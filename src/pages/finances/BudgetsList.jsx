@@ -9,12 +9,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  createFinanceHelpers,
-  useDepenses,
-  useLignesBudgetaires,
-  useProjetsFinances,
-} from "./finances-data";
+import { useDepenses, useProjetsFinances } from "./finances-data";
 
 const fmtMontant = (n, devise = "XOF") =>
   new Intl.NumberFormat("fr-FR", {
@@ -39,6 +34,21 @@ function ProgressBar({ taux }) {
   );
 }
 
+/** Stats budgétaires d'un projet calculées depuis les dépenses réelles */
+function computeStats(projet, depenses) {
+  const prevu = Number(projet.budgetTotal ?? 0);
+  const projDep = depenses.filter((d) => d.projetId === projet.id);
+  const depense = projDep
+    .filter((d) => d.statut === "VALIDEE")
+    .reduce((s, d) => s + (d.montantXOF ?? 0), 0);
+  const engage = projDep
+    .filter((d) => !["ANNULEE", "REJETEE"].includes(d.statut))
+    .reduce((s, d) => s + (d.montantXOF ?? 0), 0);
+  const solde = prevu - engage;
+  const taux = prevu > 0 ? Math.round((depense / prevu) * 100) : 0;
+  return { prevu, engage, depense, solde, taux };
+}
+
 // ════════════════════════════════════════════════════════════
 // PAGE — Vue consolidée des budgets
 // ════════════════════════════════════════════════════════════
@@ -47,39 +57,32 @@ export default function BudgetsList() {
   const [filterProjet, setFilterProjet] = useState("TOUS");
   const [search, setSearch] = useState("");
 
-  // Données React Query
-  const { data: allProjets = [] } = useProjetsFinances();
-  const { data: allLignes = [] } = useLignesBudgetaires();
-  const { data: allDepenses = [] } = useDepenses();
-  const helpers = useMemo(
-    () => createFinanceHelpers(allProjets, allLignes, allDepenses),
-    [allProjets, allLignes, allDepenses],
-  );
+  // Données Spring Boot
+  const { data: allProjets = [], isLoading: loadingProjets } = useProjetsFinances();
+  const { data: allDepenses = [], isLoading: loadingDep } = useDepenses();
+  const isLoading = loadingProjets || loadingDep;
 
   const isComptable = user?.roles?.includes("ROLE_COMPTABLE");
   const isRP = user?.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES");
 
   // Projets visibles selon rôle
-  // - RP → uniquement ses propres projets
-  // - Comptable → projets EN_COURS
-  // - Autres → tous
   const projetsBase = useMemo(() => {
-    if (isRP) return allProjets.filter((p) => p.responsableId === user?.userId);
-    if (isComptable) return allProjets.filter((p) => p.statut === "EN_COURS");
+    if (isRP) return allProjets.filter((p) => p.responsableId === user?.id);
+    if (isComptable) return allProjets.filter((p) => p.statut === "ACTIF");
     return allProjets;
-  }, [allProjets, isComptable, isRP, user?.userId]);
+  }, [allProjets, isComptable, isRP, user?.id]);
 
   // Alertes >80% pour le RP
   const alertesBudget = useMemo(() => {
     if (!isRP) return [];
     return projetsBase
       .map((p) => {
-        const s = helpers.getBudgetStatsForProjet(p.id);
+        const s = computeStats(p, allDepenses);
         return { ...p, taux: s.taux, stats: s };
       })
       .filter((p) => p.taux >= 80)
       .sort((a, b) => b.taux - a.taux);
-  }, [helpers, isRP, projetsBase]);
+  }, [allDepenses, isRP, projetsBase]);
 
   const projets = useMemo(() => {
     let list = [...projetsBase];
@@ -89,7 +92,8 @@ export default function BudgetsList() {
       const q = search.toLowerCase();
       list = list.filter(
         (p) =>
-          p.code.toLowerCase().includes(q) || p.titre.toLowerCase().includes(q),
+          (p.code ?? "").toLowerCase().includes(q) ||
+          (p.titre ?? "").toLowerCase().includes(q),
       );
     }
     return list;
@@ -99,7 +103,7 @@ export default function BudgetsList() {
   const totals = useMemo(() => {
     return projets.reduce(
       (acc, p) => {
-        const s = helpers.getBudgetStatsForProjet(p.id);
+        const s = computeStats(p, allDepenses);
         acc.prevu += s.prevu;
         acc.engage += s.engage;
         acc.depense += s.depense;
@@ -108,7 +112,7 @@ export default function BudgetsList() {
       },
       { prevu: 0, engage: 0, depense: 0, solde: 0 },
     );
-  }, [helpers, projets]);
+  }, [allDepenses, projets]);
 
   const tauxGlobal =
     totals.prevu > 0 ? Math.round((totals.depense / totals.prevu) * 100) : 0;
@@ -119,25 +123,23 @@ export default function BudgetsList() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Suivi budgétaire</h1>
         <p className="mt-1 text-sm text-gray-500">
-          {projets.length} projet{projets.length !== 1 ? "s" : ""}
+          {isLoading
+            ? "Chargement..."
+            : `${projets.length} projet${projets.length !== 1 ? "s" : ""}`}
           {isRP && " — lecture seule"}
         </p>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <KPICard
-          label="Budget prévu"
-          value={fmtMontant(totals.prevu)}
-          icon={Wallet}
-        />
+        <KPICard label="Budget prévu" value={fmtMontant(totals.prevu)} icon={Wallet} />
         <KPICard
           label="Engagé"
           value={fmtMontant(totals.engage)}
           className="border-blue-200 bg-blue-50"
         />
         <KPICard
-          label="Dépensé"
+          label="Dépensé (validé)"
           value={fmtMontant(totals.depense)}
           className="border-orange-200 bg-orange-50"
         />
@@ -163,10 +165,10 @@ export default function BudgetsList() {
         </div>
       </div>
 
-      {/* 🔔 Alertes budget >80% (RP uniquement) */}
+      {/* Alertes budget >80% (RP uniquement) */}
       {isRP && alertesBudget.length > 0 && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="mb-3 flex items-center gap-2">
             <AlertTriangle size={16} className="text-red-600" />
             <h3 className="text-sm font-bold text-red-800">
               Alertes budgétaires — {alertesBudget.length} projet
@@ -178,7 +180,7 @@ export default function BudgetsList() {
               <Link
                 key={p.id}
                 to={`/finances/budgets/${p.id}`}
-                className="flex items-center justify-between rounded-lg bg-white px-4 py-2.5 border border-red-100 hover:border-red-300 transition-colors"
+                className="flex items-center justify-between rounded-lg border border-red-100 bg-white px-4 py-2.5 transition-colors hover:border-red-300"
               >
                 <div className="flex items-center gap-3">
                   <span
@@ -189,9 +191,7 @@ export default function BudgetsList() {
                     {p.taux}%
                   </span>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {p.titre}
-                    </p>
+                    <p className="text-sm font-semibold text-gray-900">{p.titre}</p>
                     <p className="text-[11px] text-gray-500">
                       {p.code} — Budget : {fmtMontant(p.stats.prevu, p.devise)}
                     </p>
@@ -240,7 +240,16 @@ export default function BudgetsList() {
       </div>
 
       {/* Cartes projets */}
-      {projets.length === 0 ? (
+      {isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="h-52 animate-pulse rounded-xl border border-gray-200 bg-gray-100"
+            />
+          ))}
+        </div>
+      ) : projets.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white px-6 py-16 text-center shadow-sm">
           <BarChart3 className="mx-auto mb-3 text-gray-300" size={40} />
           <p className="text-sm text-gray-400">Aucun projet trouvé.</p>
@@ -248,10 +257,10 @@ export default function BudgetsList() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {projets.map((p) => {
-            const stats = helpers.getBudgetStatsForProjet(p.id);
+            const stats = computeStats(p, allDepenses);
             const taux = stats.taux;
             const statutColor =
-              p.statut === "EN_COURS"
+              p.statut === "ACTIF"
                 ? "bg-green-100 text-green-700"
                 : p.statut === "SUSPENDU"
                   ? "bg-yellow-100 text-yellow-700"
@@ -260,27 +269,27 @@ export default function BudgetsList() {
             return (
               <div
                 key={p.id}
-                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
+                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
               >
                 {/* Header */}
-                <div className="flex items-start justify-between mb-4">
+                <div className="mb-4 flex items-start justify-between">
                   <div>
                     <p className="text-xs font-mono font-medium text-gray-400">
                       {p.code}
                     </p>
-                    <h3 className="mt-0.5 text-sm font-semibold text-gray-900 leading-snug">
+                    <h3 className="mt-0.5 text-sm font-semibold leading-snug text-gray-900">
                       {p.titre}
                     </h3>
                   </div>
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${statutColor}`}
                   >
-                    {p.statut.replace("_", " ")}
+                    {(p.statut ?? "").replace("_", " ")}
                   </span>
                 </div>
 
                 {/* Chiffres */}
-                <div className="grid grid-cols-2 gap-3 text-xs mb-4">
+                <div className="mb-4 grid grid-cols-2 gap-3 text-xs">
                   <div>
                     <p className="text-gray-400">Budget total</p>
                     <p className="font-semibold text-gray-900">
@@ -294,7 +303,7 @@ export default function BudgetsList() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-400">Dépensé</p>
+                    <p className="text-gray-400">Dépensé (validé)</p>
                     <p className="font-semibold text-orange-700">
                       {fmtMontant(stats.depense, p.devise)}
                     </p>
@@ -311,7 +320,7 @@ export default function BudgetsList() {
 
                 {/* Barre progression */}
                 <div className="mb-3">
-                  <div className="flex items-center justify-between text-xs mb-1">
+                  <div className="mb-1 flex items-center justify-between text-xs">
                     <span className="text-gray-400">Consommation</span>
                     <span
                       className={`font-bold ${taux > 90 ? "text-red-600" : taux > 70 ? "text-orange-600" : "text-green-600"}`}
@@ -325,7 +334,7 @@ export default function BudgetsList() {
                 {/* Bouton détail */}
                 <Link
                   to={`/finances/budgets/${p.id}`}
-                  className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
                 >
                   <TrendingUp size={13} />
                   Voir le détail
@@ -340,12 +349,7 @@ export default function BudgetsList() {
   );
 }
 
-function KPICard({
-  label,
-  value,
-  icon: Icon,
-  className = "border-gray-200 bg-white",
-}) {
+function KPICard({ label, value, icon: Icon, className = "border-gray-200 bg-white" }) {
   return (
     <div className={`rounded-xl border px-4 py-3 shadow-sm ${className}`}>
       <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">

@@ -1,10 +1,11 @@
 import useAuthStore from "@/stores/auth.store";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
+// ROLE_ADMIN restreint à /admin — retiré du module RH
 const RH_ALLOWED_ROLES = [
   "ROLE_RH",
   "ROLE_SE",
-  "ROLE_ADMIN",
+  "ROLE_RAF",
   "ROLE_RESPONSABLE_PROGRAMMES",
 ];
 

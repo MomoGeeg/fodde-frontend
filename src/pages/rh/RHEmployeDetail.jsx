@@ -139,7 +139,7 @@ export default function RHEmployeDetail() {
     return (
       <div className="space-y-4">
         <button
-          onClick={() => navigate("/rh/employes")}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
         >
           <ArrowLeft size={16} /> Retour
@@ -159,7 +159,7 @@ export default function RHEmployeDetail() {
       {/* En-tête */}
       <div className="flex items-start gap-4">
         <button
-          onClick={() => navigate("/rh/employes")}
+          onClick={() => navigate(-1)}
           className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50 transition-colors mt-1"
         >
           <ArrowLeft size={18} />
@@ -398,8 +398,33 @@ export default function RHEmployeDetail() {
       )}
 
       {/* ── Onglet 3 : Congés ──────────────────────────── */}
-      {tab === "conges" && (
+      {tab === "conges" && (() => {
+        const pad = (n) => String(n).padStart(2, "0");
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        const congeActif = empConges.find(
+          (c) => c.statut === "APPROUVE" && c.dateFin >= todayStr
+        );
+        const joursRestantsConge = congeActif
+          ? Math.max(0, Math.ceil((new Date(congeActif.dateFin) - now) / (1000 * 60 * 60 * 24)))
+          : null;
+        return (
         <div className="space-y-4">
+          {/* Congé actif en cours */}
+          {congeActif && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 flex items-center gap-3">
+              <Calendar size={16} className="text-blue-500 shrink-0" />
+              <div className="flex-1 text-sm text-blue-800">
+                En congé <span className="font-semibold">{congeActif.typeConge?.replace(/_/g, " ")}</span> jusqu'au{" "}
+                <span className="font-semibold">{fmtDate(congeActif.dateFin)}</span>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-2xl font-bold text-blue-700">{joursRestantsConge}</span>
+                <span className="text-xs text-blue-500 ml-1">j restants</span>
+              </div>
+            </div>
+          )}
+
           {/* Solde */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -422,8 +447,8 @@ export default function RHEmployeDetail() {
             </div>
           </div>
 
-          {/* Bouton nouvelle demande */}
-          {!isParti && (
+          {/* Bouton nouvelle demande — masqué pour le RP */}
+          {!isParti && !isRP && (
             <button
               onClick={() => navigate("/rh/conges")}
               className="flex items-center gap-2 rounded-lg border border-green-200 px-3 py-2 text-xs font-medium text-green-700 hover:bg-green-50 transition-colors"
@@ -493,7 +518,8 @@ export default function RHEmployeDetail() {
             )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ── Onglet 4 : Évaluations ────────────────────── */}
       {tab === "evaluations" && (

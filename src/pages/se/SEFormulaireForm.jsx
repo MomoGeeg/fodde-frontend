@@ -22,11 +22,14 @@ import {
   Trash2,
   Type,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
+  createFormulaire,
   createSEHelpers,
+  publierFormulaire,
   TYPES_CHAMP,
   useFormulaires,
   useMembres,
@@ -64,6 +67,7 @@ function SEFormulaireFormInner() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const isEdit = Boolean(id);
 
   // Données Supabase
@@ -107,7 +111,7 @@ function SEFormulaireFormInner() {
     }
   }, []);
 
-  const isCloture = existing?.statut === "CLOTURE";
+  const isCloture = existing?.statut === "FERME";
   const isPublie = existing?.statut === "PUBLIE";
   const projet = projetId ? getProjet(projetId) : null;
 
@@ -115,8 +119,8 @@ function SEFormulaireFormInner() {
   const collecteursPossibles = useMemo(() => {
     return membres.filter(
       (m) =>
-        m.role === "ROLE_TECHNICIEN_TERRAIN" ||
-        m.role === "ROLE_CHARGE_PROGRAMME",
+        m.roles?.includes("ROLE_TECHNICIEN_TERRAIN") ||
+        m.roles?.includes("ROLE_CHARGE_PROGRAMME"),
     );
   }, [membres]);
 
@@ -219,21 +223,34 @@ function SEFormulaireFormInner() {
   };
 
   // ── Sauvegarde ───────────────────────────────────────────
-  const handleSave = (publish = false) => {
+  const handleSave = async (publish = false) => {
     if (!validate()) {
       toast.error("Corrigez les erreurs avant de sauvegarder");
       return;
     }
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      const payload = { projetId, titre, description: description || null };
+      const created = await createFormulaire(payload);
+      if (publish) {
+        await publierFormulaire(created.id);
+      }
+      queryClient.invalidateQueries({ queryKey: ["se-formulaires"] });
       toast.success(
         publish
           ? "Formulaire publié avec succès"
           : "Brouillon enregistré avec succès",
       );
       navigate("/se/formulaires");
-    }, 600);
+    } catch (err) {
+      const msg =
+        err?.response?.data?.erreur ??
+        err?.response?.data?.message ??
+        "Erreur lors de la sauvegarde";
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -273,7 +290,7 @@ function SEFormulaireFormInner() {
       {isCloture && (
         <div className="rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
           <FileText size={16} />
-          Ce formulaire est clôturé et ne peut plus être modifié.
+          Ce formulaire est fermé et ne peut plus être modifié.
         </div>
       )}
 

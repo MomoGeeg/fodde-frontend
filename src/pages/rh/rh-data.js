@@ -126,25 +126,13 @@ export function useCreateConge() {
   });
 }
 
-export function useValiderCongeN1() {
+export function useApprouverCongeRAF() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, validateurId }) => rh.validerCongeN1(id, validateurId),
+    mutationFn: ({ id, validateurId }) => rh.approuverCongeRAF(id, validateurId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: rhKeys.conges });
       qc.invalidateQueries({ queryKey: rhKeys.congesEnAttente });
-      qc.invalidateQueries({ queryKey: rhKeys.congesValideN1 });
-    },
-  });
-}
-
-export function useApprouverCongeRH() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, validateurId }) => rh.approuverCongeRH(id, validateurId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: rhKeys.conges });
-      qc.invalidateQueries({ queryKey: rhKeys.congesValideN1 });
     },
   });
 }

@@ -190,7 +190,7 @@ export default function GEDProjetDossier() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
-  const projetId = Number(projet_id);
+  const projetId = projet_id; // UUID string — ne pas convertir en nombre
 
   const { data: projetsGED = [] } = useQuery({
     queryKey: ["ged-projets"],

@@ -97,7 +97,7 @@ export default function RHPage() {
     });
 
   const { mutate: validerN1, isPending: pendingN1 } = useMutation({
-    mutationFn: (id) => rhApi.validerN1(id, user.userId),
+    mutationFn: (id) => rhApi.validerN1(id, user.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["conges-en-attente"] });
       toast.success("Congé validé (N1)");
@@ -106,7 +106,7 @@ export default function RHPage() {
   });
 
   const { mutate: approuverRH, isPending: pendingRH } = useMutation({
-    mutationFn: (id) => rhApi.approuverRH(id, user.userId),
+    mutationFn: (id) => rhApi.approuverRH(id, user.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["conges-en-attente"] });
       toast.success("Congé approuvé");
@@ -115,7 +115,7 @@ export default function RHPage() {
   });
 
   const { mutate: rejeter } = useMutation({
-    mutationFn: (id) => rhApi.rejeterConge(id, user.userId, ""),
+    mutationFn: (id) => rhApi.rejeterConge(id, user.id, ""),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["conges-en-attente"] });
       toast.success("Congé rejeté");

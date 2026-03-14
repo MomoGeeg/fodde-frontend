@@ -72,21 +72,18 @@ export default function RAFTableauDeBord() {
   const evolution = results[5].data ?? [];
 
   // ── KPI calculés ──────────────────────────────────────────
-  const totalBudget  = projets.reduce((s, p) => s + p.budget, 0);
-  const totalDepense = projets.reduce((s, p) => s + p.depense, 0);
-  const tauxGlobal   = totalBudget > 0 ? (totalDepense / totalBudget) * 100 : 0;
-  const totalAvances = avances.reduce((s, a) => s + a.montant, 0);
-  const projets80    = projets.filter((p) => (p.depense / p.budget) * 100 > 80).length;
-  const soldeTresorerie = comptes.reduce((s, c) => s + c.solde, 0);
+  const totalBudget  = projets.reduce((s, p) => s + Number(p.budgetTotal ?? 0), 0);
+  const totalAvances = avances.reduce((s, a) => s + Number(a.montant ?? 0), 0);
+  const soldeTresorerie = comptes.reduce((s, c) => s + Number(c.solde ?? 0), 0);
 
   // ── KPI cards ─────────────────────────────────────────────
   const kpis = [
     {
-      label: "Taux d'exécution global",
-      value: loading ? null : `${tauxGlobal.toFixed(1)}%`,
-      sub: `${fmt(totalDepense)} dépensés`,
+      label: "Budget total alloué",
+      value: loading ? null : fmt(totalBudget),
+      sub: `${projets.length} projet(s) actif(s)`,
       icon: TrendingUp,
-      color: tauxGlobal > 90 ? "text-red-600 bg-red-50" : tauxGlobal > 70 ? "text-orange-500 bg-orange-50" : "text-emerald-600 bg-emerald-50",
+      color: "text-emerald-600 bg-emerald-50",
     },
     {
       label: "Dépenses en attente",
@@ -103,11 +100,11 @@ export default function RAFTableauDeBord() {
       color: "text-amber-600 bg-amber-50",
     },
     {
-      label: "Projets dépassant 80%",
-      value: loading ? null : projets80,
-      sub: "projet(s) en alerte budgétaire",
+      label: "Projets actifs",
+      value: loading ? null : projets.filter((p) => p.statut === "ACTIF").length,
+      sub: `${projets.length} projet(s) au total`,
       icon: TrendingDown,
-      color: projets80 > 0 ? "text-red-600 bg-red-50" : "text-emerald-600 bg-emerald-50",
+      color: "text-sky-600 bg-sky-50",
     },
     {
       label: "Position de trésorerie",
@@ -164,9 +161,8 @@ export default function RAFTableauDeBord() {
                   <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wide">
                     <th className="px-5 py-2.5">Code</th>
                     <th className="px-5 py-2.5">Projet</th>
-                    <th className="px-5 py-2.5 text-right">Budget</th>
-                    <th className="px-5 py-2.5 text-right">Dépensé</th>
-                    <th className="px-5 py-2.5 min-w-[180px]">Consommation</th>
+                    <th className="px-5 py-2.5 text-right">Budget alloué</th>
+                    <th className="px-5 py-2.5 text-right">Statut</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -180,24 +176,34 @@ export default function RAFTableauDeBord() {
                           ))}
                         </tr>
                       ))
-                    : projets.map((p) => {
-                        const taux = (p.depense / p.budget) * 100;
-                        const rowBg =
-                          taux > 90 ? "bg-red-50/50" : taux > 70 ? "bg-orange-50/50" : "";
-                        return (
-                          <tr key={p.id} className={`border-b border-gray-50 hover:bg-gray-50 ${rowBg}`}>
-                            <td className="px-5 py-3">
-                              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-mono font-medium text-gray-700">
-                                {p.code}
-                              </span>
-                            </td>
-                            <td className="px-5 py-3 font-medium text-gray-800 text-xs">{p.titre}</td>
-                            <td className="px-5 py-3 text-right text-xs text-gray-600 tabular-nums">{fmt(p.budget)}</td>
-                            <td className="px-5 py-3 text-right text-xs font-medium text-gray-800 tabular-nums">{fmt(p.depense)}</td>
-                            <td className="px-5 py-3"><TauxBar taux={taux} /></td>
-                          </tr>
-                        );
-                      })}
+                    : projets.length === 0
+                    ? (
+                        <tr>
+                          <td colSpan={4} className="px-5 py-8 text-center text-sm text-gray-400">
+                            Aucun projet
+                          </td>
+                        </tr>
+                      )
+                    : projets.map((p) => (
+                        <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
+                          <td className="px-5 py-3">
+                            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-mono font-medium text-gray-700">
+                              {p.code}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 font-medium text-gray-800 text-xs">{p.titre}</td>
+                          <td className="px-5 py-3 text-right text-xs text-gray-600 tabular-nums">
+                            {fmt(Number(p.budgetTotal ?? 0))}
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                              p.statut === "ACTIF" ? "bg-emerald-100 text-emerald-700"
+                              : p.statut === "EN_VALIDATION" ? "bg-yellow-100 text-yellow-700"
+                              : "bg-gray-100 text-gray-600"
+                            }`}>{p.statut}</span>
+                          </td>
+                        </tr>
+                      ))}
                 </tbody>
               </table>
             </div>
@@ -233,8 +239,8 @@ export default function RAFTableauDeBord() {
                       <div className="flex items-start gap-2">
                         <AlertBadge niveau={a.niveau} />
                       </div>
-                      <p className="mt-1 text-xs font-medium text-gray-800 leading-snug">{a.message}</p>
-                      <p className="mt-0.5 text-[10px] text-gray-500 leading-snug">{a.details}</p>
+                      <p className="mt-1 text-xs font-medium text-gray-800 leading-snug">{a.titre}</p>
+                      <p className="mt-0.5 text-[10px] text-gray-500 leading-snug">{a.description}</p>
                     </div>
                   ))}
             </div>

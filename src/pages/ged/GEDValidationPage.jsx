@@ -6,9 +6,8 @@ import {
   Check,
   ClipboardCheck,
   Eye,
-  FileArchive,
-  Lock,
   Loader2,
+  Lock,
   ShieldOff,
   X,
 } from "lucide-react";
@@ -16,16 +15,29 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-const ROLES_AUTORISES = ["ROLE_SE", "ROLE_ADMIN", "ROLE_RESPONSABLE_PROGRAMMES"];
+const ROLES_AUTORISES = [
+  "ROLE_SE",
+  "ROLE_ADMIN",
+  "ROLE_RESPONSABLE_PROGRAMMES",
+];
 
 const TYPE_LABELS = {
-  RAPPORT: "Rapport", CONTRAT: "Contrat", JUSTIFICATIF: "Justificatif",
-  PHOTO: "Photo", POLITIQUE: "Politique", PV: "PV", STATUTS: "Statuts", AUTRE: "Autre",
+  RAPPORT: "Rapport",
+  CONTRAT: "Contrat",
+  JUSTIFICATIF: "Justificatif",
+  PHOTO: "Photo",
+  POLITIQUE: "Politique",
+  PV: "PV",
+  STATUTS: "Statuts",
+  AUTRE: "Autre",
 };
 
 const REPERTOIRE_LABELS = {
-  projets: "Projets", rh: "RH", institutionnel: "Institutionnel",
-  bailleurs: "Bailleurs", communication: "Communication",
+  projets: "Projets",
+  rh: "RH",
+  institutionnel: "Institutionnel",
+  bailleurs: "Bailleurs",
+  communication: "Communication",
 };
 
 const VISIBILITE_CLASSES = {
@@ -44,17 +56,26 @@ function ModalRejet({ doc, onConfirm, onCancel, isPending }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <X size={18} className="text-red-500" />
-            <h2 className="text-base font-semibold text-gray-900">Rejeter le document</h2>
+            <h2 className="text-base font-semibold text-gray-900">
+              Rejeter le document
+            </h2>
           </div>
-          <button onClick={onCancel} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100">
+          <button
+            onClick={onCancel}
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
+          >
             <X size={16} />
           </button>
         </div>
         <div className="px-6 py-4 space-y-4">
           <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-3">
             <p className="text-xs text-gray-500">Document concerné</p>
-            <p className="text-sm font-medium text-gray-900 mt-0.5">{doc?.titre}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Déposé par : {doc?.deposePar}</p>
+            <p className="text-sm font-medium text-gray-900 mt-0.5">
+              {doc?.titre}
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Déposé par : {doc?.deposePar}
+            </p>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -68,17 +89,24 @@ function ModalRejet({ doc, onConfirm, onCancel, isPending }) {
               className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none resize-none"
             />
             {motif.trim().length > 0 && motif.trim().length < 10 && (
-              <p className="mt-1 text-xs text-red-500">Le motif doit faire au moins 10 caractères</p>
+              <p className="mt-1 text-xs text-red-500">
+                Le motif doit faire au moins 10 caractères
+              </p>
             )}
           </div>
           <div className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2.5">
             <p className="text-xs text-amber-700">
-              <span className="font-medium">Information</span> — Le document repassera en statut "Brouillon" et le déposant sera notifié pour correction.
+              <span className="font-medium">Information</span> — Le document
+              repassera en statut "Brouillon" et le déposant sera notifié pour
+              correction.
             </p>
           </div>
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onCancel} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+          <button
+            onClick={onCancel}
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+          >
             Annuler
           </button>
           <button
@@ -103,26 +131,40 @@ function ModalValidation({ doc, onConfirm, onCancel, isPending }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <Check size={18} className="text-green-600" />
-            <h2 className="text-base font-semibold text-gray-900">Valider le document</h2>
+            <h2 className="text-base font-semibold text-gray-900">
+              Valider le document
+            </h2>
           </div>
-          <button onClick={onCancel} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100">
+          <button
+            onClick={onCancel}
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
+          >
             <X size={16} />
           </button>
         </div>
         <div className="px-6 py-4 space-y-4">
           <div className="rounded-xl bg-green-50 border border-green-100 px-4 py-3">
             <p className="text-xs text-gray-500">Document à valider</p>
-            <p className="text-sm font-medium text-gray-900 mt-0.5">{doc?.titre}</p>
+            <p className="text-sm font-medium text-gray-900 mt-0.5">
+              {doc?.titre}
+            </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              {TYPE_LABELS[doc?.type]} · Déposé par {doc?.deposePar} le {doc?.dateDepot ? new Date(doc.dateDepot).toLocaleDateString("fr-FR") : "—"}
+              {TYPE_LABELS[doc?.type]} · Déposé par {doc?.deposePar} le{" "}
+              {doc?.dateDepot
+                ? new Date(doc.dateDepot).toLocaleDateString("fr-FR")
+                : "—"}
             </p>
           </div>
           <p className="text-sm text-gray-600">
-            En validant ce document, vous confirmez qu'il est conforme et qu'il peut être archivé dans la GED.
+            En validant ce document, vous confirmez qu'il est conforme et qu'il
+            peut être archivé dans la GED.
           </p>
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onCancel} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+          <button
+            onClick={onCancel}
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+          >
             Annuler
           </button>
           <button
@@ -150,15 +192,17 @@ export default function GEDValidationPage() {
 
   const hasAccess = user?.roles?.some((r) => ROLES_AUTORISES.includes(r));
 
+  const userId = user?.userId ?? user?.id;
+
   const { data: documents = [], isLoading } = useQuery({
-    queryKey: ["ged", "validation"],
-    queryFn: gedApi.getDocumentsEnValidation,
+    queryKey: ["ged", "validation", userId],
+    queryFn: () => gedApi.getDocumentsEnValidation(userId),
     enabled: hasAccess,
     refetchInterval: 30_000,
   });
 
   const { mutate: valider, isPending: pendingValider } = useMutation({
-    mutationFn: (id) => gedApi.validerDocument(id),
+    mutationFn: (id) => gedApi.validerDocument(id, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ged"] });
       toast.success("Document validé et archivé avec succès");
@@ -177,14 +221,16 @@ export default function GEDValidationPage() {
     onError: () => toast.error("Erreur lors du rejet"),
   });
 
-  const fmtDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR") : "—";
+  const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
 
   if (!hasAccess) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-red-100 bg-red-50 py-16">
         <ShieldOff size={40} className="text-red-300 mb-3" />
         <p className="text-sm font-medium text-red-600">Accès non autorisé</p>
-        <p className="text-xs text-red-400 mt-1">La file de validation est réservée au SE et au Responsable Programmes</p>
+        <p className="text-xs text-red-400 mt-1">
+          La file de validation est réservée au SE et au Responsable Programmes
+        </p>
       </div>
     );
   }
@@ -194,9 +240,12 @@ export default function GEDValidationPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">File de validation</h1>
+          <h1 className="text-xl font-bold text-gray-900">
+            File de validation
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
-            {documents.length} document{documents.length !== 1 ? "s" : ""} en attente de validation
+            {documents.length} document{documents.length !== 1 ? "s" : ""} en
+            attente de validation
           </p>
         </div>
         {documents.length > 0 && (
@@ -227,35 +276,63 @@ export default function GEDValidationPage() {
         ) : documents.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <ClipboardCheck size={40} className="text-green-300 mb-3" />
-            <p className="text-sm font-medium text-gray-500">File de validation vide</p>
-            <p className="text-xs text-gray-400 mt-1">Tous les documents ont été traités</p>
+            <p className="text-sm font-medium text-gray-500">
+              File de validation vide
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Tous les documents ont été traités
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-100">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Titre</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Répertoire</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Déposé par</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Date soumission</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Visibilité</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Titre
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Répertoire
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Déposé par
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Date soumission
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Visibilité
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {documents.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={doc.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-50 shrink-0">
-                          <AlertTriangle size={15} className="text-yellow-600" />
+                          <AlertTriangle
+                            size={15}
+                            className="text-yellow-600"
+                          />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{doc.titre}</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {doc.titre}
+                          </p>
                           {doc.projetCode && (
-                            <p className="text-xs text-gray-500">{doc.projetCode}</p>
+                            <p className="text-xs text-gray-500">
+                              {doc.projetCode}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -270,12 +347,22 @@ export default function GEDValidationPage() {
                         {REPERTOIRE_LABELS[doc.repertoire] ?? doc.repertoire}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{doc.deposePar}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{fmtDate(doc.dateDepot)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {doc.deposePar}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {fmtDate(doc.dateDepot)}
+                    </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${VISIBILITE_CLASSES[doc.visibilite] ?? "bg-gray-100 text-gray-600"}`}>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${VISIBILITE_CLASSES[doc.visibilite] ?? "bg-gray-100 text-gray-600"}`}
+                      >
                         {doc.visibilite === "CONFIDENTIEL" && <Lock size={9} />}
-                        {doc.visibilite === "CONFIDENTIEL" ? "Confidentiel" : doc.visibilite === "RESTREINT" ? "Restreint" : "Public"}
+                        {doc.visibilite === "CONFIDENTIEL"
+                          ? "Confidentiel"
+                          : doc.visibilite === "RESTREINT"
+                            ? "Restreint"
+                            : "Public"}
                       </span>
                     </td>
                     <td className="px-6 py-4">

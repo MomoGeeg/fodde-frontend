@@ -15,6 +15,7 @@ const emptyForm = {
   description: "",
   objectifGeneral: "",
   zoneGeographique: "",
+  bailleur: "",
   dateDebut: "",
   dateFin: "",
   budgetTotal: "",
@@ -88,6 +89,7 @@ export default function ProjetForm() {
         description: p.description ?? "",
         objectifGeneral: p.objectifGeneral ?? "",
         zoneGeographique: p.zoneGeographique ?? "",
+        bailleur: p.bailleur ?? "",
         dateDebut: p.dateDebut ?? "",
         dateFin: p.dateFin ?? "",
         budgetTotal: p.budgetTotal?.toString() ?? "",
@@ -102,8 +104,12 @@ export default function ProjetForm() {
     mutationFn: projetsApi.create,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["projets"] });
-      toast.success("Projet créé avec succès — statut : Brouillon");
-      navigate(`/projets/${res.id}`);
+      const msg =
+        res.statut === "EN_VALIDATION"
+          ? "Projet soumis à validation avec succès"
+          : "Projet enregistré comme brouillon";
+      toast.success(msg);
+      navigate(`../${res.id}`, { relative: "path" });
     },
     onError: (err) => toast.error(err.message ?? "Erreur lors de la création"),
   });
@@ -114,13 +120,14 @@ export default function ProjetForm() {
       queryClient.invalidateQueries({ queryKey: ["projet", id] });
       queryClient.invalidateQueries({ queryKey: ["projets"] });
       toast.success("Projet mis à jour");
-      navigate(`/projets/${id}`);
+      navigate(-1);
     },
     onError: (err) =>
       toast.error(err.message ?? "Erreur lors de la mise à jour"),
   });
 
   const isPending = creating || updating;
+  const [submitMode, setSubmitMode] = useState("BROUILLON");
 
   const validate = () => {
     const errs = {};
@@ -168,6 +175,7 @@ export default function ProjetForm() {
       description: form.description.trim(),
       objectifGeneral: form.objectifGeneral.trim(),
       zoneGeographique: form.zoneGeographique.trim(),
+      bailleur: form.bailleur.trim() || undefined,
       dateDebut: form.dateDebut,
       dateFin: form.dateFin,
       budgetTotal: parseFloat(form.budgetTotal),
@@ -179,7 +187,7 @@ export default function ProjetForm() {
     if (isEditMode) {
       modifier(payload);
     } else {
-      creer(payload);
+      creer({ ...payload, statut: submitMode });
     }
   };
 
@@ -222,7 +230,7 @@ export default function ProjetForm() {
       {/* En-tête */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate(isEditMode ? `/projets/${id}` : "/projets")}
+          onClick={() => navigate(-1)}
           className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50 transition-colors"
         >
           <ArrowLeft size={18} />
@@ -320,6 +328,15 @@ export default function ProjetForm() {
                 placeholder="Ex: Kolda, Sédhiou, Ziguinchor"
               />
               <FieldError msg={errors.zoneGeographique} />
+            </div>
+
+            <div>
+              <FormLabel>Bailleur de fonds</FormLabel>
+              <FormInput
+                value={form.bailleur}
+                onChange={set("bailleur")}
+                placeholder="Ex: Union Européenne, USAID, AFD..."
+              />
             </div>
           </div>
         </div>
@@ -484,24 +501,37 @@ export default function ProjetForm() {
         <div className="flex items-center justify-end gap-3 rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm">
           <button
             type="button"
-            onClick={() => navigate(isEditMode ? `/projets/${id}` : "/projets")}
+            onClick={() => navigate(-1)}
             className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
           >
             Annuler
           </button>
+          {!isEditMode && (
+            <button
+              type="submit"
+              disabled={isPending}
+              onClick={() => setSubmitMode("BROUILLON")}
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition-colors"
+            >
+              {isPending && submitMode === "BROUILLON"
+                ? "Enregistrement..."
+                : "Enregistrer comme brouillon"}
+            </button>
+          )}
           <button
             type="submit"
             disabled={isPending}
+            onClick={() => setSubmitMode(isEditMode ? "BROUILLON" : "EN_VALIDATION")}
             className="rounded-lg px-5 py-2 text-sm font-medium text-white disabled:opacity-60 transition-colors"
             style={{ background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)" }}
           >
             {isPending
               ? isEditMode
                 ? "Enregistrement..."
-                : "Création..."
+                : "Soumission..."
               : isEditMode
                 ? "Enregistrer"
-                : "Créer le projet"}
+                : "Soumettre à validation"}
           </button>
         </div>
       </form>

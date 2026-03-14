@@ -172,7 +172,6 @@ export default function ProjetsList() {
 
   const isAdmin = user?.roles?.includes("ROLE_ADMIN");
   const canCreate = [
-    "ROLE_RAF",
     "ROLE_RESPONSABLE_PROGRAMMES",
     "ROLE_ADMIN",
   ].some((r) => user?.roles?.includes(r));
@@ -216,7 +215,7 @@ export default function ProjetsList() {
         </div>
         {canCreate && (
           <button
-            onClick={() => navigate("/projets/nouveau")}
+            onClick={() => navigate("nouveau")}
             className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
             style={{ background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)" }}
           >
@@ -330,7 +329,7 @@ export default function ProjetsList() {
               {projetsFiltered.map((projet) => (
                 <tr
                   key={projet.id}
-                  onClick={() => navigate(`/projets/${projet.id}`)}
+                  onClick={() => navigate(String(projet.id))}
                   className="cursor-pointer transition-colors hover:bg-gray-50"
                 >
                   <td className="px-6 py-4">

@@ -1,49 +1,23 @@
-import { supabase } from "@/lib/supabase";
+import api from "@/api/axios";
 
 export const dashboardApi = {
-  getProjets: async () => {
-    const { data, error } = await supabase
-      .from("projets")
-      .select("*")
-      .order("code");
-    if (error) throw new Error(error.message);
-    return data;
-  },
+  getProjets: () => api.get("/api/projets").then((r) => r.data),
 
-  getEmployes: async () => {
-    const { data, error } = await supabase
-      .from("employes")
-      .select("*")
-      .eq("statut", "ACTIF");
-    if (error) throw new Error(error.message);
-    return data;
-  },
+  getEmployes: () =>
+    api
+      .get("/api/employes")
+      .then((r) => r.data)
+      .catch(() => []), // 403 si rôle non autorisé (RH/Admin seulement)
 
-  getDocuments: async () => {
-    const { data, error } = await supabase
-      .from("documents")
-      .select("*")
-      .neq("statut", "ARCHIVE");
-    if (error) throw new Error(error.message);
-    return data;
-  },
+  getDocuments: () =>
+    api
+      .get("/api/documents")
+      .then((r) => r.data)
+      .catch(() => []),
 
-  getDepensesMoisCourant: async () => {
-    const now = new Date();
-    const debut = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const fin = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      0,
-    ).toISOString();
-    const { data, error } = await supabase
-      .from("depenses")
-      .select("montant")
-      .gte("date", debut)
-      .lte("date", fin)
-      .eq("statut", "VALIDEE");
-    if (error) throw new Error(error.message);
-    const total = (data ?? []).reduce((s, d) => s + (d.montant ?? 0), 0);
-    return { total, count: data?.length ?? 0 };
-  },
+  getDepensesMoisCourant: () =>
+    api
+      .get("/api/depenses/stats/mois-courant")
+      .then((r) => ({ total: r.data?.total ?? 0, count: r.data?.count ?? 0 }))
+      .catch(() => ({ total: 0, count: 0 })),
 };

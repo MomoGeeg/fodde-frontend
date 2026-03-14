@@ -17,14 +17,12 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  createFinanceHelpers,
   MODE_PAIEMENT_LABELS,
   SEUIL_APPROBATION_SE,
   STATUT_COLORS,
   STATUTS_DEPENSE,
   useDepenseById,
-  useLignesBudgetaires,
-  useProjetsFinances,
+  useLignesParProjet,
 } from "./finances-data";
 
 const fmtDate = (d) =>
@@ -154,12 +152,8 @@ export default function DepenseDetail() {
 
   // Données React Query
   const { data: depense } = useDepenseById(id);
-  const { data: allProjets = [] } = useProjetsFinances();
-  const { data: allLignes = [] } = useLignesBudgetaires();
-  const helpers = useMemo(
-    () => createFinanceHelpers(allProjets, allLignes, []),
-    [allProjets, allLignes],
-  );
+  // Lignes du projet (pour le solde disponible de la ligne)
+  const { data: lignes = [] } = useLignesParProjet(depense?.projetId);
 
   // Rôles
   const isComptable = user?.roles?.includes("ROLE_COMPTABLE");
@@ -189,9 +183,13 @@ export default function DepenseDetail() {
     );
   }
 
-  const projet = helpers.getProjet(depense.projetId);
-  const ligne = helpers.getLigne(depense.ligneBudgetaireId);
-  const solde = helpers.getSoldeDisponible(depense.ligneBudgetaireId);
+  // Utilise les champs embarqués de DepenseResponse
+  const projet = { code: depense.projetCode, titre: depense.projetTitre };
+  const ligne = { code: depense.ligneBudgetaireCode, intitule: depense.ligneBudgetaireIntitule };
+  const ligneData = lignes.find((l) => l.id === depense.ligneBudgetaireId);
+  const solde = ligneData
+    ? (ligneData.soldeDisponible != null ? Number(ligneData.soldeDisponible) : ligneData.prevu - ligneData.depense)
+    : null;
   const statut = depense.statut;
 
   // ── Actions handlers (mock) ────────────────────────────
@@ -366,7 +364,7 @@ export default function DepenseDetail() {
             </p>
             {depense.devise !== "XOF" && (
               <p className="text-xs text-gray-400">
-                ≈ {fmtMontant(depense.montantXOF)} (taux: {depense.tauxChange})
+                ≈ {fmtMontant(depense.montantXOF)}
               </p>
             )}
           </div>
@@ -382,8 +380,8 @@ export default function DepenseDetail() {
           />
           <Field
             label="Solde disponible"
-            value={fmtMontant(solde)}
-            valueClass={solde < 0 ? "text-red-600" : "text-green-600"}
+            value={solde != null ? fmtMontant(solde) : "—"}
+            valueClass={solde != null && solde < 0 ? "text-red-600" : "text-green-600"}
           />
           <Field label="Devise" value={depense.devise} />
           <Field

@@ -11,22 +11,27 @@ import { supabase } from "@/lib/supabase";
 // ════════════════════════════════════════════════════════════════════════════
 
 export const TYPE_OPTIONS = [
-  "Rapport",
-  "Contrat",
-  "Convention",
-  "Budget",
-  "PV",
-  "Photo",
-  "Autre",
+  { value: "RAPPORT", label: "Rapport" },
+  { value: "CONTRAT", label: "Contrat" },
+  { value: "CONVENTION", label: "Convention" },
+  { value: "JUSTIFICATIF", label: "Justificatif" },
+  { value: "PV", label: "Procès-verbal" },
+  { value: "POLITIQUE", label: "Politique / Procédure" },
+  { value: "PHOTO", label: "Photo" },
+  { value: "AUTRE", label: "Autre" },
 ];
 
 export const FORMATS_AUTORISES = [
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "pdf",
+  "jpg",
+  "jpeg",
+  "png",
+  "docx",
+  "xlsx",
+  "zip",
 ];
+
+export const FORMATS_LABEL = "PDF, JPG, PNG, DOCX, XLSX, ZIP";
 
 export const TAILLE_MAX_MB = 25;
 
@@ -91,14 +96,9 @@ export async function getDocumentsByProjet(projetId) {
 }
 
 export async function getDocumentsByRepertoire(repertoireId) {
-  const { data, error } = await supabase
-    .from("documents")
-    .select("*")
-    .eq("repertoire_id", repertoireId)
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data;
+  // DEPRECATED — la table documents n'a pas de colonne repertoire_id.
+  // Utiliser gedApi.getDocumentsByRepertoire() qui filtre par projet_id / type_document.
+  return getAllDocuments();
 }
 
 export async function getDocumentById(id) {
@@ -313,12 +313,27 @@ export async function getSignedUrl(path, expiresIn = 3600) {
 // ════════════════════════════════════════════════════════════════════════════
 
 export function computeKpiGed(documents) {
-  const total = documents.length;
-  const enAttente = documents.filter(
+  const actifs = documents.filter((d) => d.statut !== "ARCHIVE");
+  const totalActifs = actifs.length;
+  const enValidation = documents.filter(
     (d) => d.statut === "EN_VALIDATION",
   ).length;
-  const valides = documents.filter((d) => d.statut === "VALIDE").length;
-  const archives = documents.filter((d) => d.statut === "ARCHIVE").length;
 
-  return { total, enAttente, valides, archives };
+  // Documents déposés ce mois
+  const now = new Date();
+  const depositsMois = documents.filter((d) => {
+    if (!d.created_at) return false;
+    const dt = new Date(d.created_at);
+    return (
+      dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear()
+    );
+  }).length;
+
+  return {
+    totalActifs,
+    enValidation,
+    depositsMois,
+    stockageUtilise: "—",
+    stockagePourcent: 0,
+  };
 }

@@ -9,7 +9,6 @@ import {
   Lock,
   Plus,
   Search,
-  Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -48,7 +47,7 @@ export default function SEFormulairesList() {
   const { data: membres = [] } = useMembres();
   const { data: reponsesData = [] } = useReponsesEnAttente();
 
-  const { getProjet, getMembre, getReponsesForFormulaire } = createSEHelpers(
+  const { getProjet, getReponsesForFormulaire } = createSEHelpers(
     projets,
     membres,
     [],
@@ -213,7 +212,7 @@ export default function SEFormulairesList() {
           },
           {
             label: "Clôturés",
-            value: allFormulaires.filter((f) => f.statut === "CLOTURE").length,
+            value: allFormulaires.filter((f) => f.statut === "FERME").length,
             icon: Lock,
             color: "text-gray-600 bg-gray-100",
           },
@@ -271,7 +270,6 @@ export default function SEFormulairesList() {
             <tbody className="divide-y divide-gray-100">
               {formulaires.map((form) => {
                 const projet = getProjet(form.projetId);
-                const collecteurs = form.collecteursIds?.map(getMembre) ?? [];
                 const reponses = getReponsesForFormulaire(form.id);
                 const enAttente = reponses.filter(
                   (r) => r.statut === "EN_ATTENTE",
@@ -300,26 +298,12 @@ export default function SEFormulairesList() {
                       </span>{" "}
                       {projet?.titre}
                     </td>
-                    <td className="px-4 py-3 text-center text-xs font-semibold text-gray-700">
-                      {form.champs?.length ?? 0}
+                    <td className="px-4 py-3 text-center text-xs text-gray-400">
+                      —
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <Users size={12} className="text-gray-400" />
-                        <span className="text-xs text-gray-600">
-                          {collecteurs
-                            .slice(0, 2)
-                            .map((m) =>
-                              m ? `${m.prenom} ${m.nom?.charAt(0)}.` : "—",
-                            )
-                            .join(", ")}
-                          {collecteurs.length > 2 &&
-                            ` +${collecteurs.length - 2}`}
-                        </span>
-                      </div>
-                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-400">—</td>
                     <td className="px-4 py-3 text-xs text-gray-500">
-                      {fmtDate(form.datePublication)}
+                      {fmtDate(form.dateDebut)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className="text-xs font-semibold text-gray-700">

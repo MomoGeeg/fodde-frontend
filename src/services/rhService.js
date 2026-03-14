@@ -1,312 +1,204 @@
 /**
- * Service RH — Supabase
- * Tables : employes, contrats, conges, types_conges, evaluations,
- *          criteres_evaluation, services
+ * Service RH — Spring Boot API
+ * Remplace les appels Supabase directs par des appels à l'API REST Spring Boot.
  */
-import { supabase } from "@/lib/supabase";
+import api from "@/api/axios";
 
 // ════════════════════════════════════════════════════════════════════════════
-// EMPLOYÉS
+// EMPLOYÉS  —  /api/employes
 // ════════════════════════════════════════════════════════════════════════════
 
 export async function getAllEmployes() {
-  const { data, error } = await supabase
-    .from("employes")
-    .select("*")
-    .order("nom", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.get("/api/employes");
+  return res.data;
 }
 
 export async function getEmployeById(id) {
-  const { data, error } = await supabase
-    .from("employes")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.get(`/api/employes/${id}`);
+  return res.data;
 }
 
 export async function createEmploye(payload) {
-  const { data, error } = await supabase
-    .from("employes")
-    .insert(payload)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.post("/api/employes", payload);
+  return res.data;
 }
 
+// La mise à jour complète n'existe pas en REST pur — on passe par statut ou on ajoute un PUT si nécessaire
 export async function updateEmploye(id, payload) {
-  const { data, error } = await supabase
-    .from("employes")
-    .update(payload)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  if (payload.statut) {
+    const res = await api.patch(`/api/employes/${id}/statut`, null, {
+      params: { statut: payload.statut },
+    });
+    return res.data;
+  }
+  // Fallback : mettre à jour via PUT si le backend l'expose plus tard
+  const res = await api.put(`/api/employes/${id}`, payload);
+  return res.data;
 }
 
 export async function changerStatutEmploye(id, statut) {
-  return updateEmploye(id, { statut });
+  const res = await api.patch(`/api/employes/${id}/statut`, null, {
+    params: { statut },
+  });
+  return res.data;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// CONGÉS
+// CONGÉS  —  /api/conges
 // ════════════════════════════════════════════════════════════════════════════
 
 export async function getAllConges() {
-  const { data, error } = await supabase
-    .from("conges")
-    .select("*")
-    .order("date_soumission", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.get("/api/conges");
+  return res.data;
 }
 
 export async function getCongesByEmploye(employeId) {
-  const { data, error } = await supabase
-    .from("conges")
-    .select("*")
-    .eq("employe_id", employeId)
-    .order("date_soumission", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.get(`/api/conges/mes-conges/${employeId}`);
+  return res.data;
 }
 
 export async function getCongesEnAttente() {
-  const { data, error } = await supabase
-    .from("conges")
-    .select("*")
-    .eq("statut", "EN_ATTENTE")
-    .order("date_soumission", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.get("/api/conges/en-attente");
+  return res.data;
 }
 
 export async function getCongesValideN1() {
-  const { data, error } = await supabase
-    .from("conges")
-    .select("*")
-    .eq("statut", "VALIDE_N1")
-    .order("date_soumission", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.get("/api/conges/valide-n1");
+  return res.data;
 }
 
 export async function createConge(payload) {
-  const { data, error } = await supabase
-    .from("conges")
-    .insert({ ...payload, statut: "EN_ATTENTE" })
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.post("/api/conges", payload);
+  return res.data;
 }
 
-export async function validerCongeN1(id, validateurId) {
-  const { data, error } = await supabase
-    .from("conges")
-    .update({ statut: "VALIDE_N1", valideur_n1: validateurId })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-export async function approuverCongeRH(id, validateurId) {
-  const { data, error } = await supabase
-    .from("conges")
-    .update({ statut: "APPROUVE", valideur_rh: validateurId })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+export async function approuverCongeRAF(id, validateurId) {
+  const res = await api.patch(`/api/conges/${id}/approuver`, null, {
+    params: { validateurId },
+  });
+  return res.data;
 }
 
 export async function rejeterConge(id, validateurId, motif) {
-  const { data, error } = await supabase
-    .from("conges")
-    .update({
-      statut: "REJETE",
-      valideur_rh: validateurId,
-      motif_rejet: motif,
-    })
-    .eq("id", id)
-    .select()
-    .single();
+  const res = await api.patch(`/api/conges/${id}/rejeter`, null, {
+    params: { validateurId, motif },
+  });
+  return res.data;
+}
 
-  if (error) throw new Error(error.message);
-  return data;
+export async function annulerConge(id) {
+  const res = await api.patch(`/api/conges/${id}/annuler`);
+  return res.data;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// TYPES CONGÉS
+// TYPES CONGÉS  —  valeurs de l'enum TypeConge backend
 // ════════════════════════════════════════════════════════════════════════════
 
 export async function getTypesConges() {
-  const { data, error } = await supabase
-    .from("types_conges")
-    .select("*")
-    .order("nom", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return data;
+  // L'enum est statique côté backend — on retourne les valeurs connues
+  return [
+    { id: "ANNUEL",       nom: "Congé annuel" },
+    { id: "MALADIE",      nom: "Congé maladie" },
+    { id: "MATERNITE",    nom: "Congé maternité" },
+    { id: "PATERNITE",    nom: "Congé paternité" },
+    { id: "SANS_SOLDE",   nom: "Congé sans solde" },
+    { id: "EXCEPTIONNEL", nom: "Congé exceptionnel" },
+  ];
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// SERVICES / DÉPARTEMENTS
+// SERVICES / DÉPARTEMENTS  —  extraits dynamiquement des employés
 // ════════════════════════════════════════════════════════════════════════════
 
 export async function getServices() {
-  const { data, error } = await supabase
-    .from("services")
-    .select("*")
-    .order("nom", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return data;
+  const employes = await getAllEmployes();
+  const set = new Set(employes.map((e) => e.departement).filter(Boolean));
+  return [...set].sort().map((nom) => ({ id: nom, nom }));
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// ÉVALUATIONS
+// ÉVALUATIONS  —  /api/evaluations
 // ════════════════════════════════════════════════════════════════════════════
 
 export async function getAllEvaluations() {
-  const { data, error } = await supabase
-    .from("evaluations")
-    .select("*")
-    .order("date", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.get("/api/evaluations");
+  return res.data;
 }
 
 export async function getEvaluationsByEmploye(employeId) {
-  const { data, error } = await supabase
-    .from("evaluations")
-    .select("*")
-    .eq("employe_id", employeId)
-    .order("annee", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.get(`/api/evaluations/employe/${employeId}`);
+  return res.data;
 }
 
 export async function createEvaluation(payload) {
-  const { data, error } = await supabase
-    .from("evaluations")
-    .insert(payload)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.post("/api/evaluations", payload);
+  return res.data;
 }
 
 export async function updateEvaluation(id, payload) {
-  const { data, error } = await supabase
-    .from("evaluations")
-    .update(payload)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  // Pas de PUT générique — on utilise les endpoints métier (soumettre/valider)
+  if (payload.statut === "SOUMISE") {
+    const res = await api.patch(`/api/evaluations/${id}/soumettre`);
+    return res.data;
+  }
+  if (payload.statut === "VALIDEE") {
+    const res = await api.patch(`/api/evaluations/${id}/valider`);
+    return res.data;
+  }
+  throw new Error("updateEvaluation: statut non supporté : " + payload.statut);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// CRITÈRES D'ÉVALUATION
+// CRITÈRES D'ÉVALUATION  —  valeurs statiques (pas d'endpoint backend)
 // ════════════════════════════════════════════════════════════════════════════
 
 export async function getCriteresEvaluation() {
-  const { data, error } = await supabase
-    .from("criteres_evaluation")
-    .select("*")
-    .order("nom", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return data;
+  return [
+    { id: "COMPETENCES",    nom: "Compétences techniques" },
+    { id: "PONCTUALITE",    nom: "Ponctualité" },
+    { id: "TRAVAIL_EQUIPE", nom: "Travail en équipe" },
+    { id: "INITIATIVES",    nom: "Initiatives" },
+    { id: "RESULTATS",      nom: "Atteinte des résultats" },
+  ];
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// MISSIONS (RH)
+// MISSIONS  —  /api/missions (RAF) retournées tel quel
 // ════════════════════════════════════════════════════════════════════════════
 
 export async function getMissions() {
-  const { data, error } = await supabase
-    .from("missions")
-    .select("*")
-    .order("date_debut", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data;
+  const res = await api.get("/api/missions").catch(() => ({ data: [] }));
+  return res.data;
 }
 
 export async function getMissionsByEmploye(employeId) {
-  const { data, error } = await supabase
-    .from("missions")
-    .select("*")
-    .eq("employe_id", employeId)
-    .order("date_debut", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data;
+  // Pas d'endpoint dédié — filtre côté client
+  const missions = await getMissions();
+  return missions.filter((m) => m.employeId === employeId);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// DOCUMENTS RH
+// DOCUMENTS RH  —  pas encore exposé dans Spring Boot (retourne [])
 // ════════════════════════════════════════════════════════════════════════════
 
-export async function getDocumentsEmploye(employeId) {
-  const { data, error } = await supabase
-    .from("documents")
-    .select("*")
-    .eq("employe_id", employeId)
-    .order("date_depot", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data;
+export async function getDocumentsEmploye(_employeId) {
+  return [];
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 // HELPERS CÔTÉ CLIENT
 // ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Calcule les jours restants avant une date.
- */
 export function joursRestants(dateFin) {
   if (!dateFin) return null;
-  const diff = Math.ceil(
-    (new Date(dateFin) - new Date()) / (1000 * 60 * 60 * 24),
-  );
-  return diff;
+  return Math.ceil((new Date(dateFin) - new Date()) / (1000 * 60 * 60 * 24));
 }
 
-/**
- * Retourne le niveau d'urgence d'un contrat.
- */
 export function urgenceContrat(dateFin) {
   const j = joursRestants(dateFin);
-  if (j === null) return null;
-  if (j <= 7) return "CRITIQUE";
+  if (j === null || j <= 0) return null;
+  if (j <= 7)  return "CRITIQUE";
   if (j <= 30) return "DANGER";
   if (j <= 60) return "WARNING";
   return null;

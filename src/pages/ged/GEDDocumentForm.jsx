@@ -1,7 +1,7 @@
 import { gedApi } from "@/api/ged.api";
 import {
   FORMATS_AUTORISES,
-  SOUS_REPERTOIRES,
+  FORMATS_LABEL,
   TAILLE_MAX_MB,
   TYPE_OPTIONS,
 } from "@/services/gedService";
@@ -17,7 +17,6 @@ import { toast } from "sonner";
  *  - open: boolean
  *  - onClose: () => void
  *  - repertoire: string (ex: "projets")
- *  - sousRepertoire: string (optionnel, pré-sélectionné)
  *  - projetId: number (optionnel, pré-sélectionné)
  *  - nouvelleVersionDe: object (doc existant si on dépose une nouvelle version)
  */
@@ -25,7 +24,6 @@ export default function GEDDocumentForm({
   open,
   onClose,
   repertoire = "projets",
-  sousRepertoire: sousRepDefaut,
   projetId: projetIdDefaut,
   nouvelleVersionDe,
 }) {
@@ -42,9 +40,8 @@ export default function GEDDocumentForm({
     titre: nouvelleVersionDe?.titre ?? "",
     type: nouvelleVersionDe?.type ?? "",
     projetId: projetIdDefaut ?? "",
-    sousRepertoire: sousRepDefaut ?? "",
     description: "",
-    visibilite: "RESTREINT",
+    visibilite: "PRIVE",
     commentaire: "",
   });
   const [fichier, setFichier] = useState(null);
@@ -60,9 +57,8 @@ export default function GEDDocumentForm({
         titre: nouvelleVersionDe?.titre ?? "",
         type: nouvelleVersionDe?.type ?? "",
         projetId: projetIdDefaut ?? "",
-        sousRepertoire: sousRepDefaut ?? "",
         description: "",
-        visibilite: "RESTREINT",
+        visibilite: "PRIVE",
         commentaire: "",
       });
       setFichier(null);
@@ -70,7 +66,7 @@ export default function GEDDocumentForm({
       setDoublon(null);
       setChoixDoublon(null);
     }
-  }, [open, nouvelleVersionDe, projetIdDefaut, sousRepDefaut]);
+  }, [open, nouvelleVersionDe, projetIdDefaut]);
 
   const { mutate: deposer, isPending } = useMutation({
     mutationFn: (data) => gedApi.deposerDocument(data),
@@ -82,9 +78,11 @@ export default function GEDDocumentForm({
       queryClient.invalidateQueries({ queryKey: ["ged"] });
       const msg = result.estNouvelleVersion
         ? "Nouvelle version déposée avec succès"
-        : result.statut === "EN_VALIDATION"
-          ? "Document soumis à validation"
-          : "Document déposé avec succès";
+        : result.statut === "VALIDE"
+          ? "Document déposé et validé automatiquement"
+          : result.statut === "EN_VALIDATION"
+            ? "Document soumis à validation"
+            : "Document déposé avec succès";
       toast.success(msg);
       onClose();
     },
@@ -96,7 +94,7 @@ export default function GEDDocumentForm({
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (!FORMATS_AUTORISES.includes(ext)) {
       setErreurFichier(
-        `Format non autorisé. Formats acceptés : ${FORMATS_AUTORISES.join(", ").toUpperCase()}`,
+        `Format non autorisé. Formats acceptés : ${FORMATS_LABEL}`,
       );
       return false;
     }
@@ -139,24 +137,20 @@ export default function GEDDocumentForm({
     }
     if (erreurFichier) return;
 
-    const projetSelectionne = projetsGED.find(
-      (p) => p.id === Number(form.projetId),
-    );
+    const projetSelectionne = projetsGED.find((p) => p.id === form.projetId);
 
     const data = {
       titre: form.titre,
       type: form.type,
-      repertoire,
-      sousRepertoire: form.sousRepertoire,
-      projetId: form.projetId ? Number(form.projetId) : null,
-      projetCode: projetSelectionne?.code ?? null,
-      projetTitre: projetSelectionne?.titre ?? null,
+      projetId: form.projetId || null,
       description: form.description,
       visibilite: form.visibilite,
       commentaire: form.commentaire,
       fichier: fichier?.name ?? "document.pdf",
       taille: fichier ? `${(fichier.size / (1024 * 1024)).toFixed(1)} MB` : "—",
+      createdBy: user?.userId ?? user?.id ?? null,
       deposePar: user ? `${user.prenom} ${user.nom}` : "Utilisateur courant",
+      roles: user?.roles ?? [],
       nouvelleVersionDeId:
         choixDoublon === "version"
           ? doublon?.id
@@ -169,17 +163,11 @@ export default function GEDDocumentForm({
     setChoixDoublon(choix);
     setDoublon(null);
     if (choix === "version") {
-      const projetSelectionne = projetsGED.find(
-        (p) => p.id === Number(form.projetId),
-      );
+      const projetSelectionne = projetsGED.find((p) => p.id === form.projetId);
       deposer({
         titre: form.titre,
         type: form.type,
-        repertoire,
-        sousRepertoire: form.sousRepertoire,
-        projetId: form.projetId ? Number(form.projetId) : null,
-        projetCode: projetSelectionne?.code ?? null,
-        projetTitre: projetSelectionne?.titre ?? null,
+        projetId: form.projetId || null,
         description: form.description,
         visibilite: form.visibilite,
         commentaire: form.commentaire,
@@ -193,8 +181,6 @@ export default function GEDDocumentForm({
     }
     // Si choix === "nouveau" : on continue avec le formulaire sans ID de doublon
   }
-
-  const sousReps = SOUS_REPERTOIRES[repertoire] ?? [];
 
   if (!open) return null;
 
@@ -377,60 +363,37 @@ export default function GEDDocumentForm({
                   }
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
                 >
-                  <option value="PUBLIC">Public</option>
-                  <option value="RESTREINT">Restreint</option>
-                  <option value="CONFIDENTIEL">Confidentiel</option>
+                  <option value="PRIVE">Privé</option>
+                  <option value="EQUIPE_PROJET">Équipe projet</option>
+                  <option value="ORGANISATION">Organisation</option>
+                  <option value="CONSEIL_ADMIN">
+                    Conseil d'administration
+                  </option>
                 </select>
               </div>
             </div>
 
-            {/* Sous-répertoire */}
-            {sousReps.length > 0 && (
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Sous-répertoire *
-                </label>
-                <select
-                  required
-                  value={form.sousRepertoire}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, sousRepertoire: e.target.value }))
-                  }
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                >
-                  <option value="">Sélectionner...</option>
-                  {sousReps.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             {/* Projet associé */}
-            {repertoire === "projets" && (
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Projet associé *
-                </label>
-                <select
-                  required
-                  value={form.projetId}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, projetId: e.target.value }))
-                  }
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                >
-                  <option value="">Sélectionner un projet...</option>
-                  {projetsGED.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.code} — {p.titre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Projet associé{repertoire === "projets" ? " *" : ""}
+              </label>
+              <select
+                required={repertoire === "projets"}
+                value={form.projetId}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, projetId: e.target.value }))
+                }
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              >
+                <option value="">Sélectionner un projet...</option>
+                {projetsGED.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} — {p.titre}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {/* Description */}
             <div>
@@ -467,6 +430,14 @@ export default function GEDDocumentForm({
             )}
 
             {/* Info validation */}
+            {form.type && ["PHOTO", "AUTRE"].includes(form.type) && (
+              <div className="rounded-lg bg-green-50 border border-green-100 px-3 py-2.5">
+                <p className="text-xs text-green-700">
+                  <span className="font-medium">Validation automatique</span> —
+                  Ce type de document sera validé automatiquement au dépôt.
+                </p>
+              </div>
+            )}
             {form.type &&
               [
                 "RAPPORT",
@@ -474,13 +445,14 @@ export default function GEDDocumentForm({
                 "JUSTIFICATIF",
                 "POLITIQUE",
                 "PV",
-                "STATUTS",
-              ].includes(form.type) && (
+                "CONVENTION",
+              ].includes(form.type) &&
+              !(user?.roles ?? []).includes("ROLE_SE") && (
                 <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2.5">
                   <p className="text-xs text-blue-700">
                     <span className="font-medium">Validation requise</span> — Ce
-                    type de document sera soumis à validation avant archivage
-                    définitif.
+                    type de document devra être soumis à validation par le SE ou
+                    le Responsable Programmes.
                   </p>
                 </div>
               )}

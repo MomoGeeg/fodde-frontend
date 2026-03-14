@@ -3,6 +3,7 @@ import useAuthStore from "@/stores/auth.store";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Toaster } from "sonner";
+import { Agentation } from "agentation";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 5 * 60 * 1000 } },
@@ -28,6 +29,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AppRoutes />
       <Toaster position="top-right" richColors />
+      {import.meta.env.DEV && <Agentation />}
     </QueryClientProvider>
   );
 }

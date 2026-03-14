@@ -15,8 +15,8 @@ import {
   createFinanceHelpers,
   STATUT_COLORS,
   STATUTS_DEPENSE,
-  useDepenses,
-  useLignesBudgetaires,
+  useDepensesParProjet,
+  useLignesParProjet,
   useProjetsFinances,
 } from "./finances-data";
 
@@ -84,7 +84,6 @@ function VirementModal({ lignes, devise, onClose }) {
         <p className="text-sm text-gray-500 mb-5">
           Transférer un montant d'une ligne à une autre
         </p>
-
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-600">
@@ -156,7 +155,6 @@ function VirementModal({ lignes, devise, onClose }) {
             />
           </div>
         </div>
-
         <div className="mt-5 flex justify-end gap-2">
           <button
             onClick={onClose}
@@ -186,22 +184,20 @@ export default function BudgetProjetDetail() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
-  // Données React Query
+  // Données Spring Boot
   const { data: allProjets = [] } = useProjetsFinances();
-  const { data: allLignes = [] } = useLignesBudgetaires();
-  const { data: allDepenses = [] } = useDepenses();
+  const { data: lignes = [], isLoading: loadingLignes } = useLignesParProjet(projet_id);
+  const { data: depenses = [], isLoading: loadingDep } = useDepensesParProjet(projet_id);
+
   const helpers = useMemo(
-    () => createFinanceHelpers(allProjets, allLignes, allDepenses),
-    [allProjets, allLignes, allDepenses],
+    () => createFinanceHelpers(allProjets, lignes, depenses),
+    [allProjets, lignes, depenses],
   );
 
   const projet = helpers.getProjet(projet_id);
-  const lignes = helpers.getLignesForProjet(projet_id);
   const stats = helpers.getBudgetStatsForProjet(projet_id);
 
-  const isRAF = user?.roles?.some((r) =>
-    ["ROLE_RAF", "ROLE_ADMIN"].includes(r),
-  );
+  const isRAF = user?.roles?.some((r) => ["ROLE_RAF", "ROLE_ADMIN"].includes(r));
   const isSE = user?.roles?.includes("ROLE_SE");
   const isRP = user?.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES");
   const canVirement = isRAF || isSE;
@@ -220,21 +216,24 @@ export default function BudgetProjetDetail() {
         return (
           l.code.toLowerCase().includes(q) ||
           l.intitule.toLowerCase().includes(q) ||
-          l.categorie.toLowerCase().includes(q)
+          (l.categorie ?? "").toLowerCase().includes(q)
         );
       })
       .forEach((l) => {
-        if (!map.has(l.categorie)) map.set(l.categorie, []);
-        map.get(l.categorie).push(l);
+        const cat = l.categorie ?? "Autre";
+        if (!map.has(cat)) map.set(cat, []);
+        map.get(cat).push(l);
       });
     return map;
   }, [lignes, searchLigne]);
 
-  if (!projet) {
+  const isLoading = loadingLignes || loadingDep;
+
+  if (!isLoading && !projet) {
     return (
       <div className="space-y-4">
         <button
-          onClick={() => navigate("/finances/budgets")}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
         >
           <ArrowLeft size={16} /> Retour
@@ -251,7 +250,7 @@ export default function BudgetProjetDetail() {
     <div className="space-y-5">
       {/* Retour */}
       <button
-        onClick={() => navigate("/finances/budgets")}
+        onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
       >
         <ArrowLeft size={16} /> Retour au suivi budgétaire
@@ -261,10 +260,10 @@ export default function BudgetProjetDetail() {
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-mono text-gray-400">{projet.code}</p>
-            <h2 className="text-xl font-bold text-gray-900">{projet.titre}</h2>
+            <p className="text-xs font-mono text-gray-400">{projet?.code}</p>
+            <h2 className="text-xl font-bold text-gray-900">{projet?.titre}</h2>
             <p className="mt-1 text-sm text-gray-500">
-              Devise : {projet.devise}
+              Devise : {projet?.devise ?? "XOF"}
               {isRP && (
                 <span className="ml-3 inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-[10px] font-semibold text-gray-500">
                   <Lock size={9} /> Lecture seule
@@ -272,13 +271,11 @@ export default function BudgetProjetDetail() {
               )}
             </p>
           </div>
-          {canVirement && (
+          {canVirement && lignes.length > 0 && (
             <button
               onClick={() => setShowVirement(true)}
               className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white"
-              style={{
-                background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)",
-              }}
+              style={{ background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)" }}
             >
               <ArrowRightLeft size={15} />
               Virement budgétaire
@@ -288,23 +285,20 @@ export default function BudgetProjetDetail() {
 
         {/* Résumé global */}
         <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-5">
-          <StatBox
-            label="Prévu"
-            value={fmtMontant(stats.prevu, projet.devise)}
-          />
+          <StatBox label="Prévu" value={fmtMontant(stats.prevu, projet?.devise)} />
           <StatBox
             label="Engagé"
-            value={fmtMontant(stats.engage, projet.devise)}
+            value={fmtMontant(stats.engage, projet?.devise)}
             className="text-blue-700"
           />
           <StatBox
             label="Dépensé"
-            value={fmtMontant(stats.depense, projet.devise)}
+            value={fmtMontant(stats.depense, projet?.devise)}
             className="text-orange-700"
           />
           <StatBox
             label="Solde"
-            value={fmtMontant(stats.solde, projet.devise)}
+            value={fmtMontant(stats.solde, projet?.devise)}
             className={stats.solde < 0 ? "text-red-600" : "text-green-600"}
           />
           <div>
@@ -336,24 +330,30 @@ export default function BudgetProjetDetail() {
         />
       </div>
 
-      {/* Arborescence lignes par catégorie */}
-      {categories.size === 0 ? (
+      {/* Arborescence lignes */}
+      {isLoading ? (
         <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center shadow-sm">
-          <p className="text-sm text-gray-400">Aucune ligne budgétaire.</p>
+          <p className="text-sm text-gray-400">Chargement des lignes budgétaires...</p>
+        </div>
+      ) : categories.size === 0 ? (
+        <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center shadow-sm">
+          <p className="text-sm text-gray-400">
+            {lignes.length === 0
+              ? "Aucune ligne budgétaire — le budget n'a pas encore été créé par le RAF."
+              : "Aucune ligne trouvée."}
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
           {[...categories.entries()].map(([cat, catLignes]) => (
             <div
               key={cat}
-              className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden"
+              className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
             >
-              {/* Catégorie header */}
-              <div className="bg-gray-50 px-5 py-3 border-b border-gray-100">
+              <div className="border-b border-gray-100 bg-gray-50 px-5 py-3">
                 <h4 className="text-sm font-semibold text-gray-700">{cat}</h4>
               </div>
 
-              {/* Lignes */}
               <div className="divide-y divide-gray-100">
                 {catLignes.map((ligne) => {
                   const taux =
@@ -366,16 +366,14 @@ export default function BudgetProjetDetail() {
 
                   return (
                     <div key={ligne.id}>
-                      {/* Ligne row */}
                       <div
-                        className={`flex items-center gap-4 px-5 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${
-                          ligne.gele ? "opacity-60 bg-gray-50" : ""
+                        className={`flex cursor-pointer items-center gap-4 px-5 py-3 transition-colors hover:bg-gray-50 ${
+                          ligne.gele ? "bg-gray-50 opacity-60" : ""
                         } ${taux > 90 ? "bg-red-50/40" : taux > 70 ? "bg-orange-50/30" : ""}`}
                         onClick={() =>
                           setExpandedLigne(isExpanded ? null : ligne.id)
                         }
                       >
-                        {/* Chevron */}
                         <div className="shrink-0 text-gray-400">
                           {isExpanded ? (
                             <ChevronDown size={16} />
@@ -384,13 +382,12 @@ export default function BudgetProjetDetail() {
                           )}
                         </div>
 
-                        {/* Code + Intitulé */}
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-mono font-semibold text-gray-500">
                               {ligne.code}
                             </span>
-                            <span className="text-sm font-medium text-gray-900 truncate">
+                            <span className="truncate text-sm font-medium text-gray-900">
                               {ligne.intitule}
                             </span>
                             {ligne.gele && (
@@ -406,24 +403,23 @@ export default function BudgetProjetDetail() {
                           </div>
                         </div>
 
-                        {/* Chiffres */}
-                        <div className="hidden sm:grid sm:grid-cols-5 gap-4 text-xs text-right shrink-0 w-[500px]">
+                        <div className="hidden w-[500px] shrink-0 grid-cols-5 gap-4 text-right text-xs sm:grid">
                           <div>
                             <p className="text-gray-400">Prévu</p>
                             <p className="font-semibold text-gray-900">
-                              {fmtMontant(ligne.prevu, projet.devise)}
+                              {fmtMontant(ligne.prevu, projet?.devise)}
                             </p>
                           </div>
                           <div>
                             <p className="text-gray-400">Engagé</p>
                             <p className="font-semibold text-blue-700">
-                              {fmtMontant(ligne.engage, projet.devise)}
+                              {fmtMontant(ligne.engage, projet?.devise)}
                             </p>
                           </div>
                           <div>
                             <p className="text-gray-400">Dépensé</p>
                             <p className="font-semibold text-orange-700">
-                              {fmtMontant(ligne.depense, projet.devise)}
+                              {fmtMontant(ligne.depense, projet?.devise)}
                             </p>
                           </div>
                           <div>
@@ -431,7 +427,7 @@ export default function BudgetProjetDetail() {
                             <p
                               className={`font-semibold ${solde < 0 ? "text-red-600" : "text-green-600"}`}
                             >
-                              {fmtMontant(solde, projet.devise)}
+                              {fmtMontant(solde, projet?.devise)}
                             </p>
                           </div>
                           <div>
@@ -446,30 +442,24 @@ export default function BudgetProjetDetail() {
                         </div>
                       </div>
 
-                      {/* Dépenses imputées (expanded) */}
+                      {/* Dépenses imputées */}
                       {isExpanded && (
-                        <div className="bg-gray-50 px-5 py-3 border-t border-gray-100">
-                          <p className="text-[10px] font-semibold uppercase text-gray-400 mb-2">
+                        <div className="border-t border-gray-100 bg-gray-50 px-5 py-3">
+                          <p className="mb-2 text-[10px] font-semibold uppercase text-gray-400">
                             Dépenses imputées ({depensesLigne.length})
                           </p>
                           {depensesLigne.length === 0 ? (
-                            <p className="text-xs text-gray-400 py-2">
+                            <p className="py-2 text-xs text-gray-400">
                               Aucune dépense sur cette ligne.
                             </p>
                           ) : (
                             <table className="w-full text-xs">
                               <thead>
                                 <tr className="text-left text-gray-400">
-                                  <th className="pb-1 font-semibold">
-                                    N° pièce
-                                  </th>
+                                  <th className="pb-1 font-semibold">N° pièce</th>
                                   <th className="pb-1 font-semibold">Date</th>
-                                  <th className="pb-1 font-semibold">
-                                    Libellé
-                                  </th>
-                                  <th className="pb-1 font-semibold text-right">
-                                    Montant
-                                  </th>
+                                  <th className="pb-1 font-semibold">Libellé</th>
+                                  <th className="pb-1 text-right font-semibold">Montant</th>
                                   <th className="pb-1 font-semibold">Statut</th>
                                 </tr>
                               </thead>
@@ -477,20 +467,16 @@ export default function BudgetProjetDetail() {
                                 {depensesLigne.map((dep) => (
                                   <tr
                                     key={dep.id}
-                                    className={`${isRP ? "" : "hover:bg-white cursor-pointer"}`}
+                                    className={`${isRP ? "" : "cursor-pointer hover:bg-white"}`}
                                     onClick={(e) => {
-                                      if (isRP) return; // RP : pas de navigation vers le détail
+                                      if (isRP) return;
                                       e.stopPropagation();
                                       navigate(`/finances/depenses/${dep.id}`);
                                     }}
                                   >
-                                    <td className="py-1.5 font-mono">
-                                      {dep.numeroPiece}
-                                    </td>
-                                    <td className="py-1.5">
-                                      {fmtDate(dep.date)}
-                                    </td>
-                                    <td className="py-1.5 max-w-[200px] truncate">
+                                    <td className="py-1.5 font-mono">{dep.numeroPiece}</td>
+                                    <td className="py-1.5">{fmtDate(dep.date)}</td>
+                                    <td className="max-w-[200px] truncate py-1.5">
                                       {dep.libelle}
                                     </td>
                                     <td className="py-1.5 text-right font-semibold">
@@ -500,9 +486,7 @@ export default function BudgetProjetDetail() {
                                       <span
                                         className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUT_COLORS[dep.statut]}`}
                                       >
-                                        {STATUTS_DEPENSE.find(
-                                          (s) => s.value === dep.statut,
-                                        )?.label ?? dep.statut}
+                                        {STATUTS_DEPENSE.find((s) => s.value === dep.statut)?.label ?? dep.statut}
                                       </span>
                                     </td>
                                   </tr>
@@ -525,7 +509,7 @@ export default function BudgetProjetDetail() {
       {showVirement && (
         <VirementModal
           lignes={lignes}
-          devise={projet.devise}
+          devise={projet?.devise ?? "XOF"}
           onClose={() => setShowVirement(false)}
         />
       )}

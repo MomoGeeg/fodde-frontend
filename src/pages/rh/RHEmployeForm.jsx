@@ -1,10 +1,11 @@
+import api from "@/api/axios";
 import RoleGate from "@/components/shared/RoleGate";
 import useAuthStore from "@/stores/auth.store";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { useEmployes } from "./rh-data";
+import { useCreateEmploye, useEmployes } from "./rh-data";
 
 const TYPES_CONTRAT = ["CDI", "CDD", "CONSULTANT", "VOLONTAIRE", "STAGIAIRE"];
 const DEVISES = ["XOF", "EUR", "USD"];
@@ -81,13 +82,14 @@ export default function RHEmployeForm() {
 
   const { data: allEmployes = [] } = useEmployes();
 
+  const createEmployeMutation = useCreateEmploye();
+
   const [form, setForm] = useState({
     ...emptyForm,
     matricule: generateMatricule(),
   });
   const [originalSalaire, setOriginalSalaire] = useState(null);
   const [errors, setErrors] = useState({});
-  const [isPending, setIsPending] = useState(false);
 
   // ── Charger les données en mode édition ──────────────────
   useEffect(() => {
@@ -167,7 +169,7 @@ export default function RHEmployeForm() {
     return errs;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
@@ -176,20 +178,44 @@ export default function RHEmployeForm() {
       return;
     }
 
-    setIsPending(true);
-    // Simulation — en prod ce sera un appel API
-    setTimeout(() => {
-      setIsPending(false);
-      toast.success(
-        isEditMode ? "Dossier employé mis à jour" : "Dossier employé créé",
-      );
-      if (salaireModifie) {
-        toast.info(
-          "Notification envoyée au SE pour validation du changement de salaire",
-        );
-      }
-      navigate(isEditMode ? `/rh/employes/${id}` : "/rh/employes");
-    }, 800);
+    try {
+      const employePayload = {
+        matricule: form.matricule,
+        nom: form.nom,
+        prenom: form.prenom,
+        dateNaissance: form.dateNaissance || null,
+        lieuNaissance: form.lieuNaissance || null,
+        nationalite: form.nationalite,
+        telephone: form.telephone || null,
+        adresse: form.adresse || null,
+        poste: form.poste,
+        departement: form.departement,
+        dateEmbauche: form.dateDebutContrat,
+        superviseurId: form.superviseurId || null,
+      };
+
+      const employe = await createEmployeMutation.mutateAsync(employePayload);
+
+      const contratPayload = {
+        employeId: employe.id,
+        typeContrat: form.typeContrat,
+        dateDebut: form.dateDebutContrat,
+        dateFin: form.dateFinContrat || null,
+        salaireBase: parseFloat(form.salaireBase),
+        devise: form.devise,
+        poste: form.poste,
+      };
+      await api.post("/api/contrats", contratPayload);
+
+      toast.success("Dossier employé créé avec succès");
+      navigate("/rh/employes");
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Erreur lors de la création du dossier";
+      toast.error(msg);
+    }
   };
 
   const set = (key) => (e) =>
@@ -461,13 +487,13 @@ export default function RHEmployeForm() {
             </button>
             <button
               type="submit"
-              disabled={isPending}
+              disabled={createEmployeMutation.isPending}
               className="rounded-lg px-5 py-2 text-sm font-medium text-white disabled:opacity-60 transition-colors"
               style={{
                 background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)",
               }}
             >
-              {isPending
+              {createEmployeMutation.isPending
                 ? isEditMode
                   ? "Enregistrement..."
                   : "Création..."

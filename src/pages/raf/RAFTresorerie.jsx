@@ -221,16 +221,16 @@ export default function RAFTresorerie() {
                       return (
                         <tr key={a.id} className={`border-b border-gray-50 hover:bg-gray-50 ${enRetard ? "bg-red-50/40" : ""}`}>
                           <td className="px-5 py-3">
-                            <p className="font-medium text-gray-800">{a.beneficiaire}</p>
-                            <p className="text-[10px] text-gray-400">{a.poste}</p>
+                            <p className="font-medium text-gray-800">{a.beneficiaireNom ?? "—"}</p>
+                            <p className="text-[10px] text-gray-400">{a.statut}</p>
                           </td>
                           <td className="px-5 py-3">
                             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-mono text-gray-700">
-                              {a.projetCode}
+                              {a.projetCode ?? "—"}
                             </span>
                           </td>
                           <td className="px-5 py-3 text-right font-bold text-gray-900 tabular-nums">{fmt(a.montant)}</td>
-                          <td className="px-5 py-3 text-gray-600">{fmtDate(a.dateAvance)}</td>
+                          <td className="px-5 py-3 text-gray-600">{fmtDate(a.dateOctroi)}</td>
                           <td className="px-5 py-3">
                             <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold ${
                               enRetard ? "bg-red-100 text-red-700" : "bg-amber-50 text-amber-700"

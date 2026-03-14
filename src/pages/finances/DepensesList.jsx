@@ -11,19 +11,19 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import DepenseFormModal from "./DepenseForm";
 import {
-  createFinanceHelpers,
   MODE_PAIEMENT_LABELS,
   SEUIL_APPROBATION_SE,
   STATUT_COLORS,
   STATUTS_DEPENSE,
   useDepenses,
-  useLignesBudgetaires,
+  useLignesParProjet,
   useProjetsFinances,
 } from "./finances-data";
 
-// ── Helpers ────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────
 const fmtDate = (d) =>
   d
     ? new Date(d).toLocaleDateString("fr-FR", {
@@ -68,28 +68,18 @@ export default function DepensesList() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
-  // ── Données Supabase ───────────────────────────────────
+  const [showModal, setShowModal] = useState(false);
+
+  // ── Données Spring Boot ─────────────────────────────────
   const { data: allDepenses = [], isLoading: loadingDep } = useDepenses();
-  const { data: allLignes = [], isLoading: loadingLignes } =
-    useLignesBudgetaires();
-  const { data: allProjets = [], isLoading: loadingProjets } =
-    useProjetsFinances();
-  const isLoading = loadingDep || loadingLignes || loadingProjets;
+  const { data: allProjets = [], isLoading: loadingProjets } = useProjetsFinances();
+  const isLoading = loadingDep || loadingProjets;
 
-  const { getLigne, getProjet, getSoldeDisponible } = useMemo(
-    () => createFinanceHelpers(allProjets, allLignes, allDepenses),
-    [allProjets, allLignes, allDepenses],
-  );
-
-  // ── Détection du rôle ──────────────────────────────────
+  // ── Détection du rôle ───────────────────────────────────
   const isComptable = user?.roles?.includes("ROLE_COMPTABLE");
-  const isRAF = user?.roles?.some((r) =>
-    ["ROLE_RAF", "ROLE_ADMIN"].includes(r),
-  );
   const isSE = user?.roles?.includes("ROLE_SE");
-  const isRP = user?.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES");
 
-  // ── Filtres ────────────────────────────────────────────
+  // ── Filtres ─────────────────────────────────────────────
   const [search, setSearch] = useState("");
   const [filterProjet, setFilterProjet] = useState("TOUS");
   const [filterStatut, setFilterStatut] = useState("TOUS");
@@ -99,19 +89,19 @@ export default function DepensesList() {
   const [dateFin, setDateFin] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  // ── Données filtrées par rôle puis critères ────────────
+  // Lignes du projet sélectionné (pour le filtre)
+  const { data: lignesFiltres = [] } = useLignesParProjet(
+    filterProjet !== "TOUS" ? filterProjet : null,
+  );
+
+  // ── Données filtrées ────────────────────────────────────
+  // Pour le SE, on affiche uniquement EN_APPROBATION_SE par défaut
   const baseDepenses = useMemo(() => {
-    if (isComptable) {
-      return allDepenses.filter(
-        (d) => d.saisiPar === user?.userId || d.saisi_par === user?.id,
-      );
-    }
-    if (isSE) {
+    if (isSE && !user?.roles?.some((r) => ["ROLE_RAF", "ROLE_ADMIN"].includes(r))) {
       return allDepenses.filter((d) => d.statut === "EN_APPROBATION_SE");
     }
-    // RAF, RP, Admin → tout
     return allDepenses;
-  }, [isComptable, isSE, user?.userId, user?.id, allDepenses]);
+  }, [isSE, allDepenses, user?.roles]);
 
   const depenses = useMemo(() => {
     let list = [...baseDepenses];
@@ -124,19 +114,20 @@ export default function DepensesList() {
       list = list.filter((d) => d.ligneBudgetaireId === filterLigne);
     if (filterMode !== "TOUS")
       list = list.filter((d) => d.modePaiement === filterMode);
-    if (dateDebut) list = list.filter((d) => d.date >= dateDebut);
-    if (dateFin) list = list.filter((d) => d.date <= dateFin);
+    if (dateDebut) list = list.filter((d) => (d.date ?? "") >= dateDebut);
+    if (dateFin) list = list.filter((d) => (d.date ?? "") <= dateFin);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
         (d) =>
-          d.libelle.toLowerCase().includes(q) ||
-          d.beneficiaire.toLowerCase().includes(q) ||
-          d.numeroPiece.toLowerCase().includes(q),
+          (d.libelle ?? "").toLowerCase().includes(q) ||
+          (d.beneficiaire ?? "").toLowerCase().includes(q) ||
+          (d.numeroPiece ?? "").toLowerCase().includes(q) ||
+          (d.projetCode ?? "").toLowerCase().includes(q),
       );
     }
 
-    return list.sort((a, b) => b.date.localeCompare(a.date));
+    return list.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
   }, [
     baseDepenses,
     filterProjet,
@@ -148,37 +139,18 @@ export default function DepensesList() {
     search,
   ]);
 
-  // Lignes filtrées selon le projet sélectionné
-  const lignesOptions = useMemo(() => {
-    if (filterProjet === "TOUS") return allLignes;
-    return allLignes.filter(
-      (l) => (l.projet_id ?? l.projetId) === filterProjet,
-    );
-  }, [filterProjet, allLignes]);
-
-  // ── KPIs ───────────────────────────────────────────────
-  const totalMontant = depenses.reduce((s, d) => s + d.montantXOF, 0);
+  // ── KPIs ─────────────────────────────────────────────────
+  const totalMontant = depenses.reduce((s, d) => s + (d.montantXOF ?? 0), 0);
   const nbSoumises = depenses.filter((d) => d.statut === "SOUMISE").length;
   const nbEnAttentesSE = depenses.filter(
     (d) => d.statut === "EN_APPROBATION_SE",
   ).length;
   const nbValidees = depenses.filter((d) => d.statut === "VALIDEE").length;
 
-  // ── Badges conditionnels pour une dépense ──────────────
+  // ── Badges alertes ───────────────────────────────────────
   const getAlertBadges = (dep) => {
     const badges = [];
-    const solde = getSoldeDisponible(dep.ligneBudgetaireId);
-    if (dep.montantXOF > solde) {
-      badges.push(
-        <Badge key="solde" className="bg-red-100 text-red-700">
-          <AlertTriangle size={10} /> Solde insuffisant
-        </Badge>,
-      );
-    }
-    if (
-      dep.statut === "SOUMISE" &&
-      (new Date() - new Date(dep.date)) / 86400000 > 7
-    ) {
+    if (dep.statut === "SOUMISE" && dep.joursAttente > 7) {
       badges.push(
         <Badge key="attente" className="bg-orange-100 text-orange-700">
           <Calendar size={10} /> &gt; 7j sans validation
@@ -192,7 +164,7 @@ export default function DepensesList() {
         </Badge>,
       );
     }
-    if (!dep.justificatif) {
+    if (!dep.justificatif && dep.montantXOF > 100_000) {
       badges.push(
         <Badge key="piece" className="bg-yellow-100 text-yellow-700">
           <FileWarning size={10} /> Pièce manquante
@@ -221,26 +193,28 @@ export default function DepensesList() {
   };
 
   return (
+    <>
     <div className="space-y-5">
       {/* ── Header ──────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dépenses</h1>
           <p className="mt-1 text-sm text-gray-500">
-            {depenses.length} dépense{depenses.length !== 1 ? "s" : ""}
+            {isLoading ? "Chargement..." : `${depenses.length} dépense${depenses.length !== 1 ? "s" : ""}`}
             {isComptable && " — vos saisies"}
-            {isSE && " — en attente de votre approbation"}
+            {isSE && !user?.roles?.some((r) => ["ROLE_RAF", "ROLE_ADMIN"].includes(r)) &&
+              " — en attente de votre approbation"}
           </p>
         </div>
         {isComptable && (
-          <Link
-            to="/finances/depenses/nouvelle"
+          <button
+            onClick={() => setShowModal(true)}
             className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
             style={{ background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)" }}
           >
             <Plus size={16} />
             Nouvelle dépense
-          </Link>
+          </button>
         )}
       </div>
 
@@ -264,9 +238,7 @@ export default function DepensesList() {
           <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-500">
             En attente SE
           </p>
-          <p className="mt-1 text-lg font-bold text-orange-700">
-            {nbEnAttentesSE}
-          </p>
+          <p className="mt-1 text-lg font-bold text-orange-700">{nbEnAttentesSE}</p>
         </div>
         <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-green-500">
@@ -285,7 +257,7 @@ export default function DepensesList() {
           />
           <input
             type="text"
-            placeholder="Rechercher libellé, bénéficiaire, n° pièce..."
+            placeholder="Libellé, bénéficiaire, n° pièce, projet..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm text-gray-700 shadow-sm focus:border-green-500 focus:outline-none"
@@ -318,7 +290,7 @@ export default function DepensesList() {
         )}
       </div>
 
-      {/* ── Panneau de filtres avancés ───────────────────── */}
+      {/* ── Filtres avancés ──────────────────────────────── */}
       {showFilters && (
         <div className="grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:grid-cols-3 lg:grid-cols-6">
           <div>
@@ -365,10 +337,13 @@ export default function DepensesList() {
             <select
               value={filterLigne}
               onChange={(e) => setFilterLigne(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-xs focus:border-green-500 focus:outline-none"
+              disabled={filterProjet === "TOUS"}
+              className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-xs focus:border-green-500 focus:outline-none disabled:opacity-50"
             >
-              <option value="TOUS">Toutes</option>
-              {lignesOptions.map((l) => (
+              <option value="TOUS">
+                {filterProjet === "TOUS" ? "Sélectionner un projet" : "Toutes"}
+              </option>
+              {lignesFiltres.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.code} — {l.intitule}
                 </option>
@@ -377,7 +352,7 @@ export default function DepensesList() {
           </div>
           <div>
             <label className="mb-1 block text-[10px] font-semibold uppercase text-gray-400">
-              Mode de paiement
+              Mode paiement
             </label>
             <select
               value={filterMode}
@@ -418,7 +393,11 @@ export default function DepensesList() {
 
       {/* ── Tableau ─────────────────────────────────────── */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        {depenses.length === 0 ? (
+        {isLoading ? (
+          <div className="px-6 py-12 text-center text-sm text-gray-400">
+            Chargement des dépenses...
+          </div>
+        ) : depenses.length === 0 ? (
           <div className="px-6 py-16 text-center">
             <Search className="mx-auto mb-3 text-gray-300" size={40} />
             <p className="text-sm text-gray-400">Aucune dépense trouvée.</p>
@@ -462,8 +441,6 @@ export default function DepensesList() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {depenses.map((dep) => {
-                  const projet = getProjet(dep.projetId);
-                  const ligne = getLigne(dep.ligneBudgetaireId);
                   const isAnnulee = dep.statut === "ANNULEE";
                   const badges = getAlertBadges(dep);
 
@@ -479,23 +456,23 @@ export default function DepensesList() {
                       <td className="px-4 py-3 text-xs text-gray-500">
                         {fmtDate(dep.date)}
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 max-w-[200px] truncate">
+                      <td className="max-w-[200px] truncate px-4 py-3 text-sm font-medium text-gray-900">
                         {dep.libelle}
                       </td>
                       <td className="px-4 py-3">
                         <p className="text-xs font-medium text-gray-700">
-                          {projet?.code}
+                          {dep.projetCode}
                         </p>
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs text-gray-500">
-                          {ligne?.code}
+                          {dep.ligneBudgetaireCode}
                         </span>
-                        {ligne?.gele && (
-                          <Lock
-                            size={10}
-                            className="ml-1 inline text-gray-400"
-                          />
+                        {dep.ligneBudgetaireCode && (
+                          <span className="ml-1 hidden text-[10px] text-gray-400 sm:inline">
+                            {dep.ligneBudgetaireIntitule?.slice(0, 20)}
+                            {dep.ligneBudgetaireIntitule?.length > 20 ? "…" : ""}
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -509,9 +486,9 @@ export default function DepensesList() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-500">
-                        {MODE_PAIEMENT_LABELS[dep.modePaiement]}
+                        {MODE_PAIEMENT_LABELS[dep.modePaiement] ?? dep.modePaiement}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-600 max-w-[150px] truncate">
+                      <td className="max-w-[150px] truncate px-4 py-3 text-xs text-gray-600">
                         {dep.beneficiaire}
                       </td>
                       <td className="px-4 py-3">
@@ -531,5 +508,12 @@ export default function DepensesList() {
         )}
       </div>
     </div>
+
+    {/* Modal nouvelle dépense */}
+    <DepenseFormModal
+      open={showModal}
+      onClose={() => setShowModal(false)}
+    />
+    </>
   );
 }

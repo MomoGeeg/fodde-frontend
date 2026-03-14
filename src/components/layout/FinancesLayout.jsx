@@ -1,11 +1,11 @@
 import useAuthStore from "@/stores/auth.store";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
+// ROLE_ADMIN restreint à /admin — retiré du module Finances
 const FINANCES_ALLOWED_ROLES = [
   "ROLE_COMPTABLE",
   "ROLE_RAF",
   "ROLE_SE",
-  "ROLE_ADMIN",
   "ROLE_RESPONSABLE_PROGRAMMES",
 ];
 
@@ -13,6 +13,7 @@ const PAGE_TITLES = {
   "/finances/depenses": "Liste des dépenses",
   "/finances/depenses/nouvelle": "Nouvelle dépense",
   "/finances/budgets": "Suivi budgétaire consolidé",
+  "/finances/documents": "Documents",
 };
 
 /**

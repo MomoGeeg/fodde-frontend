@@ -77,9 +77,13 @@ export default function SEValidation() {
 
   // ── Données collectes ────────────────────────────────────
   const collectesData = useMemo(() => {
-    let list = collectes.filter(
-      (c) => c.statut === "EN_ATTENTE" || c.statut === "PRE_VALIDEE",
-    );
+    // Responsable SE voit TOUTES les collectes (tous statuts)
+    // CP et autres ne voient que les collectes en attente de validation
+    let list = isResponsableSE
+      ? [...collectes]
+      : collectes.filter(
+          (c) => c.statut === "EN_ATTENTE" || c.statut === "PRE_VALIDEE",
+        );
 
     // CP ne voit que ses projets
     if (isCP && !canFinalValidate) {
@@ -117,6 +121,7 @@ export default function SEValidation() {
     filterStatut,
     search,
     isCP,
+    isResponsableSE,
     canFinalValidate,
     collectes,
     indicateurs,
@@ -157,6 +162,8 @@ export default function SEValidation() {
   const preValidees = collectes.filter(
     (c) => c.statut === "PRE_VALIDEE",
   ).length;
+  const validees = collectes.filter((c) => c.statut === "VALIDEE").length;
+  const rejetees = collectes.filter((c) => c.statut === "REJETEE").length;
   const reponsesEnAttente = reponses.filter(
     (r) => r.statut === "EN_ATTENTE",
   ).length;
@@ -192,37 +199,78 @@ export default function SEValidation() {
   return (
     <div className="space-y-5">
       {/* KPIs de validation */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="flex items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4">
-          <div className="rounded-lg bg-orange-100 p-2">
-            <Clock size={18} className="text-orange-600" />
+      {isResponsableSE ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="flex items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4">
+            <div className="rounded-lg bg-orange-100 p-2">
+              <Clock size={18} className="text-orange-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-orange-700">{enAttente}</p>
+              <p className="text-[10px] text-orange-500">En attente</p>
+            </div>
           </div>
-          <div>
-            <p className="text-2xl font-bold text-orange-700">{enAttente}</p>
-            <p className="text-[10px] text-orange-500">Collectes en attente</p>
+          <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <div className="rounded-lg bg-blue-100 p-2">
+              <Shield size={18} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-blue-700">{preValidees}</p>
+              <p className="text-[10px] text-blue-500">Pré-validées</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
+            <div className="rounded-lg bg-green-100 p-2">
+              <CheckCircle2 size={18} className="text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-700">{validees}</p>
+              <p className="text-[10px] text-green-500">Validées</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+            <div className="rounded-lg bg-red-100 p-2">
+              <XCircle size={18} className="text-red-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-red-700">{rejetees}</p>
+              <p className="text-[10px] text-red-500">Rejetées</p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
-          <div className="rounded-lg bg-blue-100 p-2">
-            <Shield size={18} className="text-blue-600" />
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="flex items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4">
+            <div className="rounded-lg bg-orange-100 p-2">
+              <Clock size={18} className="text-orange-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-orange-700">{enAttente}</p>
+              <p className="text-[10px] text-orange-500">Collectes en attente</p>
+            </div>
           </div>
-          <div>
-            <p className="text-2xl font-bold text-blue-700">{preValidees}</p>
-            <p className="text-[10px] text-blue-500">Pré-validées (→ final)</p>
+          <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <div className="rounded-lg bg-blue-100 p-2">
+              <Shield size={18} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-blue-700">{preValidees}</p>
+              <p className="text-[10px] text-blue-500">Pré-validées (→ final)</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-purple-200 bg-purple-50 p-4">
+            <div className="rounded-lg bg-purple-100 p-2">
+              <MessageSquare size={18} className="text-purple-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-purple-700">
+                {reponsesEnAttente}
+              </p>
+              <p className="text-[10px] text-purple-500">Réponses formulaires</p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-xl border border-purple-200 bg-purple-50 p-4">
-          <div className="rounded-lg bg-purple-100 p-2">
-            <MessageSquare size={18} className="text-purple-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-purple-700">
-              {reponsesEnAttente}
-            </p>
-            <p className="text-[10px] text-purple-500">Réponses formulaires</p>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Workflow explication */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -263,7 +311,7 @@ export default function SEValidation() {
           }`}
         >
           <ClipboardCheck size={14} className="inline mr-1.5 -mt-0.5" />
-          Collectes
+          {isResponsableSE ? "Données terrain" : "Collectes"}
           {enAttente + preValidees > 0 && (
             <span className="ml-1.5 rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-bold text-orange-700">
               {enAttente + preValidees}
@@ -352,6 +400,12 @@ export default function SEValidation() {
                 <option value="all">Tous</option>
                 <option value="EN_ATTENTE">En attente</option>
                 <option value="PRE_VALIDEE">Pré-validée</option>
+                {isResponsableSE && (
+                  <>
+                    <option value="VALIDEE">Validée</option>
+                    <option value="REJETEE">Rejetée</option>
+                  </>
+                )}
               </select>
             </div>
           )}

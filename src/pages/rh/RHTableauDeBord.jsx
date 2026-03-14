@@ -121,6 +121,7 @@ export default function RHTableauDeBord() {
   const effectifActif = employes.filter((e) => e.statut === "ACTIF").length;
   const enConge = employes.filter((e) => e.statut === "EN_CONGE").length;
 
+  // typeContrat et dateFinContrat viennent du contrat actif enrichi dans EmployeResponse
   const contratsCDD = employes.filter(
     (e) =>
       ["CDD", "CONSULTANT", "STAGIAIRE"].includes(e.typeContrat) &&
@@ -139,8 +140,9 @@ export default function RHTableauDeBord() {
     return j !== null && j <= 90 && j > 60;
   }).length;
 
+  // EN_RETARD n'existe pas dans le backend — EN_COURS + SOUMISE = non complétées
   const evalNonCompletees = evaluations.filter((e) =>
-    ["EN_COURS", "EN_RETARD"].includes(e.statut),
+    ["EN_COURS", "SOUMISE"].includes(e.statut),
   ).length;
 
   const congesEnAttente = conges.filter((c) =>
@@ -187,12 +189,17 @@ export default function RHTableauDeBord() {
         const fin = new Date(c.dateFin);
         return deb <= in30 && fin >= now;
       })
-      .map((c) => ({
-        ...c,
-        typeColor:
-          TYPE_CONGE_COLORS[c.typeConge] ?? "bg-gray-100 text-gray-600",
-      }));
-  }, [conges]);
+      .map((c) => {
+        const emp = employes.find((e) => e.id === c.employeId);
+        return {
+          ...c,
+          employeNom: emp ? `${emp.prenom} ${emp.nom}` : "—",
+          service: emp?.departement ?? "—",
+          dateSoumission: c.createdAt,
+          typeColor: TYPE_CONGE_COLORS[c.typeConge] ?? "bg-gray-100 text-gray-600",
+        };
+      });
+  }, [conges, employes]);
 
   // ── Alertes actives ────────────────────────────────────
   const alertesContrats = contratsCDD
@@ -204,14 +211,26 @@ export default function RHTableauDeBord() {
     .filter((e) => e.urgence)
     .sort((a, b) => a.jours - b.jours);
 
-  const alertesEval = evaluations.filter((e) => e.statut === "EN_RETARD");
+  // EN_RETARD n'existe pas → on utilise SOUMISE comme indicateur d'éval. à traiter
+  const alertesEval = evaluations.filter((e) => e.statut === "SOUMISE").map((e) => {
+    const emp = employes.find((emp) => emp.id === e.employeId);
+    return { ...e, employeNom: emp ? `${emp.prenom} ${emp.nom}` : "—", annee: e.periode };
+  });
 
   const alertesConges = conges.filter((c) => {
     if (!["EN_ATTENTE", "VALIDE_N1"].includes(c.statut)) return false;
+    const soumis = c.createdAt ?? c.dateSoumission;
     const diff = Math.ceil(
-      (new Date() - new Date(c.dateSoumission)) / (1000 * 60 * 60 * 24),
+      (new Date() - new Date(soumis)) / (1000 * 60 * 60 * 24),
     );
     return diff > 3;
+  }).map((c) => {
+    const emp = employes.find((e) => e.id === c.employeId);
+    return {
+      ...c,
+      employeNom: emp ? `${emp.prenom} ${emp.nom}` : "—",
+      dateSoumission: c.createdAt,
+    };
   });
 
   return (
@@ -443,7 +462,7 @@ export default function RHTableauDeBord() {
               {alertesEval.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    Évaluations en retard
+                    Évaluations à valider
                   </p>
                   <div className="space-y-1.5">
                     {alertesEval.map((e) => (
@@ -454,8 +473,8 @@ export default function RHTableauDeBord() {
                         <span className="text-xs font-medium text-red-700">
                           {e.employeNom} — {e.annee}
                         </span>
-                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
-                          EN RETARD
+                        <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-700">
+                          À VALIDER
                         </span>
                       </div>
                     ))}

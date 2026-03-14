@@ -272,7 +272,7 @@ export default function SEIndicateursList() {
           <tbody className="divide-y divide-gray-100">
             {indicateurs.map((ind) => {
               const projet = getProjet(ind.projetId);
-              const resp = getMembre(ind.responsableCollecteId);
+              const resp = getMembre(ind.responsableId);
               const taux = getTauxAtteinte(ind);
               const collectes = getCollectesForIndicateur(ind.id);
               const noCollecte = collectes.length === 0;
@@ -297,14 +297,14 @@ export default function SEIndicateursList() {
                       ind.unite}
                   </td>
                   <td className="px-4 py-3 text-center text-xs text-gray-500">
-                    {ind.valeurReference}
+                    {ind.valeurBaseline}
                   </td>
                   <td className="px-4 py-3 text-center text-xs font-semibold text-gray-700">
                     {ind.valeurCible}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500">
-                    {FREQUENCES_COLLECTE.find((f) => f.value === ind.frequence)
-                      ?.label ?? ind.frequence}
+                    {FREQUENCES_COLLECTE.find((f) => f.value === ind.frequenceCollecte)
+                      ?.label ?? ind.frequenceCollecte}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500 max-w-[150px] truncate">
                     {projet?.code}

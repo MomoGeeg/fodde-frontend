@@ -959,7 +959,7 @@ function TabAvancement({
             {/* EN_CLOTURE → Voir GED */}
             {projet.statut === "EN_CLOTURE" && (
               <button
-                onClick={() => navigate("/ged")}
+                onClick={() => navigate("/documents")}
                 className="flex w-full items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-4 py-2.5 text-sm font-medium text-purple-700 hover:bg-purple-100 transition-colors"
               >
                 <FileArchive size={15} />
@@ -1201,7 +1201,8 @@ export default function ProjetDetail() {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState("infos");
 
-  const isSE = user?.roles?.includes("ROLE_SECRETAIRE_EXECUTIF");
+  const isSE =
+    user?.roles?.includes("ROLE_SE") || user?.roles?.includes("ROLE_ADMIN");
   const isRP = user?.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES");
   const isRAF = user?.roles?.includes("ROLE_RAF");
   const isCP = user?.roles?.includes("ROLE_CHARGE_PROGRAMME");
@@ -1247,7 +1248,7 @@ export default function ProjetDetail() {
   const handleChangerStatut = (statut, commentaire = null) => {
     changerStatut({
       statut,
-      validateurId: user?.userId,
+      validateurId: user?.id,
       commentaire: commentaire ?? undefined,
     });
   };
@@ -1285,7 +1286,7 @@ export default function ProjetDetail() {
           Projet introuvable ou erreur lors du chargement.
         </p>
         <button
-          onClick={() => navigate("/projets")}
+          onClick={() => navigate(-1)}
           className="mt-3 text-sm font-medium text-red-700 hover:underline"
         >
           Retour à la liste
@@ -1302,7 +1303,7 @@ export default function ProjetDetail() {
       {/* En-tête */}
       <div className="flex items-start gap-4">
         <button
-          onClick={() => navigate("/projets")}
+          onClick={() => navigate(-1)}
           className="mt-1 rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50 transition-colors shrink-0"
         >
           <ArrowLeft size={18} />
@@ -1333,7 +1334,7 @@ export default function ProjetDetail() {
         </div>
         {canManage && !isReadOnly && (
           <button
-            onClick={() => navigate(`/projets/${id}/edit`)}
+            onClick={() => navigate("edit")}
             className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
           >
             <Edit size={15} />
@@ -1341,6 +1342,21 @@ export default function ProjetDetail() {
           </button>
         )}
       </div>
+
+      {/* Commentaire de rejet visible RP/RAF */}
+      {projet.statut === "BROUILLON" && projet.commentaire_validation && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
+          <X size={16} className="mt-0.5 shrink-0 text-red-500" />
+          <div>
+            <p className="text-sm font-semibold text-red-800">
+              Projet rejeté — modifications requises
+            </p>
+            <p className="mt-0.5 text-sm text-red-700">
+              {projet.commentaire_validation}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Alerte J-30 */}
       {isJ30() && (

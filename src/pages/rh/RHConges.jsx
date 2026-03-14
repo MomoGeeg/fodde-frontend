@@ -8,14 +8,19 @@ import {
   Search,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { useConges, useEmployes } from "./rh-data";
+import {
+  useApprouverCongeRAF,
+  useConges,
+  useCreateConge,
+  useEmployes,
+  useRejeterConge,
+} from "./rh-data";
 
 // ── Constantes ─────────────────────────────────────────────
 const STATUT_COLORS = {
   EN_ATTENTE: "bg-yellow-100 text-yellow-700",
-  VALIDE_N1: "bg-blue-100 text-blue-700",
   APPROUVE: "bg-green-100 text-green-700",
   REJETE: "bg-red-100 text-red-600",
   ANNULE: "bg-gray-100 text-gray-500",
@@ -51,7 +56,7 @@ const TYPES = [
   "RECUPERATION",
   "MISSION",
 ];
-const STATUTS = ["TOUS", "EN_ATTENTE", "VALIDE_N1", "APPROUVE", "REJETE"];
+const STATUTS = ["TOUS", "EN_ATTENTE", "APPROUVE", "REJETE", "ANNULE"];
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
 
@@ -74,14 +79,20 @@ function NouvelleDemandeModal({ onClose }) {
     dateDebut: "",
     dateFin: "",
     motif: "",
+    employeId: "",
   });
   const [errors, setErrors] = useState({});
 
-  const emp =
-    allEmployes.find((e) => e.userId === user?.userId) || allEmployes[3];
+  const empLinked = allEmployes.find((e) => e.userId === user?.id);
+  const isRHSansFiche = !empLinked;
+  const emp = empLinked ?? allEmployes.find((e) => e.id === form.employeId);
+
+  const [justificatifFile, setJustificatifFile] = useState(null);
+  const fileInputRef = useRef(null);
 
   const validate = () => {
     const errs = {};
+    if (isRHSansFiche && !form.employeId) errs.employeId = "Sélectionnez un employé";
     if (!form.dateDebut) errs.dateDebut = "Obligatoire";
     if (!form.dateFin) errs.dateFin = "Obligatoire";
     if (form.dateDebut && form.dateFin && form.dateFin <= form.dateDebut) {
@@ -109,14 +120,38 @@ function NouvelleDemandeModal({ onClose }) {
     return errs;
   };
 
+  const { mutate: createConge, isPending: creating } = useCreateConge();
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
-    toast.success("Demande de congé soumise avec succès");
-    onClose();
+    createConge(
+      {
+        employeId: emp?.id,
+        typeConge: form.typeConge,
+        dateDebut: form.dateDebut,
+        dateFin: form.dateFin,
+        motif: form.motif,
+        justificatifUrl: justificatifFile?.name || null,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Demande enregistrée — soumise au RAF pour validation");
+          onClose();
+        },
+        onError: (err) => {
+          const msg =
+            err?.response?.data?.erreur ||
+            err?.response?.data?.message ||
+            err?.message ||
+            "Erreur lors de la soumission";
+          toast.error(msg);
+        },
+      },
+    );
   };
 
   return (
@@ -142,6 +177,34 @@ function NouvelleDemandeModal({ onClose }) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Sélecteur employé — visible uniquement si l'utilisateur n'a pas de fiche employé */}
+          {isRHSansFiche && (
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-gray-500 uppercase">
+                Employé concerné
+              </label>
+              <select
+                value={form.employeId}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, employeId: e.target.value }))
+                }
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+              >
+                <option value="">— Sélectionner un employé —</option>
+                {allEmployes
+                  .filter((e) => e.statut === "ACTIF")
+                  .map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.prenom} {e.nom} — {e.poste}
+                    </option>
+                  ))}
+              </select>
+              {errors.employeId && (
+                <p className="mt-1 text-xs text-red-500">{errors.employeId}</p>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500 uppercase">
               Type de congé
@@ -228,15 +291,40 @@ function NouvelleDemandeModal({ onClose }) {
             )}
           </div>
 
-          {form.typeConge === "MALADIE" && (
+          {/* Justificatif — optionnel pour tous les types */}
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-gray-500 uppercase">
+              Justificatif <span className="font-normal normal-case text-gray-400">(optionnel)</span>
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              className="hidden"
+              onChange={(e) => setJustificatifFile(e.target.files?.[0] ?? null)}
+            />
             <button
               type="button"
-              className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors w-full justify-center"
+              onClick={() => fileInputRef.current?.click()}
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors w-full justify-center ${
+                justificatifFile
+                  ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                  : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100"
+              }`}
             >
               <FileText size={13} />
-              Joindre justificatif médical
+              {justificatifFile ? `✓ ${justificatifFile.name}` : "Joindre un justificatif (PDF, image)"}
             </button>
-          )}
+            {justificatifFile && (
+              <button
+                type="button"
+                onClick={() => setJustificatifFile(null)}
+                className="mt-1 text-[10px] text-gray-400 hover:text-red-400 w-full text-center"
+              >
+                Supprimer le fichier
+              </button>
+            )}
+          </div>
 
           <div className="flex gap-2 justify-end pt-2">
             <button
@@ -248,12 +336,13 @@ function NouvelleDemandeModal({ onClose }) {
             </button>
             <button
               type="submit"
-              className="rounded-lg px-4 py-2 text-sm font-medium text-white"
+              disabled={creating}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
               style={{
                 background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)",
               }}
             >
-              Soumettre la demande
+              {creating ? "Envoi..." : "Soumettre la demande"}
             </button>
           </div>
         </form>
@@ -312,10 +401,11 @@ function RejetModal({ conge, onClose, onConfirm }) {
 // ══════════════════════════════════════════════════════════
 export default function RHConges() {
   const { user } = useAuthStore();
-  const isRH = user?.roles?.some((r) => ["ROLE_RH", "ROLE_ADMIN"].includes(r));
-  const isSE = user?.roles?.includes("ROLE_SE");
-  const isRP = user?.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES");
-  const canSeeAll = isRH || isSE || isRP;
+  const isRH  = user?.roles?.some((r) => ["ROLE_RH", "ROLE_ADMIN"].includes(r));
+  const isSE  = user?.roles?.includes("ROLE_SE");
+  const isRP  = user?.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES");
+  const isRAF = user?.roles?.includes("ROLE_RAF");
+  const canSeeAll = isRH || isSE || isRP || isRAF;
   const isReadOnly = isRP; // RP = lecture seule (disponibilités uniquement)
 
   const [search, setSearch] = useState("");
@@ -324,14 +414,31 @@ export default function RHConges() {
   const [showModal, setShowModal] = useState(false);
   const [rejetConge, setRejetConge] = useState(null);
 
-  const { data: fetchedConges = [] } = useConges();
+  const { data: rawConges = [] } = useConges();
+  const { data: allEmployes = [] } = useEmployes();
+
+  // Enrichir les congés avec le nom et le service de l'employé
+  const fetchedConges = rawConges.map((c) => {
+    const emp = allEmployes.find((e) => e.id === c.employeId);
+    return {
+      ...c,
+      employeNom: emp ? `${emp.prenom} ${emp.nom}` : c.employeId ?? "—",
+      service: emp?.departement ?? "—",
+    };
+  });
+
+  const { mutate: approuverRH } = useApprouverCongeRAF();
+  const { mutate: rejeterConge } = useRejeterConge();
+
+  // Employé lié au compte connecté (peut être null si l'utilisateur n'est pas un employé)
+  const monEmploye = allEmployes.find((e) => e.userId === user?.id);
 
   // Données filtrées — pour le RP : uniquement les congés approuvés
   const allConges = isRP
     ? fetchedConges.filter((c) => c.statut === "APPROUVE")
     : canSeeAll
       ? fetchedConges
-      : fetchedConges.filter((c) => c.employeId === user?.userId);
+      : fetchedConges.filter((c) => c.employeId === monEmploye?.id);
 
   const conges = allConges.filter((c) => {
     const q = search.toLowerCase();
@@ -350,16 +457,26 @@ export default function RHConges() {
   );
   const showChevauchement = chevauchements.length > 1;
 
-  const handleValiderN1 = (id) => {
-    toast.success("Congé validé par N+1");
-  };
-
   const handleApprouverRH = (id) => {
-    toast.success("Congé approuvé par RH");
+    approuverRH(
+      { id, validateurId: user?.id },
+      {
+        onSuccess: () => toast.success("Congé approuvé"),
+        onError: (err) =>
+          toast.error(err?.response?.data?.erreur || err?.response?.data?.message || "Erreur lors de l'approbation"),
+      },
+    );
   };
 
   const handleRejeter = (motif) => {
-    toast.success("Congé rejeté");
+    rejeterConge(
+      { id: rejetConge.id, validateurId: user?.id, motif },
+      {
+        onSuccess: () => toast.success("Demande rejetée"),
+        onError: (err) =>
+          toast.error(err?.response?.data?.erreur || err?.response?.data?.message || "Erreur lors du rejet"),
+      },
+    );
     setRejetConge(null);
   };
 
@@ -369,7 +486,7 @@ export default function RHConges() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {isRP ? "Disponibilités des équipes" : "Gestion des congés"}
+            {isRP ? "Disponibilités des équipes" : isRAF ? "Validation des congés" : "Gestion des congés"}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
             {isRP
@@ -377,7 +494,7 @@ export default function RHConges() {
               : `${allConges.length} demande${allConges.length !== 1 ? "s" : ""} au total`}
           </p>
         </div>
-        {!isReadOnly && (
+        {!isReadOnly && !isRAF && (
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
@@ -389,29 +506,71 @@ export default function RHConges() {
         )}
       </div>
 
+      {/* Demandes à traiter — visible RH et RAF */}
+      {(isRH || isRAF) && (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          {[
+            {
+              label: "En attente RAF",
+              count: fetchedConges.filter((c) => c.statut === "EN_ATTENTE")
+                .length,
+              color: "bg-yellow-100 text-yellow-700",
+            },
+            {
+              label: "Approuvés",
+              count: fetchedConges.filter((c) => c.statut === "APPROUVE")
+                .length,
+              color: "bg-green-100 text-green-700",
+            },
+            {
+              label: "Rejetés",
+              count: fetchedConges.filter((c) => c.statut === "REJETE").length,
+              color: "bg-red-100 text-red-700",
+            },
+          ].map(({ label, count, color }) => (
+            <div
+              key={label}
+              className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+            >
+              <span
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold ${color}`}
+              >
+                {count}
+              </span>
+              <p className="text-sm text-gray-600">{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Workflow visuel — masqué pour le RP */}
       {!isRP && (
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
             Workflow de validation
           </p>
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs flex-wrap">
+            <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-600">
+              RH soumet
+            </span>
+            <span className="text-gray-300">→</span>
             <span className="rounded-full bg-yellow-100 px-3 py-1 font-medium text-yellow-700">
-              Soumise
-            </span>
-            <span className="text-gray-300">→</span>
-            <span className="rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-700">
-              Approuvée N+1
-            </span>
-            <span className="text-gray-300">→</span>
-            <span className="rounded-full bg-green-100 px-3 py-1 font-medium text-green-700">
-              Validée RH
+              En attente RAF
             </span>
             <span className="text-gray-300">→</span>
             <span className="rounded-full bg-emerald-100 px-3 py-1 font-medium text-emerald-700">
               Approuvée ✓
             </span>
+            <span className="text-gray-400 text-[10px] ml-1">ou</span>
+            <span className="rounded-full bg-red-100 px-3 py-1 font-medium text-red-600">
+              Rejetée ✗
+            </span>
           </div>
+          {isRAF && (
+            <p className="mt-2 text-[11px] text-blue-700 bg-blue-50 rounded-lg px-3 py-1.5">
+              En tant que RAF, vous êtes le seul validateur des demandes de congé.
+            </p>
+          )}
         </div>
       )}
 
@@ -505,12 +664,9 @@ export default function RHConges() {
                     Statut
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    N+1
+                    Approuvé RAF
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    RH
-                  </th>
-                  {(isRH || isSE) && (
+                  {isRAF && (
                     <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
                       Actions
                     </th>
@@ -544,39 +700,29 @@ export default function RHConges() {
                       <Badge statut={c.statut} />
                     </td>
                     <td className="px-6 py-4 text-xs text-gray-500">
-                      {c.valideurN1 || "—"}
+                      {c.valideParRaf ? "✓" : "—"}
                     </td>
-                    <td className="px-6 py-4 text-xs text-gray-500">
-                      {c.valideurRH || "—"}
-                    </td>
-                    {(isRH || isSE) && (
+                    {isRAF && (
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {c.statut === "EN_ATTENTE" && (
-                            <button
-                              onClick={() => handleValiderN1(c.id)}
-                              className="rounded-lg border border-blue-100 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50 transition-colors"
-                            >
-                              <Check size={12} className="inline mr-0.5" />
-                              Valider N1
-                            </button>
-                          )}
-                          {c.statut === "VALIDE_N1" && isRH && (
-                            <button
-                              onClick={() => handleApprouverRH(c.id)}
-                              className="rounded-lg border border-green-100 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-50 transition-colors"
-                            >
-                              <Check size={12} className="inline mr-0.5" />
-                              Approuver RH
-                            </button>
-                          )}
-                          {["EN_ATTENTE", "VALIDE_N1"].includes(c.statut) && (
-                            <button
-                              onClick={() => setRejetConge(c)}
-                              className="rounded-lg border border-red-100 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
-                            >
-                              Rejeter
-                            </button>
+                          {c.statut === "EN_ATTENTE" ? (
+                            <>
+                              <button
+                                onClick={() => handleApprouverRH(c.id)}
+                                className="rounded-lg border border-green-100 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-50 transition-colors"
+                              >
+                                <Check size={12} className="inline mr-0.5" />
+                                Approuver
+                              </button>
+                              <button
+                                onClick={() => setRejetConge(c)}
+                                className="rounded-lg border border-red-100 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+                              >
+                                Rejeter
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[10px] text-gray-300">—</span>
                           )}
                         </div>
                       </td>

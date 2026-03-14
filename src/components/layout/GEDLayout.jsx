@@ -2,12 +2,7 @@ import useAuthStore from "@/stores/auth.store";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 const PAGE_TITLES = {
-  "/documents": "Accueil GED",
-  "/documents/projets": "Dossiers Projets",
-  "/documents/rh": "Ressources Humaines",
-  "/documents/institutionnel": "Institutionnel",
-  "/documents/bailleurs": "Bailleurs",
-  "/documents/communication": "Communication",
+  "/documents": "Tous les documents",
   "/documents/validation": "File de validation",
 };
 
@@ -28,7 +23,7 @@ export default function GEDLayout() {
   const parentKey = Object.keys(PAGE_TITLES).find(
     (k) => k !== "/documents" && location.pathname.startsWith(k)
   );
-  const pageTitle = exactTitle ?? (parentKey ? PAGE_TITLES[parentKey] : "Gestion Documentaire");
+  const pageTitle = exactTitle ?? (parentKey ? PAGE_TITLES[parentKey] : "Gestion documentaire");
 
   return (
     <div className="flex flex-col h-full">

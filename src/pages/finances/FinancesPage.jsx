@@ -105,7 +105,7 @@ export default function FinancesPage() {
 
   const { mutate: changerStatutDepense, isPending } = useMutation({
     mutationFn: ({ id, statut }) =>
-      financesApi.changerStatutDepense(id, statut, user.userId, ""),
+      financesApi.changerStatutDepense(id, statut, user.id, ""),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["depenses", selectedProjetId] });
       toast.success("Statut de la dépense mis à jour");
@@ -114,7 +114,7 @@ export default function FinancesPage() {
   });
 
   const { mutate: annuler } = useMutation({
-    mutationFn: (id) => financesApi.annulerDepense(id, "Annulé par admin", user.userId),
+    mutationFn: (id) => financesApi.annulerDepense(id, "Annulé par admin", user.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["depenses", selectedProjetId] });
       toast.success("Dépense annulée");

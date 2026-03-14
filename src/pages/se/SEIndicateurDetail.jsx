@@ -20,7 +20,7 @@ import {
   STATUTS_COLLECTE,
   UNITES_MESURE,
   useCollectes,
-  useIndicateurs,
+  useIndicateurById,
   useMembres,
   useProjets,
 } from "./se-data";
@@ -106,23 +106,16 @@ export default function SEIndicateurDetail() {
 
   const isResponsableSE = user?.roles?.includes("ROLE_RESPONSABLE_SE");
 
-  // Données Supabase
   const { data: projets = [] } = useProjets();
-  const { data: indicateursData = [] } = useIndicateurs();
+  const { data: indicateur } = useIndicateurById(id);
   const { data: membres = [] } = useMembres();
   const { data: collectesData = [] } = useCollectes();
 
-  const {
-    getIndicateur,
-    getProjet,
-    getMembre,
-    getCollectesForIndicateur,
-    getTauxAtteinte,
-  } = createSEHelpers(projets, membres, indicateursData, collectesData, [], []);
+  const { getProjet, getMembre, getCollectesForIndicateur, getTauxAtteinte } =
+    createSEHelpers(projets, membres, indicateur ? [indicateur] : [], collectesData, [], []);
 
-  const indicateur = getIndicateur(id);
   const projet = indicateur ? getProjet(indicateur.projetId) : null;
-  const resp = indicateur ? getMembre(indicateur.responsableCollecteId) : null;
+  const resp = indicateur ? getMembre(indicateur.responsableId) : null;
   const collectes = useMemo(
     () => (indicateur ? getCollectesForIndicateur(indicateur.id) : []),
     [indicateur, collectesData],
@@ -134,7 +127,7 @@ export default function SEIndicateurDetail() {
     return (
       <div className="space-y-4">
         <button
-          onClick={() => navigate("/se/indicateurs")}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
         >
           <ArrowLeft size={16} /> Retour
@@ -151,7 +144,7 @@ export default function SEIndicateurDetail() {
     <div className="space-y-5">
       {/* Retour */}
       <button
-        onClick={() => navigate("/se/indicateurs")}
+        onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
       >
         <ArrowLeft size={16} /> Retour aux indicateurs
@@ -195,14 +188,14 @@ export default function SEIndicateurDetail() {
                 Cible : <strong>{indicateur.valeurCible}</strong>
               </span>
               <span>
-                Baseline : <strong>{indicateur.valeurReference}</strong>
+                Baseline : <strong>{indicateur.valeurBaseline}</strong>
               </span>
               <span>
                 Fréquence :{" "}
                 <strong>
                   {FREQUENCES_COLLECTE.find(
-                    (f) => f.value === indicateur.frequence,
-                  )?.label ?? indicateur.frequence}
+                    (f) => f.value === indicateur.frequenceCollecte,
+                  )?.label ?? indicateur.frequenceCollecte}
                 </strong>
               </span>
             </div>
@@ -269,13 +262,13 @@ function TabGeneral({ indicateur, projet, resp }) {
         UNITES_MESURE.find((u) => u.value === indicateur.unite)?.label ??
         indicateur.unite,
     },
-    { label: "Valeur de référence", value: indicateur.valeurReference },
+    { label: "Valeur de référence", value: indicateur.valeurBaseline },
     { label: "Valeur cible", value: indicateur.valeurCible },
     {
       label: "Fréquence de collecte",
       value:
-        FREQUENCES_COLLECTE.find((f) => f.value === indicateur.frequence)
-          ?.label ?? indicateur.frequence,
+        FREQUENCES_COLLECTE.find((f) => f.value === indicateur.frequenceCollecte)
+          ?.label ?? indicateur.frequenceCollecte,
     },
     {
       label: "Source de vérification",

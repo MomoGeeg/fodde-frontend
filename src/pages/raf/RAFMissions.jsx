@@ -38,7 +38,7 @@ function ModalConfirmValider({ mission, onConfirm, onClose, loading }) {
     <Modal title="Valider la mission" onClose={onClose}>
       <p className="text-sm text-gray-700">
         Vous êtes sur le point de <strong>valider</strong> la mission de{" "}
-        <strong>{mission.employe}</strong> à <strong>{mission.destination}</strong> du{" "}
+        <strong>{mission.employeNom ?? "—"}</strong> à <strong>{mission.destination}</strong> du{" "}
         {fmtDate(mission.dateDebut)} au {fmtDate(mission.dateFin)}.
       </p>
       <p className="mt-2 text-xs text-gray-500">
@@ -69,7 +69,7 @@ function ModalRejet({ mission, onConfirm, onClose, loading }) {
   return (
     <Modal title="Rejeter la mission" onClose={onClose}>
       <p className="text-sm text-gray-700">
-        Rejet de la mission de <strong>{mission.employe}</strong> à{" "}
+        Rejet de la mission de <strong>{mission.employeNom ?? "—"}</strong> à{" "}
         <strong>{mission.destination}</strong>.
       </p>
       <div className="mt-3">
@@ -182,8 +182,7 @@ export default function RAFMissions() {
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50 text-left text-[11px] text-gray-500 uppercase tracking-wide">
-                <th className="px-4 py-3">Employé</th>
-                <th className="px-4 py-3">Projet</th>
+                <th className="px-4 py-3">Employé / Projet</th>
                 <th className="px-4 py-3">Destination</th>
                 <th className="px-4 py-3">Dates</th>
                 <th className="px-4 py-3">Motif</th>
@@ -196,7 +195,7 @@ export default function RAFMissions() {
               {isLoading
                 ? Array.from({ length: 4 }).map((_, i) => (
                     <tr key={i} className="border-b border-gray-50">
-                      {Array.from({ length: 8 }).map((_, j) => (
+                      {Array.from({ length: 7 }).map((_, j) => (
                         <td key={j} className="px-4 py-3">
                           <Skeleton className="h-4 w-full" />
                         </td>
@@ -206,7 +205,7 @@ export default function RAFMissions() {
                 : missionsFiltrees.length === 0
                 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
+                      <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
                         <MapPin className="mx-auto mb-2 text-gray-300" size={28} />
                         Aucune mission à afficher
                       </td>
@@ -214,18 +213,13 @@ export default function RAFMissions() {
                   )
                 : missionsFiltrees.map((m) => {
                     const st = STATUTS[m.statut];
-                    const peutValider = m.statut === "APPROUVEE_N1";
+                    const peutValider = ["SOUMISE", "APPROUVEE_N1"].includes(m.statut);
                     const peutRejeter = ["SOUMISE", "APPROUVEE_N1"].includes(m.statut);
                     return (
                       <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50">
                         <td className="px-4 py-3">
-                          <p className="font-medium text-gray-800">{m.employe}</p>
-                          <p className="text-[10px] text-gray-400">{m.poste}</p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700">
-                            {m.projetCode}
-                          </span>
+                          <p className="font-medium text-gray-800">{m.employeNom ?? "—"}</p>
+                          <p className="text-[10px] text-gray-400 font-mono">{m.projetCode ?? ""}</p>
                         </td>
                         <td className="px-4 py-3 font-medium text-gray-800">{m.destination}</td>
                         <td className="px-4 py-3 text-gray-600">
