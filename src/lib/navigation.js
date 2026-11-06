@@ -1,10 +1,6 @@
 import {
-  Briefcase,
   CalendarDays,
   CheckSquare,
-  ClipboardCheck,
-  ClipboardList,
-  Database,
   FileArchive,
   FileCheck,
   FileText,
@@ -57,11 +53,9 @@ export const ACCES = {
   rh: [R.RH, R.SE],
   employes: [R.RH, R.SE, R.RAF, R.RP],
   suiviEvaluation: [R.RSE, R.CP, R.RP, R.SE, R.RAF],
-  validationSE: [R.RSE, R.CP, R.SE],
   direction: [R.SE],
   validationDocuments: [R.SE],
   logistique: [R.LOG, R.RAF, R.SE, R.ADMIN],
-  terrain: [R.TT, R.ANTENNE, R.RSE, R.SE],
   administration: [R.ADMIN],
 };
 
@@ -82,8 +76,6 @@ export const MENU = {
   employes: [R.RH, R.SE, R.RP],
   rhSeulement: [R.RH],
   indicateurs: [R.RSE, R.CP, R.RP, R.SE],
-  collecte: [R.RSE, R.CP],
-  donnees: [R.RSE],
   documentsAValider: [R.SE],
   administration: [R.ADMIN],
   pasPret: [],
@@ -131,10 +123,6 @@ export const NAVIGATION = [
     titre: "Suivi-évaluation",
     items: [
       { label: "Indicateurs", path: "/se/indicateurs", icon: Target, menu: MENU.indicateurs },
-      { label: "Formulaires", path: "/se/formulaires", icon: ClipboardList, menu: MENU.collecte },
-      { label: "Validation des données", path: "/se/validation", icon: ClipboardCheck, menu: MENU.collecte },
-      { label: "Données collectées", path: "/se/donnees", icon: Database, menu: MENU.donnees },
-      { label: "Collecte terrain", path: "/terrain", icon: Briefcase, menu: MENU.pasPret },
     ],
   },
   {

@@ -29,11 +29,6 @@ import RHEmployeDetail from "@/pages/rh/RHEmployeDetail";
 import RHEmployeForm from "@/pages/rh/RHEmployeForm";
 import RHEmployesList from "@/pages/rh/RHEmployesList";
 import RHEvaluations from "@/pages/rh/RHEvaluations";
-import SECollecte from "@/pages/se/SECollecte";
-import SEDonnees from "@/pages/se/SEDonnees";
-import SEFormulaireForm from "@/pages/se/SEFormulaireForm";
-import SEFormulairesList from "@/pages/se/SEFormulairesList";
-import SEValidation from "@/pages/se/SEValidation";
 import SecretariatRapports from "@/pages/secretariat/SecretariatRapports";
 import SecretariatValidations from "@/pages/secretariat/SecretariatValidations";
 import ModuleEnPreparation from "@/pages/shared/ModuleEnPreparation";
@@ -129,20 +124,9 @@ export default function AppRoutes() {
             <Route path="se/indicateurs" element={<IndicateursPage />} />
             <Route path="se/indicateurs/:id" element={<IndicateurFichePage />} />
             <Route path="se/indicateurs/:id/edit" element={<AncienneModification />} />
-            <Route path="se/formulaires" element={<SEFormulairesList />} />
-            <Route path="se/formulaires/nouveau" element={<SEFormulaireForm />} />
-            <Route path="se/formulaires/:id" element={<SEFormulaireForm />} />
-            <Route path="se/collecte/:formulaire_id" element={<SECollecte />} />
-            <Route path="se/donnees" element={<SEDonnees />} />
           </Route>
           <Route element={<Acces roles={GESTIONNAIRES_INDICATEURS} />}>
             <Route path="se/indicateurs/nouveau" element={<IndicateurFormPage />} />
-          </Route>
-          <Route element={<Acces roles={ACCES.validationSE} />}>
-            <Route path="se/validation" element={<SEValidation />} />
-          </Route>
-          <Route element={<Acces roles={ACCES.terrain} />}>
-            <Route path="terrain/*" element={<ModuleEnPreparation titre="Collecte terrain" />} />
           </Route>
 
           {/* ── Documents (tous les utilisateurs) ───────────── */}
@@ -173,6 +157,10 @@ export default function AppRoutes() {
           <Route path="raf/validation-depenses" element={<Navigate to="/finances/depenses" replace />} />
           <Route path="raf/missions" element={<Navigate to="/missions" replace />} />
           <Route path="raf/rapports" element={<Navigate to="/finances/budgets" replace />} />
+          {/* La collecte de terrain se fait désormais avec KoboCollect */}
+          {["se/formulaires/*", "se/collecte/*", "se/donnees", "se/validation", "terrain/*"].map((p) => (
+            <Route key={p} path={p} element={<Navigate to="/se/indicateurs" replace />} />
+          ))}
           <Route path="raf/acquisitions" element={<Navigate to="/acquisitions" replace />} />
           <Route path="rh/conges" element={<Navigate to="/conges" replace />} />
         </Route>
