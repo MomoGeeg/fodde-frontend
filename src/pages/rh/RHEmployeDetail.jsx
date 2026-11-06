@@ -449,7 +449,7 @@ export default function RHEmployeDetail() {
           {/* Bouton nouvelle demande — masqué pour le RP */}
           {!isParti && !isRP && (
             <button
-              onClick={() => navigate("/rh/conges")}
+              onClick={() => navigate("/conges")}
               className="flex items-center gap-2 rounded-lg border border-green-200 px-3 py-2 text-xs font-medium text-green-700 hover:bg-green-50 transition-colors"
             >
               <Calendar size={13} />

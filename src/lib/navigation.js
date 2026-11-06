@@ -54,7 +54,7 @@ export const ACCES = {
   saisieDepenses: [R.COMPTABLE, R.RAF],
   budgetsProjets: [R.COMPTABLE, R.RAF, R.SE, R.RP],
   budgetAnnuel: [R.RAF, R.SE],
-  missionsAchats: [R.RAF, R.SE],
+  conges: [R.RH, R.RAF, R.SE],
   rapportsFinanciers: [R.RAF, R.SE],
   rh: [R.RH, R.SE],
   employes: [R.RH, R.SE, R.RAF, R.RP],
@@ -86,13 +86,19 @@ export const NAVIGATION = [
     ],
   },
   {
-    titre: "Finances",
+    titre: "Demandes",
     items: [
       { label: "Dépenses", path: "/finances/depenses", icon: Receipt, roles: ACCES.depenses },
+      { label: "Missions", path: "/missions", icon: MapPin },
+      { label: "Acquisitions", path: "/acquisitions", icon: Package },
+      { label: "Congés", path: "/conges", icon: CalendarDays, roles: ACCES.conges },
+    ],
+  },
+  {
+    titre: "Finances",
+    items: [
       { label: "Budgets des projets", path: "/finances/budgets", icon: PieChart, roles: ACCES.budgetsProjets },
       { label: "Budget annuel", path: "/raf/budgets", icon: Landmark, roles: ACCES.budgetAnnuel },
-      { label: "Missions", path: "/raf/missions", icon: MapPin, roles: ACCES.missionsAchats },
-      { label: "Acquisitions", path: "/raf/acquisitions", icon: Package, roles: ACCES.missionsAchats },
       { label: "Rapports financiers", path: "/raf/rapports", icon: Banknote, roles: ACCES.rapportsFinanciers },
     ],
   },
@@ -100,7 +106,6 @@ export const NAVIGATION = [
     titre: "Ressources humaines",
     items: [
       { label: "Employés", path: "/rh/employes", icon: Users, roles: ACCES.employes },
-      { label: "Congés", path: "/rh/conges", icon: CalendarDays, roles: ACCES.rh },
       { label: "Évaluations", path: "/rh/evaluations", icon: Star, roles: ACCES.rh },
       { label: "Alertes RH", path: "/rh/alertes", icon: TriangleAlert, roles: ACCES.rh },
     ],

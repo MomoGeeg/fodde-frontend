@@ -183,7 +183,7 @@ function CongesAttenteSection() {
         <div
           key={c.id}
           className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
-          onClick={() => navigate("/rh/conges")}
+          onClick={() => navigate("/conges")}
         >
           <div className="min-w-0">
             <p className="text-sm font-medium text-gray-900">{c.employeNom}</p>
@@ -408,7 +408,7 @@ export default function RHAlertes() {
               )}
             </div>
             <button
-              onClick={() => navigate("/rh/conges")}
+              onClick={() => navigate("/conges")}
               className="flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
             >
               Voir tous

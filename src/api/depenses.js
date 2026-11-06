@@ -30,11 +30,8 @@ export const MODES_PAIEMENT = {
 
 export const DEVISES = ["XOF", "EUR", "USD"];
 
-export const montant = (n, devise = "XOF") =>
-  new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Number(n) || 0) +
-  (devise === "XOF" ? " F CFA" : ` ${devise}`);
-
-export const dateCourte = (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
+import { montant } from "@/lib/format";
+export { dateCourte, montant } from "@/lib/format";
 
 const depasseSeuil = (d) => Number(d.montant) > SEUIL_APPROBATION_SE;
 
