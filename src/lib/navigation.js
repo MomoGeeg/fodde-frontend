@@ -51,7 +51,7 @@ export const R = {
 export const ACCES = {
   projets: [R.SE, R.RAF, R.RP, R.CP, R.RSE],
   depenses: [R.COMPTABLE, R.RAF, R.SE],
-  validationDepenses: [R.RAF, R.SE],
+  saisieDepenses: [R.COMPTABLE, R.RAF],
   budgetsProjets: [R.COMPTABLE, R.RAF, R.SE, R.RP],
   budgetAnnuel: [R.RAF, R.SE],
   missionsAchats: [R.RAF, R.SE],
@@ -89,7 +89,6 @@ export const NAVIGATION = [
     titre: "Finances",
     items: [
       { label: "Dépenses", path: "/finances/depenses", icon: Receipt, roles: ACCES.depenses },
-      { label: "Validation des dépenses", path: "/raf/validation-depenses", icon: ClipboardCheck, roles: ACCES.validationDepenses },
       { label: "Budgets des projets", path: "/finances/budgets", icon: PieChart, roles: ACCES.budgetsProjets },
       { label: "Budget annuel", path: "/raf/budgets", icon: Landmark, roles: ACCES.budgetAnnuel },
       { label: "Missions", path: "/raf/missions", icon: MapPin, roles: ACCES.missionsAchats },

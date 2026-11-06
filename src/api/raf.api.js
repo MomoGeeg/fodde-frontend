@@ -11,26 +11,6 @@ const getUserId = () => useAuthStore.getState().user?.id;
 export const rafApi = {
   // ─── KPI & Alertes ──────────────────────────────────────
   getProjets: () => api.get("/api/projets").then((r) => r.data),
-  getAlertes: () => api.get("/api/alertes").then((r) => r.data).catch(() => []),
-
-  // ─── Dépenses ───────────────────────────────────────────
-  getDepensesEnAttente: () =>
-    api.get("/api/depenses?statut=SOUMISE").then((r) => r.data).catch(() => []),
-  getDepensesVerifiees: () =>
-    api.get("/api/depenses?statut=VERIFIEE").then((r) => r.data).catch(() => []),
-  getDepensesCount: () =>
-    api.get("/api/depenses?statut=SOUMISE").then((r) => r.data.length).catch(() => 0),
-  verifierDepense: (id) =>
-    api.patch(`/api/depenses/${id}/statut`, { statut: "VERIFIEE", userId: getUserId() }),
-  validerDepense: (id) =>
-    api.patch(`/api/depenses/${id}/statut`, { statut: "VALIDEE", userId: getUserId() }),
-  transmettreAuSE: (id) =>
-    api.patch(`/api/depenses/${id}/statut`, { statut: "EN_APPROBATION_SE", userId: getUserId() }),
-  rejeterDepense: (id, motif) =>
-    api.patch(`/api/depenses/${id}/statut`, { statut: "REJETEE", userId: getUserId(), motif }),
-
-
-  getAvancesNonJustifiees: () => api.get("/api/avances?justifiee=false").then((r) => r.data).catch(() => []),
 
   // ─── Missions ────────────────────────────────────────────
   getMissions: () => api.get("/api/missions").then((r) => r.data).catch(() => []),

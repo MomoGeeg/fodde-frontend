@@ -22,7 +22,7 @@ const fcfa = (n) =>
   new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Number(n) || 0) + " F CFA";
 
 /** Construit la liste « À traiter » selon les rôles. */
-async function chargerATraiter(roles) {
+async function chargerATraiter(roles, userId) {
   const taches = [];
   const ajouter = (libelle, nombre, lien) => {
     if (nombre > 0) taches.push({ libelle, nombre, lien });
@@ -34,7 +34,7 @@ async function chargerATraiter(roles) {
     appels.push(
       Promise.all([liste("/api/depenses?statut=SOUMISE"), liste("/api/depenses?statut=VERIFIEE")]).then(
         ([soumises, verifiees]) =>
-          ajouter("Dépenses à vérifier ou valider", soumises.length + verifiees.length, "/raf/validation-depenses"),
+          ajouter("Dépenses à vérifier ou valider", soumises.length + verifiees.length, "/finances/depenses"),
       ),
       liste("/api/missions").then((m) =>
         ajouter(
@@ -52,7 +52,7 @@ async function chargerATraiter(roles) {
   if (aAcces(roles, [R.SE])) {
     appels.push(
       liste("/api/depenses?statut=EN_APPROBATION_SE").then((d) =>
-        ajouter("Dépenses à approuver", d.length, "/secretariat/validations"),
+        ajouter("Dépenses à approuver", d.length, "/finances/depenses"),
       ),
       liste("/api/projets").then((p) =>
         ajouter("Projets à valider", p.filter((x) => x.statut === "EN_VALIDATION").length, "/secretariat/validations"),
@@ -74,7 +74,7 @@ async function chargerATraiter(roles) {
 
   if (aAcces(roles, [R.COMPTABLE])) {
     appels.push(
-      liste("/api/depenses/mes-depenses").then((d) => {
+      liste(`/api/depenses/mes-depenses?userId=${userId}`).then((d) => {
         ajouter("Dépenses rejetées à corriger", d.filter((x) => x.statut === "REJETEE").length, "/finances/depenses");
         ajouter("Brouillons à soumettre", d.filter((x) => x.statut === "BROUILLON").length, "/finances/depenses");
       }),
@@ -86,8 +86,8 @@ async function chargerATraiter(roles) {
 }
 
 /** Suivi des dépenses saisies par le comptable. */
-async function chargerMesDemandes() {
-  const d = await liste("/api/depenses/mes-depenses");
+async function chargerMesDemandes(userId) {
+  const d = await liste(`/api/depenses/mes-depenses?userId=${userId}`);
   const compter = (statuts) => d.filter((x) => statuts.includes(x.statut)).length;
   return [
     { libelle: "En cours de validation", nombre: compter(["SOUMISE", "VERIFIEE", "EN_APPROBATION_SE"]) },
@@ -126,12 +126,12 @@ export default function AccueilPage() {
 
   const aTraiter = useQuery({
     queryKey: ["accueil", "a-traiter", roles],
-    queryFn: () => chargerATraiter(roles),
+    queryFn: () => chargerATraiter(roles, user?.id),
     staleTime: 60_000,
   });
   const mesDemandes = useQuery({
-    queryKey: ["accueil", "mes-demandes"],
-    queryFn: chargerMesDemandes,
+    queryKey: ["accueil", "mes-demandes", user?.id],
+    queryFn: () => chargerMesDemandes(user?.id),
     enabled: voitMesDemandes,
     staleTime: 60_000,
   });

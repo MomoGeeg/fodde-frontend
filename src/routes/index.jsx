@@ -12,8 +12,9 @@ import DocumentsPage from "@/pages/documents/DocumentsPage";
 import DocumentValidationPage from "@/pages/documents/DocumentValidationPage";
 import BudgetProjetDetail from "@/pages/finances/BudgetProjetDetail";
 import BudgetsList from "@/pages/finances/BudgetsList";
-import DepenseDetail from "@/pages/finances/DepenseDetail";
-import DepensesList from "@/pages/finances/DepensesList";
+import DepenseFichePage from "@/pages/depenses/DepenseFichePage";
+import DepenseFormPage from "@/pages/depenses/DepenseFormPage";
+import DepensesPage from "@/pages/depenses/DepensesPage";
 import ProjetDetail from "@/pages/projets/ProjetDetail";
 import ProjetForm from "@/pages/projets/ProjetForm";
 import ProjetsList from "@/pages/projets/ProjetsList";
@@ -21,7 +22,6 @@ import RAFAcquisitions from "@/pages/raf/RAFAcquisitions";
 import RAFBudgets from "@/pages/raf/RAFBudgets";
 import RAFMissions from "@/pages/raf/RAFMissions";
 import RAFRapports from "@/pages/raf/RAFRapports";
-import RAFValidationDepenses from "@/pages/raf/RAFValidationDepenses";
 import RHAlertes from "@/pages/rh/RHAlertes";
 import RHConges from "@/pages/rh/RHConges";
 import RHEmployeDetail from "@/pages/rh/RHEmployeDetail";
@@ -83,15 +83,15 @@ export default function AppRoutes() {
 
           {/* ── Finances ────────────────────────────────────── */}
           <Route element={<Acces roles={ACCES.depenses} />}>
-            <Route path="finances/depenses" element={<DepensesList />} />
-            <Route path="finances/depenses/:id" element={<DepenseDetail />} />
+            <Route path="finances/depenses" element={<DepensesPage />} />
+            <Route path="finances/depenses/:id" element={<DepenseFichePage />} />
           </Route>
           <Route element={<Acces roles={ACCES.budgetsProjets} />}>
             <Route path="finances/budgets" element={<BudgetsList />} />
             <Route path="finances/budgets/:projet_id" element={<BudgetProjetDetail />} />
           </Route>
-          <Route element={<Acces roles={ACCES.validationDepenses} />}>
-            <Route path="raf/validation-depenses" element={<RAFValidationDepenses />} />
+          <Route element={<Acces roles={ACCES.saisieDepenses} />}>
+            <Route path="finances/depenses/nouvelle" element={<DepenseFormPage />} />
           </Route>
           <Route element={<Acces roles={ACCES.budgetAnnuel} />}>
             <Route path="raf/budgets" element={<RAFBudgets />} />
@@ -163,6 +163,7 @@ export default function AppRoutes() {
           <Route path="mes-documents" element={<Navigate to="/documents" replace />} />
           <Route path="finances/documents" element={<Navigate to="/documents" replace />} />
           <Route path="secretariat/documents/:id" element={<AncienDocument />} />
+          <Route path="raf/validation-depenses" element={<Navigate to="/finances/depenses" replace />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
