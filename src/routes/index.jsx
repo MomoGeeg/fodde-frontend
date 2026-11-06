@@ -2,6 +2,8 @@ import AppLayout from "@/components/layout/AppLayout";
 import RequireRole from "@/components/shared/RequireRole";
 import { ACCES, R } from "@/lib/navigation";
 import AccueilPage from "@/pages/accueil/AccueilPage";
+import { IndicateurFichePage, IndicateurFormPage, IndicateursPage } from "@/pages/indicateurs/IndicateursPages";
+import { GESTIONNAIRES_INDICATEURS } from "@/api/indicateurs";
 import { AcquisitionFichePage, AcquisitionFormPage, AcquisitionsPage } from "@/pages/acquisitions/AcquisitionsPages";
 import { CongeFichePage, CongeFormPage, CongesPage } from "@/pages/conges/CongesPages";
 import { MissionFichePage, MissionFormPage, MissionsPage } from "@/pages/missions/MissionsPages";
@@ -31,9 +33,6 @@ import SECollecte from "@/pages/se/SECollecte";
 import SEDonnees from "@/pages/se/SEDonnees";
 import SEFormulaireForm from "@/pages/se/SEFormulaireForm";
 import SEFormulairesList from "@/pages/se/SEFormulairesList";
-import SEIndicateurDetail from "@/pages/se/SEIndicateurDetail";
-import SEIndicateurForm from "@/pages/se/SEIndicateurForm";
-import SEIndicateursList from "@/pages/se/SEIndicateursList";
 import SEValidation from "@/pages/se/SEValidation";
 import SecretariatRapports from "@/pages/secretariat/SecretariatRapports";
 import SecretariatValidations from "@/pages/secretariat/SecretariatValidations";
@@ -127,15 +126,17 @@ export default function AppRoutes() {
           {/* ── Suivi-évaluation ────────────────────────────── */}
           <Route element={<Acces roles={ACCES.suiviEvaluation} />}>
             <Route path="se" element={<Navigate to="/se/indicateurs" replace />} />
-            <Route path="se/indicateurs" element={<SEIndicateursList />} />
-            <Route path="se/indicateurs/nouveau" element={<SEIndicateurForm />} />
-            <Route path="se/indicateurs/:id" element={<SEIndicateurDetail />} />
-            <Route path="se/indicateurs/:id/edit" element={<SEIndicateurForm />} />
+            <Route path="se/indicateurs" element={<IndicateursPage />} />
+            <Route path="se/indicateurs/:id" element={<IndicateurFichePage />} />
+            <Route path="se/indicateurs/:id/edit" element={<AncienneModification />} />
             <Route path="se/formulaires" element={<SEFormulairesList />} />
             <Route path="se/formulaires/nouveau" element={<SEFormulaireForm />} />
             <Route path="se/formulaires/:id" element={<SEFormulaireForm />} />
             <Route path="se/collecte/:formulaire_id" element={<SECollecte />} />
             <Route path="se/donnees" element={<SEDonnees />} />
+          </Route>
+          <Route element={<Acces roles={GESTIONNAIRES_INDICATEURS} />}>
+            <Route path="se/indicateurs/nouveau" element={<IndicateurFormPage />} />
           </Route>
           <Route element={<Acces roles={ACCES.validationSE} />}>
             <Route path="se/validation" element={<SEValidation />} />
@@ -179,6 +180,12 @@ export default function AppRoutes() {
       </Routes>
     </BrowserRouter>
   );
+}
+
+/** Le backend ne permet pas de modifier un indicateur : retour à sa fiche. */
+function AncienneModification() {
+  const { id } = useParams();
+  return <Navigate to={`/se/indicateurs/${id}`} replace />;
 }
 
 /** /secretariat/documents/:id → /documents/:id */
