@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { joursRestants, urgenceContrat, useConges, useEmployes } from "./rh-data";
+import { joursRestants, urgenceContrat, useConges, useEmployes } from "@/api/rh-data";
 
 // ── Constantes ─────────────────────────────────────────────
 const STATUT_COLORS = {

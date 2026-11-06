@@ -18,7 +18,7 @@ import {
   useIndicateurs,
   useMembres,
   useProjets,
-} from "./se-data";
+} from "@/api/se-data";
 
 function ProgressBar({ taux }) {
   const color =
@@ -69,13 +69,6 @@ export default function SEIndicateursList() {
   const indicateursBase = useMemo(() => {
     if (isResponsableSE) return indicateursData; // Tous
     if (isRP) return indicateursData; // Tous en lecture seule
-    if (isCP) {
-      // Ses projets affectés uniquement
-      const projetsAffectes = ["p001", "p002", "p003"]; // mock
-      return indicateursData.filter((i) =>
-        projetsAffectes.includes(i.projetId),
-      );
-    }
     return indicateursData;
   }, [isResponsableSE, isRP, isCP, indicateursData]);
 

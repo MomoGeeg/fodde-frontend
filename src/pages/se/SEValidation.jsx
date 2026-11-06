@@ -25,7 +25,7 @@ import {
   useMembres,
   useProjets,
   useReponsesEnAttente,
-} from "./se-data";
+} from "@/api/se-data";
 
 const fmtDate = (d) =>
   d
@@ -85,15 +85,6 @@ export default function SEValidation() {
           (c) => c.statut === "EN_ATTENTE" || c.statut === "PRE_VALIDEE",
         );
 
-    // CP ne voit que ses projets
-    if (isCP && !canFinalValidate) {
-      const mesProjectIds = ["p001", "p002", "p003"]; // mock
-      list = list.filter((c) => {
-        const ind = getIndicateur(c.indicateurId);
-        return ind && mesProjectIds.includes(ind.projetId);
-      });
-    }
-
     // Filtres
     if (filterProjet !== "all") {
       list = list.filter((c) => {
@@ -130,11 +121,6 @@ export default function SEValidation() {
   // ── Données réponses formulaires ─────────────────────────
   const reponsesData = useMemo(() => {
     let list = reponses.filter((r) => r.statut === "EN_ATTENTE");
-
-    if (isCP && !canFinalValidate) {
-      const mesProjectIds = ["p001", "p002", "p003"];
-      list = list.filter((r) => mesProjectIds.includes(r.projetId));
-    }
 
     if (filterProjet !== "all") {
       list = list.filter((r) => {

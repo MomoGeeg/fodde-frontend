@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
 import {
   createFinanceHelpers,
   STATUT_COLORS,
@@ -18,7 +17,7 @@ import {
   useDepensesParProjet,
   useLignesParProjet,
   useProjetsFinances,
-} from "./finances-data";
+} from "@/api/finances-data";
 
 const fmtMontant = (n, devise = "XOF") =>
   new Intl.NumberFormat("fr-FR", {
@@ -51,134 +50,6 @@ function ProgressBar({ taux, height = "h-2" }) {
   );
 }
 
-// ── Modale Virement budgétaire ─────────────────────────────
-function VirementModal({ lignes, devise, onClose }) {
-  const [sourceId, setSourceId] = useState("");
-  const [destId, setDestId] = useState("");
-  const [montant, setMontant] = useState("");
-  const [motif, setMotif] = useState("");
-
-  const source = lignes.find((l) => l.id === sourceId);
-  const soldeSource = source ? source.prevu - source.depense : 0;
-  const montantNum = parseFloat(montant) || 0;
-
-  const handleConfirm = () => {
-    if (!sourceId || !destId)
-      return toast.error("Sélectionnez source et destination");
-    if (sourceId === destId)
-      return toast.error("Source et destination identiques");
-    if (!montantNum || montantNum <= 0) return toast.error("Montant invalide");
-    if (montantNum > soldeSource)
-      return toast.error("Montant dépasse le solde disponible");
-    if (!motif.trim()) return toast.error("Motif obligatoire");
-    toast.success(`Virement de ${fmtMontant(montantNum, devise)} effectué`);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-        <h3 className="text-lg font-bold text-gray-900 mb-1">
-          Virement budgétaire
-        </h3>
-        <p className="text-sm text-gray-500 mb-5">
-          Transférer un montant d'une ligne à une autre
-        </p>
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-600">
-              Ligne source
-            </label>
-            <select
-              value={sourceId}
-              onChange={(e) => setSourceId(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
-            >
-              <option value="">— Sélectionner —</option>
-              {lignes
-                .filter((l) => !l.gele)
-                .map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.code} — {l.intitule} (solde:{" "}
-                    {fmtMontant(l.prevu - l.depense, devise)})
-                  </option>
-                ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-600">
-              Ligne destination
-            </label>
-            <select
-              value={destId}
-              onChange={(e) => setDestId(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
-            >
-              <option value="">— Sélectionner —</option>
-              {lignes
-                .filter((l) => !l.gele && l.id !== sourceId)
-                .map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.code} — {l.intitule}
-                  </option>
-                ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-600">
-              Montant à transférer ({devise})
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={montant}
-              onChange={(e) => setMontant(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
-              placeholder="0"
-            />
-            {source && montantNum > soldeSource && (
-              <p className="mt-1 text-xs text-red-500">
-                Dépasse le solde disponible ({fmtMontant(soldeSource, devise)})
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-600">
-              Motif *
-            </label>
-            <textarea
-              value={motif}
-              onChange={(e) => setMotif(e.target.value)}
-              rows={2}
-              placeholder="Justification du virement..."
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
-            />
-          </div>
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white"
-            style={{ background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)" }}
-          >
-            <ArrowRightLeft size={14} />
-            Confirmer le virement
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════
-// PAGE — Structure budgétaire d'un projet
-// ════════════════════════════════════════════════════════════
 export default function BudgetProjetDetail() {
   const { projet_id } = useParams();
   const { user } = useAuthStore();
@@ -197,13 +68,9 @@ export default function BudgetProjetDetail() {
   const projet = helpers.getProjet(projet_id);
   const stats = helpers.getBudgetStatsForProjet(projet_id);
 
-  const isRAF = user?.roles?.some((r) => ["ROLE_RAF", "ROLE_ADMIN"].includes(r));
-  const isSE = user?.roles?.includes("ROLE_SE");
   const isRP = user?.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES");
-  const canVirement = isRAF || isSE;
 
   const [expandedLigne, setExpandedLigne] = useState(null);
-  const [showVirement, setShowVirement] = useState(false);
   const [searchLigne, setSearchLigne] = useState("");
 
   // Grouper lignes par catégorie
@@ -271,16 +138,6 @@ export default function BudgetProjetDetail() {
               )}
             </p>
           </div>
-          {canVirement && lignes.length > 0 && (
-            <button
-              onClick={() => setShowVirement(true)}
-              className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white"
-              style={{ background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)" }}
-            >
-              <ArrowRightLeft size={15} />
-              Virement budgétaire
-            </button>
-          )}
         </div>
 
         {/* Résumé global */}
@@ -505,14 +362,6 @@ export default function BudgetProjetDetail() {
         </div>
       )}
 
-      {/* Modale virement */}
-      {showVirement && (
-        <VirementModal
-          lignes={lignes}
-          devise={projet?.devise ?? "XOF"}
-          onClose={() => setShowVirement(false)}
-        />
-      )}
     </div>
   );
 }

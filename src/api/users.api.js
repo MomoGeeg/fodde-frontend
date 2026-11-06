@@ -1,4 +1,4 @@
-import * as us from "@/services/userService";
+import * as us from "@/api/userService";
 
 export const usersApi = {
   getAll: () => us.getAllUsers(),

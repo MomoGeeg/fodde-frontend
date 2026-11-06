@@ -1,5 +1,5 @@
 import { useCreateUser, useUpdateUser, useUser } from "@/api/admin.api";
-import { ROLES_DISPONIBLES } from "@/data/admin.mock";
+import { ROLES_DISPONIBLES } from "@/lib/roles";
 import { ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";

@@ -18,10 +18,9 @@ import {
   useConges,
   useEmployes,
   useEvaluations,
-} from "./rh-data";
+} from "@/api/rh-data";
 
 // ── Helpers ────────────────────────────────────────────────
-const fmt = (n) => new Intl.NumberFormat("fr-SN").format(n);
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
 
 function Skeleton({ className = "" }) {
@@ -109,9 +108,6 @@ export default function RHTableauDeBord() {
   const { user } = useAuthStore();
 
   const isRP = user?.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES");
-  const isFullRH = user?.roles?.some((r) =>
-    ["ROLE_RH", "ROLE_SE", "ROLE_ADMIN"].includes(r),
-  );
 
   // ── Calculs KPI ────────────────────────────────────────
   const { data: employes = [] } = useEmployes();

@@ -269,11 +269,10 @@ function TabInfos({ projet, users }) {
 }
 
 // ─── Onglet Activités ─────────────────────────────────────────────────────
-function TabActivites({ projet, activites, users, canManage, isSuspendu }) {
+function TabActivites({ projet, activites, canManage, isSuspendu }) {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
   const [showForm, setShowForm] = useState(false);
-  const [parentIdForm, setParentIdForm] = useState("");
+  const [, setParentIdForm] = useState("");
   const [expanded, setExpanded] = useState({});
   const [form, setForm] = useState({
     titre: "",
@@ -1209,7 +1208,6 @@ export default function ProjetDetail() {
   const isAdmin = user?.roles?.includes("ROLE_ADMIN");
 
   const canManage = isRP || isAdmin;
-  const canAct = isRP || isRAF || isSE || isAdmin;
 
   const {
     data: projetData,

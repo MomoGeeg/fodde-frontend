@@ -17,7 +17,7 @@ import {
   useEmployes,
   useEvaluations,
   useMissions,
-} from "./rh-data";
+} from "@/api/rh-data";
 
 // ── Helpers ────────────────────────────────────────────────
 const fmt = (n) => new Intl.NumberFormat("fr-SN").format(n);
@@ -99,7 +99,6 @@ export default function RHEmployeDetail() {
 
   const isRH = user?.roles?.some((r) => ["ROLE_RH", "ROLE_ADMIN"].includes(r));
   const isSE = user?.roles?.includes("ROLE_SE");
-  const isRAF = user?.roles?.includes("ROLE_RAF");
   const isRP = user?.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES");
   const canSeeSalaire = isRH || isSE;
   const canSeeContrats = isRH || isSE; // RP ne voit ni salaires ni contrats

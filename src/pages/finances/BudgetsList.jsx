@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useDepenses, useProjetsFinances } from "./finances-data";
+import { useDepenses, useProjetsFinances } from "@/api/finances-data";
 
 const fmtMontant = (n, devise = "XOF") =>
   new Intl.NumberFormat("fr-FR", {

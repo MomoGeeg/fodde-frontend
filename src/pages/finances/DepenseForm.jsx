@@ -21,7 +21,7 @@ import {
 
   useLignesParProjet,
   useProjetsFinances,
-} from "./finances-data";
+} from "@/api/finances-data";
 
 const fmtMontant = (n, devise = "XOF") =>
   new Intl.NumberFormat("fr-FR", {

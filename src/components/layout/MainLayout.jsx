@@ -91,19 +91,6 @@ const secretariatNavItems = [
   { label: "Rapports", path: "/secretariat/rapports", icon: FileText },
 ];
 
-const rafNavItems = [
-  { label: "Tableau de bord", path: "/raf/tableau-de-bord", icon: TrendingUp },
-  {
-    label: "Validation dépenses",
-    path: "/raf/validation-depenses",
-    icon: ClipboardCheck,
-  },
-  { label: "Budgets", path: "/raf/budgets", icon: BarChart2 },
-  { label: "Trésorerie", path: "/raf/tresorerie", icon: Landmark },
-  { label: "Missions", path: "/raf/missions", icon: MapPin },
-  { label: "Acquisitions", path: "/raf/acquisitions", icon: Package },
-  { label: "Rapports", path: "/raf/rapports", icon: FileText },
-];
 
 const rhNavItemsFull = [
   {
@@ -743,8 +730,6 @@ function GEDSidebar({ user, onLogout, onBack, userRoles, validationCount }) {
         : "text-gray-400 hover:bg-black-light hover:text-white"
     }`;
 
-  const isSE =
-    userRoles?.includes("ROLE_SE") || userRoles?.includes("ROLE_ADMIN");
 
   return (
     <div className="flex flex-col h-full">
@@ -895,7 +880,6 @@ function AdminSidebar({ user, onLogout, sansCompteCount }) {
 function SecretariatSidebar({
   user,
   onLogout,
-  onBack,
   validationsCount,
   alertesCount,
 }) {

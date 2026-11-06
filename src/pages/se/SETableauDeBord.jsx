@@ -35,7 +35,7 @@ import {
   useIndicateurs,
   useProjets,
   useReponsesEnAttente,
-} from "./se-data";
+} from "@/api/se-data";
 
 // ── Constantes visuelles ─────────────────────────────────────────────────────
 const STATUT_COLORS_PIE = {

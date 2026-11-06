@@ -13,7 +13,6 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { useDocuments, TYPE_OPTIONS, STATUT_CONFIG, typeLabel } from "@/api/documents.api";
-import useAuthStore from "@/stores/auth.store";
 import DocumentUploadModal from "./DocumentUploadModal";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -41,18 +40,10 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString("fr-FR");
 }
 
-function formatSize(bytes) {
-  if (!bytes) return null;
-  if (bytes < 1024) return `${bytes} o`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
-}
-
 // ── Composant principal ───────────────────────────────────────────────────────
 
 export default function DocumentsPage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterStatut, setFilterStatut] = useState("");

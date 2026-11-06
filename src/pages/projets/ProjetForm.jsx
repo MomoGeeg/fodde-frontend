@@ -1,6 +1,5 @@
 import { projetsApi } from "@/api/projets.api";
 import { usersApi } from "@/api/users.api";
-import useAuthStore from "@/stores/auth.store";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -62,7 +61,6 @@ export default function ProjetForm() {
   const isEditMode = !!id;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
 
   const [form, setForm] = useState(emptyForm);
   const [resultats, setResultats] = useState([""]);

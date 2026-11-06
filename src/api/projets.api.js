@@ -1,4 +1,4 @@
-import * as ps from "@/services/projetService";
+import * as ps from "@/api/projetService";
 
 export const projetsApi = {
   getAll: () => ps.getAllProjets(),

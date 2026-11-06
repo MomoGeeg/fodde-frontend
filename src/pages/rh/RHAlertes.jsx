@@ -14,7 +14,7 @@ import {
   useConges,
   useEmployes,
   useEvaluations,
-} from "./rh-data";
+} from "@/api/rh-data";
 
 // ── Helpers ────────────────────────────────────────────────
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");

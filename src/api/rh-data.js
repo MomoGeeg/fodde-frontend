@@ -1,11 +1,11 @@
 // ════════════════════════════════════════════════════════════════════════════
 // Bridge Module RH — mappe l'ancien rh-mock-data vers Supabase
 // ════════════════════════════════════════════════════════════════════════════
-import * as rh from "@/services/rhService";
+import * as rh from "@/api/rhService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // ── Re-exports helpers synchrones depuis le service ───────────────────────
-export { joursRestants, urgenceContrat } from "@/services/rhService";
+export { joursRestants, urgenceContrat } from "@/api/rhService";
 
 // ════════════════════════════════════════════════════════════════════════════
 // QUERY KEYS
@@ -16,7 +16,6 @@ export const rhKeys = {
   conges: ["rh-conges"],
   congesByEmploye: (id) => ["rh-conges", id],
   congesEnAttente: ["rh-conges-attente"],
-  congesValideN1: ["rh-conges-valide-n1"],
   evaluations: ["rh-evaluations"],
   evaluationsByEmploye: (id) => ["rh-evaluations", id],
   criteresEvaluation: ["rh-criteres-evaluation"],
@@ -53,17 +52,6 @@ export function useCreateEmploye() {
   return useMutation({
     mutationFn: (payload) => rh.createEmploye(payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: rhKeys.employes }),
-  });
-}
-
-export function useUpdateEmploye() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, payload }) => rh.updateEmploye(id, payload),
-    onSuccess: (_data, { id }) => {
-      qc.invalidateQueries({ queryKey: rhKeys.employes });
-      qc.invalidateQueries({ queryKey: rhKeys.employe(id) });
-    },
   });
 }
 
@@ -107,14 +95,6 @@ export function useCongesEnAttente() {
   });
 }
 
-export function useCongesValideN1() {
-  return useQuery({
-    queryKey: rhKeys.congesValideN1,
-    queryFn: rh.getCongesValideN1,
-    staleTime: 1 * 60_000,
-  });
-}
-
 export function useCreateConge() {
   const qc = useQueryClient();
   return useMutation({
@@ -145,7 +125,6 @@ export function useRejeterConge() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: rhKeys.conges });
       qc.invalidateQueries({ queryKey: rhKeys.congesEnAttente });
-      qc.invalidateQueries({ queryKey: rhKeys.congesValideN1 });
     },
   });
 }

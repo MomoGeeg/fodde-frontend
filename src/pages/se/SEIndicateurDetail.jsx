@@ -23,7 +23,7 @@ import {
   useIndicateurById,
   useMembres,
   useProjets,
-} from "./se-data";
+} from "@/api/se-data";
 
 const fmtDate = (d) =>
   d

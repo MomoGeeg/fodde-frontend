@@ -1,4 +1,3 @@
-import useAuthStore from "@/stores/auth.store";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -21,7 +20,7 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { createSEHelpers, useFormulaires, useProjets } from "./se-data";
+import { createSEHelpers, useFormulaires, useProjets } from "@/api/se-data";
 
 const TYPE_ICONS = {
   TEXTE: Type,
@@ -41,7 +40,6 @@ const TYPE_ICONS = {
 export default function SECollecte() {
   const { formulaire_id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
 
   // Données Supabase
   const { data: projets = [] } = useProjets();
@@ -173,7 +171,7 @@ export default function SECollecte() {
         setGpsLoading(false);
         toast.success("Position GPS capturée");
       },
-      (err) => {
+      () => {
         setGpsLoading(false);
         toast.error("Impossible de capturer la position GPS");
       },
@@ -301,7 +299,7 @@ export default function SECollecte() {
         </div>
 
         {/* Champs du formulaire */}
-        {champs.map((champ, i) => {
+        {champs.map((champ) => {
           const TypeIcon = TYPE_ICONS[champ.type] || Type;
           const hasError = errors[champ.id];
           return (
