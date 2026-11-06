@@ -1,7 +1,10 @@
 import AppLayout from "@/components/layout/AppLayout";
 import RequireRole from "@/components/shared/RequireRole";
-import { ACCES } from "@/lib/navigation";
+import { ACCES, R } from "@/lib/navigation";
 import AccueilPage from "@/pages/accueil/AccueilPage";
+import { AcquisitionFichePage, AcquisitionFormPage, AcquisitionsPage } from "@/pages/acquisitions/AcquisitionsPages";
+import { CongeFichePage, CongeFormPage, CongesPage } from "@/pages/conges/CongesPages";
+import { MissionFichePage, MissionFormPage, MissionsPage } from "@/pages/missions/MissionsPages";
 import ActivitesList from "@/pages/activites/ActivitesList";
 import AdminEmployesSansCompte from "@/pages/admin/AdminEmployesSansCompte";
 import AdminUserForm from "@/pages/admin/AdminUserForm";
@@ -18,12 +21,9 @@ import DepensesPage from "@/pages/depenses/DepensesPage";
 import ProjetDetail from "@/pages/projets/ProjetDetail";
 import ProjetForm from "@/pages/projets/ProjetForm";
 import ProjetsList from "@/pages/projets/ProjetsList";
-import RAFAcquisitions from "@/pages/raf/RAFAcquisitions";
 import RAFBudgets from "@/pages/raf/RAFBudgets";
-import RAFMissions from "@/pages/raf/RAFMissions";
 import RAFRapports from "@/pages/raf/RAFRapports";
 import RHAlertes from "@/pages/rh/RHAlertes";
-import RHConges from "@/pages/rh/RHConges";
 import RHEmployeDetail from "@/pages/rh/RHEmployeDetail";
 import RHEmployeForm from "@/pages/rh/RHEmployeForm";
 import RHEmployesList from "@/pages/rh/RHEmployesList";
@@ -97,9 +97,20 @@ export default function AppRoutes() {
             <Route path="raf/budgets" element={<RAFBudgets />} />
             <Route path="raf/tresorerie" element={<ModuleEnPreparation titre="Trésorerie" />} />
           </Route>
-          <Route element={<Acces roles={ACCES.missionsAchats} />}>
-            <Route path="raf/missions" element={<RAFMissions />} />
-            <Route path="raf/acquisitions" element={<RAFAcquisitions />} />
+
+          {/* ── Demandes ouvertes à tous : missions et achats ── */}
+          <Route path="missions" element={<MissionsPage />} />
+          <Route path="missions/nouvelle" element={<MissionFormPage />} />
+          <Route path="missions/:id" element={<MissionFichePage />} />
+          <Route path="acquisitions" element={<AcquisitionsPage />} />
+          <Route path="acquisitions/nouvelle" element={<AcquisitionFormPage />} />
+          <Route path="acquisitions/:id" element={<AcquisitionFichePage />} />
+          <Route element={<Acces roles={ACCES.conges} />}>
+            <Route path="conges" element={<CongesPage />} />
+            <Route path="conges/:id" element={<CongeFichePage />} />
+          </Route>
+          <Route element={<Acces roles={[R.RH]} />}>
+            <Route path="conges/nouveau" element={<CongeFormPage />} />
           </Route>
           <Route element={<Acces roles={ACCES.rapportsFinanciers} />}>
             <Route path="raf/rapports" element={<RAFRapports />} />
@@ -113,7 +124,6 @@ export default function AppRoutes() {
           <Route element={<Acces roles={ACCES.rh} />}>
             <Route path="rh/employes/nouveau" element={<RHEmployeForm />} />
             <Route path="rh/employes/:id/edit" element={<RHEmployeForm />} />
-            <Route path="rh/conges" element={<RHConges />} />
             <Route path="rh/evaluations" element={<RHEvaluations />} />
             <Route path="rh/alertes" element={<RHAlertes />} />
           </Route>
@@ -164,6 +174,9 @@ export default function AppRoutes() {
           <Route path="finances/documents" element={<Navigate to="/documents" replace />} />
           <Route path="secretariat/documents/:id" element={<AncienDocument />} />
           <Route path="raf/validation-depenses" element={<Navigate to="/finances/depenses" replace />} />
+          <Route path="raf/missions" element={<Navigate to="/missions" replace />} />
+          <Route path="raf/acquisitions" element={<Navigate to="/acquisitions" replace />} />
+          <Route path="rh/conges" element={<Navigate to="/conges" replace />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

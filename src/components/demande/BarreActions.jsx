@@ -1,4 +1,5 @@
 import ModaleConfirmation from "@/components/demande/ModaleConfirmation";
+import { messageErreur } from "@/lib/erreurs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -9,9 +10,6 @@ const STYLES = {
   danger: "border border-red-200 bg-white text-danger hover:bg-red-50",
 };
 
-/** Message d'erreur lisible depuis une réponse du backend. */
-const messageErreur = (err) =>
-  err?.response?.data?.erreur || err?.response?.data?.message || "Action impossible. Réessayez.";
 
 /**
  * Boutons d'action d'une demande. Chaque action peut demander une confirmation
@@ -33,7 +31,7 @@ export default function BarreActions({ actions }) {
       setOuverte(null);
       await queryClient.invalidateQueries();
     } catch (err) {
-      toast.error(messageErreur(err));
+      toast.error(messageErreur(err, "Action impossible. Réessayez."));
     } finally {
       setEnCours(false);
     }
