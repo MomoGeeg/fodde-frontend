@@ -67,6 +67,31 @@ export const ACCES = {
   administration: [R.ADMIN],
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Ce que chaque métier voit dans son menu : seulement ce dont il a besoin au
+// quotidien. C'est plus étroit que les droits d'accès (ACCES) : une page hors
+// menu reste ouverte depuis un lien (accueil, fiche…) si le rôle y a droit.
+// `menu` absent = tout le monde ; `menu: []` = personne (module pas prêt).
+// ─────────────────────────────────────────────────────────────────────────────
+export const MENU = {
+  direction: [R.SE],
+  projets: [R.SE, R.RAF, R.RP, R.CP, R.RSE],
+  activites: [R.RP, R.CP],
+  depenses: [R.COMPTABLE, R.RAF, R.SE],
+  conges: [R.RH, R.RAF],
+  budgetsProjets: [R.COMPTABLE, R.RAF, R.SE, R.RP],
+  budgetAnnuel: [R.RAF],
+  rapportsFinanciers: [R.RAF, R.SE],
+  employes: [R.RH, R.SE, R.RP],
+  rhSeulement: [R.RH],
+  indicateurs: [R.RSE, R.CP, R.RP, R.SE],
+  collecte: [R.RSE, R.CP],
+  donnees: [R.RSE],
+  documentsAValider: [R.SE],
+  administration: [R.ADMIN],
+  pasPret: [],
+};
+
 export const NAVIGATION = [
   {
     items: [{ label: "Accueil", path: "/", icon: Home, exact: true }],
@@ -74,68 +99,60 @@ export const NAVIGATION = [
   {
     titre: "Direction",
     items: [
-      { label: "Validations", path: "/secretariat/validations", icon: FileCheck, roles: ACCES.direction },
-      { label: "Rapports reçus", path: "/secretariat/rapports", icon: FileText, roles: ACCES.direction },
-    ],
-  },
-  {
-    titre: "Projets",
-    items: [
-      { label: "Projets", path: "/projets", icon: FolderKanban, roles: ACCES.projets },
-      { label: "Activités", path: "/activites", icon: CheckSquare, roles: ACCES.projets },
+      { label: "Validations", path: "/secretariat/validations", icon: FileCheck, menu: MENU.direction },
+      { label: "Rapports reçus", path: "/secretariat/rapports", icon: FileText, menu: MENU.direction },
     ],
   },
   {
     titre: "Demandes",
     items: [
-      { label: "Dépenses", path: "/finances/depenses", icon: Receipt, roles: ACCES.depenses },
+      { label: "Dépenses", path: "/finances/depenses", icon: Receipt, menu: MENU.depenses },
       { label: "Missions", path: "/missions", icon: MapPin },
       { label: "Acquisitions", path: "/acquisitions", icon: Package },
-      { label: "Congés", path: "/conges", icon: CalendarDays, roles: ACCES.conges },
+      { label: "Congés", path: "/conges", icon: CalendarDays, menu: MENU.conges },
     ],
   },
   {
-    titre: "Finances",
+    titre: "Projets et budgets",
     items: [
-      { label: "Budgets des projets", path: "/finances/budgets", icon: PieChart, roles: ACCES.budgetsProjets },
-      { label: "Budget annuel", path: "/raf/budgets", icon: Landmark, roles: ACCES.budgetAnnuel },
-      { label: "Rapports financiers", path: "/raf/rapports", icon: Banknote, roles: ACCES.rapportsFinanciers },
+      { label: "Projets", path: "/projets", icon: FolderKanban, menu: MENU.projets },
+      { label: "Activités", path: "/activites", icon: CheckSquare, menu: MENU.activites },
+      { label: "Budgets des projets", path: "/finances/budgets", icon: PieChart, menu: MENU.budgetsProjets },
+      { label: "Budget annuel", path: "/raf/budgets", icon: Landmark, menu: MENU.budgetAnnuel },
+      { label: "Rapports financiers", path: "/raf/rapports", icon: Banknote, menu: MENU.rapportsFinanciers },
+      { label: "Trésorerie", path: "/raf/tresorerie", icon: Landmark, menu: MENU.pasPret },
     ],
   },
   {
-    titre: "Ressources humaines",
+    titre: "Équipe",
     items: [
-      { label: "Employés", path: "/rh/employes", icon: Users, roles: ACCES.employes },
-      { label: "Évaluations", path: "/rh/evaluations", icon: Star, roles: ACCES.rh },
-      { label: "Alertes RH", path: "/rh/alertes", icon: TriangleAlert, roles: ACCES.rh },
+      { label: "Employés", path: "/rh/employes", icon: Users, menu: MENU.employes },
+      { label: "Évaluations", path: "/rh/evaluations", icon: Star, menu: MENU.rhSeulement },
+      { label: "Alertes RH", path: "/rh/alertes", icon: TriangleAlert, menu: MENU.rhSeulement },
     ],
   },
   {
     titre: "Suivi-évaluation",
     items: [
-      { label: "Indicateurs", path: "/se/indicateurs", icon: Target, roles: ACCES.suiviEvaluation },
-      { label: "Formulaires", path: "/se/formulaires", icon: ClipboardList, roles: ACCES.suiviEvaluation },
-      { label: "Validation des données", path: "/se/validation", icon: ClipboardCheck, roles: ACCES.validationSE },
-      { label: "Données collectées", path: "/se/donnees", icon: Database, roles: ACCES.suiviEvaluation },
-      { label: "Collecte terrain", path: "/terrain", icon: Briefcase, roles: ACCES.terrain },
+      { label: "Indicateurs", path: "/se/indicateurs", icon: Target, menu: MENU.indicateurs },
+      { label: "Formulaires", path: "/se/formulaires", icon: ClipboardList, menu: MENU.collecte },
+      { label: "Validation des données", path: "/se/validation", icon: ClipboardCheck, menu: MENU.collecte },
+      { label: "Données collectées", path: "/se/donnees", icon: Database, menu: MENU.donnees },
+      { label: "Collecte terrain", path: "/terrain", icon: Briefcase, menu: MENU.pasPret },
     ],
-  },
-  {
-    titre: "Documents",
-    items: [
-      { label: "Documents", path: "/documents", icon: FileArchive, exact: true },
-      { label: "Documents à valider", path: "/documents/validation", icon: FileCheck, roles: ACCES.validationDocuments },
-    ],
-  },
-  {
-    titre: "Logistique",
-    items: [{ label: "Logistique", path: "/logistique", icon: Truck, roles: ACCES.logistique }],
   },
   {
     titre: "Administration",
     items: [
-      { label: "Utilisateurs", path: "/admin/utilisateurs", icon: UserCog, roles: ACCES.administration },
-      { label: "Employés sans compte", path: "/admin/sans-compte", icon: UserPlus, roles: ACCES.administration },
+      { label: "Utilisateurs", path: "/admin/utilisateurs", icon: UserCog, menu: MENU.administration },
+      { label: "Employés sans compte", path: "/admin/sans-compte", icon: UserPlus, menu: MENU.administration },
+    ],
+  },
+  {
+    items: [
+      { label: "Documents", path: "/documents", icon: FileArchive, exact: true },
+      { label: "Documents à valider", path: "/documents/validation", icon: FileCheck, menu: MENU.documentsAValider },
+      { label: "Logistique", path: "/logistique", icon: Truck, menu: MENU.pasPret },
     ],
   },
 ];
@@ -146,11 +163,14 @@ export function aAcces(userRoles = [], roles) {
   return userRoles.some((r) => roles.includes(r));
 }
 
-/** Menu filtré pour un utilisateur : sections vides retirées. */
+/** Vrai si l'entrée doit figurer dans le menu de cet utilisateur. */
+const dansMenu = (userRoles, item) => !item.menu || userRoles.some((r) => item.menu.includes(r));
+
+/** Menu de l'utilisateur, selon son métier : sections vides retirées. */
 export function menuPour(userRoles = []) {
   return NAVIGATION.map((section) => ({
     ...section,
-    items: section.items.filter((item) => aAcces(userRoles, item.roles)),
+    items: section.items.filter((item) => dansMenu(userRoles, item)),
   })).filter((section) => section.items.length > 0);
 }
 
