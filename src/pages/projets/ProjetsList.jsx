@@ -144,7 +144,7 @@ function AdminKpiView({ projets, isLoading }) {
             Répartition par statut
           </h2>
           <div className="flex flex-wrap gap-3">
-            {Object.entries(STATUT_LABELS).map(([key, label]) => {
+            {Object.keys(STATUT_LABELS).map((key) => {
               const count = projets.filter((p) => p.statut === key).length;
               if (count === 0) return null;
               return (

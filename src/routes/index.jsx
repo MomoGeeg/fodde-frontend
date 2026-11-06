@@ -26,19 +26,12 @@ import DocumentValidationPage from "@/pages/documents/DocumentValidationPage";
 import ProjetDetail from "@/pages/projets/ProjetDetail";
 import ProjetForm from "@/pages/projets/ProjetForm";
 import ProjetsList from "@/pages/projets/ProjetsList";
-import TerrainCollecte from "@/pages/terrain/TerrainCollecte";
-import TerrainDashboard from "@/pages/terrain/TerrainDashboard";
-import TerrainRapports from "@/pages/terrain/TerrainRapports";
-import LogistiqueDashboard from "@/pages/logistique/LogistiqueDashboard";
-import LogistiqueInventaire from "@/pages/logistique/LogistiqueInventaire";
-import LogistiqueMouvements from "@/pages/logistique/LogistiqueMouvements";
-import LogistiqueVehicules from "@/pages/logistique/LogistiqueVehicules";
 import RAFAcquisitions from "@/pages/raf/RAFAcquisitions";
 import RAFBudgets from "@/pages/raf/RAFBudgets";
 import RAFMissions from "@/pages/raf/RAFMissions";
 import RAFRapports from "@/pages/raf/RAFRapports";
 import RAFTableauDeBord from "@/pages/raf/RAFTableauDeBord";
-import RAFTresorerie from "@/pages/raf/RAFTresorerie";
+import ModuleEnPreparation from "@/pages/shared/ModuleEnPreparation";
 import RAFValidationDepenses from "@/pages/raf/RAFValidationDepenses";
 import RHAlertes from "@/pages/rh/RHAlertes";
 import RHConges from "@/pages/rh/RHConges";
@@ -315,17 +308,14 @@ export default function AppRoutes() {
 
           {/* ── Module Terrain ──────────────────────────────── */}
           <Route path="terrain" element={<TerrainLayout />}>
-            <Route index element={<TerrainDashboard />} />
-            <Route path="collecte" element={<TerrainCollecte />} />
-            <Route path="rapports" element={<TerrainRapports />} />
+            <Route index element={<ModuleEnPreparation titre="Espace terrain" />} />
+            <Route path="*" element={<ModuleEnPreparation titre="Espace terrain" />} />
           </Route>
 
           {/* ── Module Logistique ───────────────────────────── */}
           <Route path="logistique" element={<LogistiqueLayout />}>
-            <Route index element={<LogistiqueDashboard />} />
-            <Route path="inventaire" element={<LogistiqueInventaire />} />
-            <Route path="vehicules" element={<LogistiqueVehicules />} />
-            <Route path="mouvements" element={<LogistiqueMouvements />} />
+            <Route index element={<ModuleEnPreparation titre="Logistique" />} />
+            <Route path="*" element={<ModuleEnPreparation titre="Logistique" />} />
           </Route>
 
           {/* ── Module RAF ──────────────────────────────────── */}
@@ -340,7 +330,7 @@ export default function AppRoutes() {
               element={<RAFValidationDepenses />}
             />
             <Route path="budgets" element={<RAFBudgets />} />
-            <Route path="tresorerie" element={<RAFTresorerie />} />
+            <Route path="tresorerie" element={<ModuleEnPreparation titre="Trésorerie" />} />
             <Route path="missions" element={<RAFMissions />} />
             <Route path="acquisitions" element={<RAFAcquisitions />} />
             <Route path="rapports" element={<RAFRapports />} />

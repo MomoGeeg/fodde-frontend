@@ -29,14 +29,7 @@ export const rafApi = {
   rejeterDepense: (id, motif) =>
     api.patch(`/api/depenses/${id}/statut`, { statut: "REJETEE", userId: getUserId(), motif }),
 
-  // ─── Lignes budgétaires (virement) ──────────────────────
-  virementBudgetaire: (idSource, idCible, montant, motif) =>
-    api.post("/api/budgets/virements", { idSource, idCible, montant, motif }),
 
-  // ─── Trésorerie ─────────────────────────────────────────
-  getComptes: () => api.get("/api/tresorerie/comptes").then((r) => r.data).catch(() => []),
-  getEvolutionTresorerie: () => api.get("/api/tresorerie/evolution").then((r) => r.data).catch(() => []),
-  getDecaissements: () => api.get("/api/tresorerie/decaissements").then((r) => r.data).catch(() => []),
   getAvancesNonJustifiees: () => api.get("/api/avances?justifiee=false").then((r) => r.data).catch(() => []),
 
   // ─── Missions ────────────────────────────────────────────

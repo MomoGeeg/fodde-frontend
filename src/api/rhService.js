@@ -23,19 +23,6 @@ export async function createEmploye(payload) {
   return res.data;
 }
 
-// La mise à jour complète n'existe pas en REST pur — on passe par statut ou on ajoute un PUT si nécessaire
-export async function updateEmploye(id, payload) {
-  if (payload.statut) {
-    const res = await api.patch(`/api/employes/${id}/statut`, null, {
-      params: { statut: payload.statut },
-    });
-    return res.data;
-  }
-  // Fallback : mettre à jour via PUT si le backend l'expose plus tard
-  const res = await api.put(`/api/employes/${id}`, payload);
-  return res.data;
-}
-
 export async function changerStatutEmploye(id, statut) {
   const res = await api.patch(`/api/employes/${id}/statut`, null, {
     params: { statut },
@@ -59,11 +46,6 @@ export async function getCongesByEmploye(employeId) {
 
 export async function getCongesEnAttente() {
   const res = await api.get("/api/conges/en-attente");
-  return res.data;
-}
-
-export async function getCongesValideN1() {
-  const res = await api.get("/api/conges/valide-n1");
   return res.data;
 }
 

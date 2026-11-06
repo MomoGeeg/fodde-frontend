@@ -1,5 +1,4 @@
 import RoleGate from "@/components/shared/RoleGate";
-import useAuthStore from "@/stores/auth.store";
 import {
   ArrowDown,
   ArrowLeft,
@@ -34,7 +33,7 @@ import {
   useFormulaires,
   useMembres,
   useProjets,
-} from "./se-data";
+} from "@/api/se-data";
 
 // ── Icônes par type de champ ────────────────────────────────
 const TYPE_ICONS = {
@@ -66,7 +65,6 @@ const makeEmptyChamp = (order) => ({
 function SEFormulaireFormInner() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const isEdit = Boolean(id);
 

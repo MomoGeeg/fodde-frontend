@@ -20,7 +20,7 @@ import {
   useMembres,
   useProjets,
   useReponsesEnAttente,
-} from "./se-data";
+} from "@/api/se-data";
 
 const fmtDate = (d) =>
   d
@@ -39,7 +39,6 @@ export default function SEFormulairesList() {
   const navigate = useNavigate();
 
   const isResponsableSE = user?.roles?.includes("ROLE_RESPONSABLE_SE");
-  const isRP = user?.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES");
   const isCP = user?.roles?.includes("ROLE_CHARGE_PROGRAMME");
   // Données Supabase
   const { data: projets = [] } = useProjets();
@@ -64,12 +63,6 @@ export default function SEFormulairesList() {
   // ── Données ──────────────────────────────────────────────
   const formulaires = useMemo(() => {
     let list = [...allFormulaires];
-
-    // CP ne voit que ses projets
-    if (isCP) {
-      const mes = ["p001", "p002", "p003"]; // mock
-      list = list.filter((f) => mes.includes(f.projetId));
-    }
 
     // Filtres
     if (filterProjet !== "all") {

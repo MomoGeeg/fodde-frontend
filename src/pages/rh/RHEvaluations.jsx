@@ -3,7 +3,7 @@ import useAuthStore from "@/stores/auth.store";
 import { Plus, Search, Star, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useEmployes, useEvaluations } from "./rh-data";
+import { useEmployes, useEvaluations } from "@/api/rh-data";
 
 // ── Constantes ─────────────────────────────────────────────
 const STATUT_COLORS = {
@@ -25,7 +25,6 @@ const CRITERES_LABELS = {
 const FILTRES_STATUT = ["TOUS", "EN_COURS", "COMPLETEE", "SIGNEE", "EN_RETARD"];
 const ANNEES = [2026, 2025, 2024, 2023];
 
-const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
 
 function Badge({ statut }) {
   return (

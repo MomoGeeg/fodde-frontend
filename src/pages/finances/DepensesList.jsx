@@ -21,7 +21,7 @@ import {
   useDepenses,
   useLignesParProjet,
   useProjetsFinances,
-} from "./finances-data";
+} from "@/api/finances-data";
 
 // ── Helpers ─────────────────────────────────────────────────
 const fmtDate = (d) =>

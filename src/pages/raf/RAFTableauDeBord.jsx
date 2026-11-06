@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 
 const fmt = (n) => new Intl.NumberFormat("fr-SN").format(n) + " F";
-const fmtDate = (d) => new Date(d).toLocaleDateString("fr-FR");
 
 function TauxBar({ taux }) {
   const pct = Math.min(taux, 100);
@@ -55,10 +54,8 @@ export default function RAFTableauDeBord() {
     queries: [
       { queryKey: ["raf-projets"],   queryFn: rafApi.getProjets,                staleTime: 5 * 60_000 },
       { queryKey: ["raf-alertes"],   queryFn: rafApi.getAlertes,                staleTime: 5 * 60_000 },
-      { queryKey: ["raf-comptes"],   queryFn: rafApi.getComptes,                staleTime: 5 * 60_000 },
       { queryKey: ["raf-avances"],   queryFn: rafApi.getAvancesNonJustifiees,   staleTime: 5 * 60_000 },
       { queryKey: ["raf-depenses-count"], queryFn: rafApi.getDepensesCount,     staleTime: 5 * 60_000 },
-      { queryKey: ["raf-evolution"], queryFn: rafApi.getEvolutionTresorerie,    staleTime: 5 * 60_000 },
     ],
   });
 
@@ -66,15 +63,12 @@ export default function RAFTableauDeBord() {
 
   const projets  = results[0].data ?? [];
   const alertes  = results[1].data ?? [];
-  const comptes  = results[2].data ?? [];
-  const avances  = results[3].data ?? [];
-  const depCount = results[4].data ?? 0;
-  const evolution = results[5].data ?? [];
+  const avances  = results[2].data ?? [];
+  const depCount = results[3].data ?? 0;
 
   // ── KPI calculés ──────────────────────────────────────────
   const totalBudget  = projets.reduce((s, p) => s + Number(p.budgetTotal ?? 0), 0);
   const totalAvances = avances.reduce((s, a) => s + Number(a.montant ?? 0), 0);
-  const soldeTresorerie = comptes.reduce((s, c) => s + Number(c.solde ?? 0), 0);
 
   // ── KPI cards ─────────────────────────────────────────────
   const kpis = [
@@ -106,23 +100,13 @@ export default function RAFTableauDeBord() {
       icon: TrendingDown,
       color: "text-sky-600 bg-sky-50",
     },
-    {
-      label: "Position de trésorerie",
-      value: loading ? null : fmt(soldeTresorerie),
-      sub: `${comptes.length} comptes / caisses`,
-      icon: Bell,
-      color: "text-sky-600 bg-sky-50",
-    },
   ];
-
-  // ── Évolution chart (bar manuel) ──────────────────────────
-  const maxSolde = Math.max(...evolution.map((e) => e.solde), 1);
 
   return (
     <RoleGate allowedRoles={["ROLE_RAF", "ROLE_SE"]}>
       <div className="space-y-6">
         {/* ── KPI Cards ───────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {kpis.map((kpi) => {
             const Icon = kpi.icon;
             return (
@@ -247,80 +231,6 @@ export default function RAFTableauDeBord() {
           </div>
         </div>
 
-        {/* ── Ligne 3 : Trésorerie ────────────────────────── */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {/* Comptes */}
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-100 px-5 py-3 flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-gray-800">Position de trésorerie</h4>
-              {!loading && (
-                <span className="text-xs font-semibold text-emerald-700">
-                  Total : {fmt(comptes.reduce((s, c) => s + c.solde, 0))}
-                </span>
-              )}
-            </div>
-            <div className="divide-y divide-gray-50">
-              {loading
-                ? Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="flex items-center justify-between px-5 py-3">
-                      <Skeleton className="h-4 w-40" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                  ))
-                : comptes.map((c) => (
-                    <div key={c.id} className="flex items-center justify-between px-5 py-3">
-                      <div>
-                        <p className="text-xs font-medium text-gray-800">{c.nom}</p>
-                        <p className="text-[10px] text-gray-400">
-                          {c.type === "BANQUE" ? `${c.banque} • ${c.numero}` : "Espèces"} — MàJ {fmtDate(c.derniereMaj)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-gray-900 tabular-nums">{fmt(c.solde)}</p>
-                        <span className={`text-[10px] font-semibold ${c.type === "BANQUE" ? "text-sky-600" : "text-amber-600"}`}>
-                          {c.type}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-            </div>
-          </div>
-
-          {/* Évolution trésorerie */}
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-100 px-5 py-3">
-              <h4 className="text-sm font-semibold text-gray-800">Évolution trésorerie — 6 mois glissants</h4>
-            </div>
-            <div className="px-5 py-4">
-              {loading ? (
-                <div className="flex items-end gap-2 h-32">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <Skeleton key={i} className="flex-1" style={{ height: `${40 + i * 10}%` }} />
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-end gap-2 h-36">
-                  {evolution.map((e, i) => {
-                    const heightPct = (e.solde / maxSolde) * 100;
-                    return (
-                      <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                        <span className="text-[9px] text-gray-500 tabular-nums" title={fmt(e.solde)}>
-                          {(e.solde / 1_000_000).toFixed(1)}M
-                        </span>
-                        <div
-                          className="w-full rounded-t bg-emerald-400 hover:bg-emerald-500 transition-colors cursor-default"
-                          style={{ height: `${Math.max(heightPct, 5)}%` }}
-                          title={`${e.mois} : ${fmt(e.solde)}`}
-                        />
-                        <span className="text-[9px] text-gray-400 text-center leading-tight">{e.mois}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
     </RoleGate>
   );

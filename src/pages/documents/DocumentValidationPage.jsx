@@ -23,7 +23,7 @@ function formatDate(iso) {
 
 export default function DocumentValidationPage() {
   const navigate = useNavigate();
-  const { data: documents = [], isLoading, refetch } = useDocumentsEnValidation();
+  const { data: documents = [], isLoading } = useDocumentsEnValidation();
   const valider = useValiderDocument();
   const rejeter = useRejeterDocument();
 

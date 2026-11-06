@@ -5,7 +5,7 @@ import {
   useEmployesSansCompte,
   useCreerCompteDepuisEmploye,
 } from "@/api/admin.api";
-import { ROLES_DISPONIBLES } from "@/data/admin.mock";
+import { ROLES_DISPONIBLES } from "@/lib/roles";
 
 // ── Modale création de compte depuis employé ──────────────────────────────────
 function CreerCompteModal({ employe, onClose }) {

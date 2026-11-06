@@ -13,7 +13,9 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import api from "@/api/axios";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -23,7 +25,7 @@ import {
   STATUTS_DEPENSE,
   useDepenseById,
   useLignesParProjet,
-} from "./finances-data";
+} from "@/api/finances-data";
 
 const fmtDate = (d) =>
   d
@@ -161,10 +163,11 @@ export default function DepenseDetail() {
     ["ROLE_RAF", "ROLE_ADMIN"].includes(r),
   );
   const isSE = user?.roles?.includes("ROLE_SE");
-  const isRP = user?.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES");
 
   // Dialogs
   const [modal, setModal] = useState(null);
+  const [enCours, setEnCours] = useState(false);
+  const queryClient = useQueryClient();
 
   if (!depense) {
     return (
@@ -192,33 +195,67 @@ export default function DepenseDetail() {
     : null;
   const statut = depense.statut;
 
-  // ── Actions handlers (mock) ────────────────────────────
-  const doAction = (action, motif = "") => {
-    toast.success(
-      `Action "${action}" effectuée sur ${depense.numeroPiece}${motif ? ` — motif: ${motif}` : ""}`,
-    );
-    setModal(null);
-    navigate("/finances/depenses");
+  // ── Actions : chaque bouton applique une ou plusieurs transitions du backend ──
+  // Circuit backend : BROUILLON → SOUMISE → VERIFIEE → (EN_APPROBATION_SE →) VALIDEE
+  const changerStatut = (nouveauStatut, motif) =>
+    api.patch(`/api/depenses/${depense.id}/statut`, {
+      statut: nouveauStatut,
+      userId: user?.id,
+      ...(motif ? { motif } : {}),
+    });
+
+  const ETAPES = {
+    soumettre: { statuts: ["SOUMISE"], message: "Dépense soumise" },
+    resoumettre: { statuts: ["BROUILLON", "SOUMISE"], message: "Dépense resoumise" },
+    supprimer: { statuts: ["ANNULEE"], message: "Brouillon annulé" },
+    valider: {
+      statuts: statut === "SOUMISE" ? ["VERIFIEE", "VALIDEE"] : ["VALIDEE"],
+      message: "Dépense validée",
+    },
+    transmettre_se: {
+      statuts: statut === "SOUMISE" ? ["VERIFIEE", "EN_APPROBATION_SE"] : ["EN_APPROBATION_SE"],
+      message: "Dépense transmise au SE",
+    },
+    rejeter: { statuts: ["REJETEE"], message: "Dépense rejetée" },
+    approuver: { statuts: ["VALIDEE"], message: "Dépense approuvée" },
+    rejeter_se: { statuts: ["REJETEE"], message: "Dépense rejetée" },
+  };
+
+  const doAction = async (key, motif = "") => {
+    setEnCours(true);
+    try {
+      if (key === "annuler") {
+        await api.patch(`/api/depenses/${depense.id}/annuler`, null, {
+          params: { motif, userId: user?.id },
+        });
+        toast.success("Dépense annulée");
+      } else {
+        const etape = ETAPES[key];
+        for (const s of etape.statuts) {
+          await changerStatut(s, s === "REJETEE" ? motif : undefined);
+        }
+        toast.success(etape.message);
+      }
+      await queryClient.invalidateQueries();
+      setModal(null);
+    } catch (err) {
+      toast.error(err?.response?.data?.erreur || err?.response?.data?.message || "Action impossible");
+    } finally {
+      setEnCours(false);
+    }
   };
 
   // ── Déterminer les actions disponibles ─────────────────
-  const actions = useMemo(() => {
+  const actions = (() => {
     const list = [];
     if (isComptable) {
       if (statut === "BROUILLON") {
-        list.push({
-          key: "modifier",
-          label: "Modifier",
-          icon: Edit3,
-          color: "bg-blue-600 hover:bg-blue-700",
-          action: () => toast.info("Redirection vers le formulaire d'édition"),
-        });
         list.push({
           key: "soumettre",
           label: "Soumettre",
           icon: Send,
           color: "bg-green-600 hover:bg-green-700",
-          action: () => doAction("Soumise"),
+          action: () => doAction("soumettre"),
         });
         list.push({
           key: "supprimer",
@@ -226,8 +263,8 @@ export default function DepenseDetail() {
           icon: Trash2,
           color: "bg-red-600 hover:bg-red-700",
           needConfirm: true,
-          confirmTitle: "Supprimer le brouillon ?",
-          confirmMsg: "Cette action est irréversible.",
+          confirmTitle: "Annuler ce brouillon ?",
+          confirmMsg: "Le brouillon passera au statut Annulée.",
           confirmMotif: false,
           confirmLabel: "Supprimer",
           confirmColor: "bg-red-600",
@@ -239,12 +276,12 @@ export default function DepenseDetail() {
           label: "Corriger et resoumettre",
           icon: Send,
           color: "bg-blue-600 hover:bg-blue-700",
-          action: () => doAction("Corrigée et resoumise"),
+          action: () => doAction("resoumettre"),
         });
       }
     }
     if (isRAF) {
-      if (statut === "SOUMISE") {
+      if (statut === "SOUMISE" || statut === "VERIFIEE") {
         list.push({
           key: "valider",
           label: "Valider",
@@ -327,7 +364,7 @@ export default function DepenseDetail() {
       });
     }
     return list;
-  }, [statut, isComptable, isRAF, isSE, depense]);
+  })();
 
   const statutLabel =
     STATUTS_DEPENSE.find((s) => s.value === statut)?.label ?? statut;
@@ -497,6 +534,7 @@ export default function DepenseDetail() {
             return (
               <button
                 key={a.key}
+                disabled={enCours}
                 onClick={() => {
                   if (a.needConfirm) {
                     setModal(a);
@@ -504,7 +542,7 @@ export default function DepenseDetail() {
                     a.action();
                   }
                 }}
-                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors ${a.color}`}
+                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50 ${a.color}`}
               >
                 <Icon size={14} />
                 {a.label}

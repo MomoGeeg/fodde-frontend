@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { useCreateEmploye, useEmployes } from "./rh-data";
+import { useCreateEmploye, useEmployes } from "@/api/rh-data";
 
 const TYPES_CONTRAT = ["CDI", "CDD", "CONSULTANT", "VOLONTAIRE", "STAGIAIRE"];
 const DEVISES = ["XOF", "EUR", "USD"];

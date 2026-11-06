@@ -99,7 +99,6 @@ export default function RAFRapports() {
     form.dateFin &&
     (form.type !== "RAPPORT_BAILLEUR" || form.bailleur);
 
-  const typeSelectionne = TYPES_RAPPORT.find((t) => t.value === form.type);
 
   return (
     <RoleGate allowedRoles={["ROLE_RAF", "ROLE_SE"]}>

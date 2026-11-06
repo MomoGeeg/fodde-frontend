@@ -16,7 +16,7 @@ import {
   useCreateConge,
   useEmployes,
   useRejeterConge,
-} from "./rh-data";
+} from "@/api/rh-data";
 
 // ── Constantes ─────────────────────────────────────────────
 const STATUT_COLORS = {

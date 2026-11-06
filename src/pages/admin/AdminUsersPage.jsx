@@ -21,7 +21,7 @@ import {
   useToggleStatutUser,
   useResetPassword,
 } from "@/api/admin.api";
-import { ROLES_DISPONIBLES } from "@/data/admin.mock";
+import { ROLES_DISPONIBLES } from "@/lib/roles";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function roleLabel(roleValue) {

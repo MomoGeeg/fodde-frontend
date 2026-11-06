@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   createIndicateur,
   mettreAJourValeurIndicateur,
-} from "@/services/seService";
+} from "@/api/seService";
 import {
   FREQUENCES_COLLECTE,
   UNITES_MESURE,
@@ -16,7 +16,7 @@ import {
   useMembres,
   useProjets,
   getNextIndicateurCode,
-} from "./se-data";
+} from "@/api/se-data";
 
 const TYPES_INDICATEUR = [
   { value: "QUANTITATIF", label: "Quantitatif" },

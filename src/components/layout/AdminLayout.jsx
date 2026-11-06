@@ -25,7 +25,6 @@ export default function AdminLayout() {
   if (!hasAccess) return <Navigate to="/" replace />;
 
   // Normalise les paths avec /edit
-  const basePath = location.pathname.replace(/\/[^/]+\/edit$/, "/edit");
   const pageTitle =
     PAGE_TITLES[location.pathname] ??
     (location.pathname.includes("/edit") ? "Modifier le compte" : "Administration");

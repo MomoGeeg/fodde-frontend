@@ -1,9 +1,9 @@
 // ════════════════════════════════════════════════════════════════════════════
 // Bridge Module S&E — mappe l'ancien se-mock-data vers Supabase
 // ════════════════════════════════════════════════════════════════════════════
-import * as ps from "@/services/projetService";
-import * as se from "@/services/seService";
-import * as us from "@/services/userService";
+import * as ps from "@/api/projetService";
+import * as se from "@/api/seService";
+import * as us from "@/api/userService";
 import { useQuery } from "@tanstack/react-query";
 
 // ── Constantes (re-exports depuis le service) ─────────────────────────────
@@ -15,14 +15,14 @@ export {
   STATUTS_INDICATEUR,
   TYPES_CHAMP,
   UNITES_MESURE,
-} from "@/services/seService";
+} from "@/api/seService";
 
 // ── Helpers purs (re-exports) ─────────────────────────────────────────────
 export {
   computeTauxAtteinte,
   getDerniereValeur,
   getNextIndicateurCode,
-} from "@/services/seService";
+} from "@/api/seService";
 
 // ── Mutations (re-exports) ────────────────────────────────────────────────
 export {
@@ -38,7 +38,7 @@ export {
   rejeterCollecte,
   updateIndicateur,
   validerCollecte,
-} from "@/services/seService";
+} from "@/api/seService";
 
 // ════════════════════════════════════════════════════════════════════════════
 // HOOKS REACT QUERY
