@@ -1,4 +1,5 @@
 import js from "@eslint/js";
+import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import { defineConfig, globalIgnores } from "eslint/config";
@@ -18,6 +19,7 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
+    plugins: { react },
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
@@ -28,6 +30,9 @@ export default defineConfig([
       },
     },
     rules: {
+      // Composant utilisé en JSX sans être importé → page blanche à l'exécution
+      "react/jsx-no-undef": "error",
+      "react/jsx-uses-vars": "error",
       "no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z_]", argsIgnorePattern: "^[A-Z_]" }],
       // Règles liées au React Compiler (non utilisé ici) : signalées sans bloquer.
       // Les pages concernées seront réécrites pendant la refonte (phases 1 et 2).
