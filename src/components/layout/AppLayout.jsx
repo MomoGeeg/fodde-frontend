@@ -32,7 +32,7 @@ export default function AppLayout() {
   const libelleRole = roles.map((r) => LIBELLES_ROLES[r]).filter(Boolean).join(", ");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-gray-50 print:block print:h-auto print:overflow-visible print:bg-white">
       {/* Fond sombre derrière le menu mobile */}
       {menuOuvert && (
         <div
@@ -44,7 +44,7 @@ export default function AppLayout() {
 
       {/* ── Menu latéral ───────────────────────────────────── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-black-fodde text-gray-300 transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-black-fodde text-gray-300 transition-transform print:hidden lg:static lg:translate-x-0 ${
           menuOuvert ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -115,8 +115,8 @@ export default function AppLayout() {
       </aside>
 
       {/* ── Contenu ───────────────────────────────────────── */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 lg:px-6">
+      <div className="flex min-w-0 flex-1 flex-col print:block">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 print:hidden lg:px-6">
           <button
             className="rounded p-1.5 text-gray-600 hover:bg-gray-100 lg:hidden"
             onClick={() => setMenuOuvert(true)}
@@ -127,7 +127,7 @@ export default function AppLayout() {
           <h1 className="truncate text-base font-semibold text-gray-900">{titre}</h1>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto p-4 print:overflow-visible print:p-0 lg:p-6">
           <Outlet />
         </main>
       </div>

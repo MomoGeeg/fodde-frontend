@@ -39,3 +39,18 @@ body {
   background: #4a7c2f;
   border-radius: 3px;
 }
+
+/* Impression (rapports PDF) : marges A4, couleurs des jauges conservées */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  tr {
+    break-inside: avoid;
+  }
+}
