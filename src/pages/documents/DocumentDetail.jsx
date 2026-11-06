@@ -9,7 +9,7 @@ import {
   AlertCircle,
   Send,
   Archive,
-  ExternalLink,
+  Download,
   Plus,
   History,
 } from "lucide-react";
@@ -21,7 +21,11 @@ import {
   useValiderDocument,
   useRejeterDocument,
   useArchiverDocument,
-  useAjouterVersion,
+  useDeposerFichier,
+  FORMATS_ACCEPTES,
+  verifierFichier,
+  telechargerFichier,
+  messageErreur,
   STATUT_CONFIG,
   typeLabel,
 } from "@/api/documents.api";
@@ -82,8 +86,8 @@ export default function DocumentDetail() {
   const [rejectMotif, setRejectMotif] = useState("");
   const [showRejectBox, setShowRejectBox] = useState(false);
   const [showAddVersion, setShowAddVersion] = useState(false);
-  const [newVersionUrl, setNewVersionUrl] = useState("");
-  const [newVersionType, setNewVersionType] = useState("");
+  const [newVersionFichier, setNewVersionFichier] = useState(null);
+  const [telechargementId, setTelechargementId] = useState(null);
 
   const { data: doc, isLoading, error } = useDocument(id);
   const { data: versions = [] } = useVersionsDocument(id);
@@ -92,7 +96,7 @@ export default function DocumentDetail() {
   const valider = useValiderDocument();
   const rejeter = useRejeterDocument();
   const archiver = useArchiverDocument();
-  const ajouterVersion = useAjouterVersion(id);
+  const ajouterVersion = useDeposerFichier(id);
 
   const userRoles = user?.roles ?? [];
   const isSE = userRoles.includes("ROLE_SE") || userRoles.includes("ROLE_ADMIN");
@@ -149,18 +153,26 @@ export default function DocumentDetail() {
   };
 
   const handleAjouterVersion = async () => {
-    if (!newVersionUrl.trim()) return toast.error("L'URL est obligatoire");
+    const erreurFichier = verifierFichier(newVersionFichier);
+    if (erreurFichier) return toast.error(erreurFichier);
     try {
-      await ajouterVersion.mutateAsync({
-        url: newVersionUrl.trim(),
-        typeFichier: newVersionType || null,
-      });
+      await ajouterVersion.mutateAsync(newVersionFichier);
       toast.success("Nouvelle version ajoutée");
       setShowAddVersion(false);
-      setNewVersionUrl("");
-      setNewVersionType("");
+      setNewVersionFichier(null);
     } catch (err) {
       toast.error(err?.response?.data?.erreur ?? "Erreur lors de l'ajout");
+    }
+  };
+
+  const handleTelecharger = async (version) => {
+    setTelechargementId(version.id);
+    try {
+      await telechargerFichier(id, version);
+    } catch (err) {
+      toast.error(await messageErreur(err, "Erreur lors du téléchargement"));
+    } finally {
+      setTelechargementId(null);
     }
   };
 
@@ -384,32 +396,24 @@ export default function DocumentDetail() {
           {/* Formulaire nouvelle version */}
           {showAddVersion && (
             <div className="mb-3 rounded-lg bg-gray-50 border border-gray-200 p-3 space-y-2">
-              <input
-                type="text"
-                value={newVersionUrl}
-                onChange={(e) => setNewVersionUrl(e.target.value)}
-                placeholder="URL du fichier *"
-                className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
-              />
-              <div className="flex gap-2">
-                <select
-                  value={newVersionType}
-                  onChange={(e) => setNewVersionType(e.target.value)}
-                  className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
-                >
-                  <option value="">Type fichier</option>
-                  {["PDF", "DOCX", "XLSX", "JPG", "PNG", "ZIP"].map((f) => (
-                    <option key={f} value={f}>{f}</option>
-                  ))}
-                </select>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="file"
+                  accept={FORMATS_ACCEPTES}
+                  onChange={(e) => setNewVersionFichier(e.target.files?.[0] ?? null)}
+                  className="flex-1 min-w-0 text-xs text-gray-600 file:mr-2 file:rounded-md file:border-0 file:bg-primary/10 file:px-2 file:py-1 file:text-xs file:font-medium file:text-primary"
+                />
                 <button
                   onClick={handleAjouterVersion}
-                  disabled={ajouterVersion.isPending}
+                  disabled={ajouterVersion.isPending || !newVersionFichier}
                   className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 disabled:opacity-60"
                 >
-                  Ajouter
+                  {ajouterVersion.isPending ? "Envoi…" : "Ajouter"}
                 </button>
               </div>
+              <p className="text-[11px] text-gray-400">
+                PDF, DOCX, XLSX, JPG, PNG, ZIP · 25 Mo maximum
+              </p>
             </div>
           )}
 
@@ -438,15 +442,24 @@ export default function DocumentDetail() {
                       </p>
                     </div>
                   </div>
-                  <a
-                    href={v.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-primary hover:text-primary/70 transition-colors"
-                  >
-                    <ExternalLink size={14} />
-                  </a>
+                  {v.fichierDisponible ? (
+                    <button
+                      type="button"
+                      onClick={() => handleTelecharger(v)}
+                      disabled={telechargementId === v.id}
+                      title="Télécharger"
+                      className="text-primary hover:text-primary/70 transition-colors disabled:opacity-50"
+                    >
+                      <Download size={14} />
+                    </button>
+                  ) : (
+                    <span
+                      className="text-[11px] text-gray-400"
+                      title="Version déposée avant la mise en place du stockage : seul le nom du fichier a été enregistré"
+                    >
+                      Fichier non stocké
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

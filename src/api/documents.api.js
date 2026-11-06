@@ -144,16 +144,74 @@ export function useArchiverDocument() {
   });
 }
 
-export function useAjouterVersion(documentId) {
+// ── Fichiers ───────────────────────────────────────────────────────────────────
+
+export const FORMATS_ACCEPTES = ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip";
+export const TAILLE_MAX_OCTETS = 25 * 1024 * 1024;
+
+/** Vérifie un fichier avant envoi. Renvoie un message d'erreur ou null. */
+export function verifierFichier(fichier) {
+  if (!fichier) return "Veuillez sélectionner un fichier";
+  const ext = fichier.name.split(".").pop()?.toLowerCase();
+  if (!FORMATS_ACCEPTES.split(",").includes(`.${ext}`)) {
+    return "Format non autorisé (PDF, DOCX, XLSX, JPG, PNG, ZIP)";
+  }
+  if (fichier.size > TAILLE_MAX_OCTETS) return "Fichier trop volumineux (25 Mo maximum)";
+  return null;
+}
+
+/** Envoie le fichier au backend, qui le range dans le stockage privé et crée une version. */
+export function deposerFichier(documentId, fichier) {
+  const formData = new FormData();
+  formData.append("fichier", fichier);
+  return api
+    .post(`/api/documents/${documentId}/fichier`, formData)
+    .then((r) => r.data);
+}
+
+export function useDeposerFichier(documentId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data) =>
-      api
-        .post(`/api/documents/${documentId}/versions`, data)
-        .then((r) => r.data),
+    mutationFn: (fichier) => deposerFichier(documentId, fichier),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.versions(documentId) });
       qc.invalidateQueries({ queryKey: KEYS.detail(documentId) });
     },
   });
+}
+
+/** Message d'erreur lisible, y compris quand la réponse est un Blob (téléchargement). */
+export async function messageErreur(err, defaut) {
+  const data = err?.response?.data;
+  if (data instanceof Blob) {
+    try {
+      return JSON.parse(await data.text())?.erreur ?? defaut;
+    } catch {
+      return defaut;
+    }
+  }
+  return data?.erreur ?? defaut;
+}
+
+/** Télécharge le fichier d'une version (requête authentifiée, le backend vérifie les droits). */
+export async function telechargerFichier(documentId, version) {
+  const res = await api.get(
+    `/api/documents/${documentId}/versions/${version.id}/fichier`,
+    { responseType: "blob" },
+  );
+  const disposition = res.headers["content-disposition"] ?? "";
+  const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const simple = disposition.match(/filename="?([^";]+)"?/i);
+  const nom = utf8
+    ? decodeURIComponent(utf8[1])
+    : simple?.[1] ?? `document-v${version.version}`;
+
+  const url = URL.createObjectURL(res.data);
+  const lien = document.createElement("a");
+  lien.href = url;
+  lien.download = nom;
+  document.body.appendChild(lien);
+  lien.click();
+  lien.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

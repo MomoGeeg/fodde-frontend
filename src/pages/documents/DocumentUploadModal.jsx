@@ -3,7 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { X, Upload, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/api/axios";
-import { useCreerDocument, TYPE_OPTIONS } from "@/api/documents.api";
+import {
+  useCreerDocument,
+  TYPE_OPTIONS,
+  FORMATS_ACCEPTES,
+  verifierFichier,
+  deposerFichier,
+} from "@/api/documents.api";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -21,7 +27,7 @@ function detectTypeFichier(file) {
     PDF: "PDF", DOC: "DOCX", DOCX: "DOCX",
     XLS: "XLSX", XLSX: "XLSX",
     JPG: "JPG", JPEG: "JPG", PNG: "PNG",
-    ZIP: "ZIP", RAR: "ZIP",
+    ZIP: "ZIP",
   };
   return map[ext] ?? "AUTRE";
 }
@@ -44,6 +50,7 @@ export default function DocumentUploadModal({ onClose, onSuccess }) {
   });
   const [fichier, setFichier] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [envoi, setEnvoi] = useState(false);
   const fileInputRef = useRef(null);
 
   const creer = useCreerDocument();
@@ -88,31 +95,40 @@ export default function DocumentUploadModal({ onClose, onSuccess }) {
   const handleSubmit = async () => {
     if (!form.titre.trim()) return toast.error("Le titre est obligatoire");
     if (!form.typeDocument) return toast.error("Le type de document est obligatoire");
-    if (!fichier) return toast.error("Veuillez sélectionner un fichier");
+    const erreurFichier = verifierFichier(fichier);
+    if (erreurFichier) return toast.error(erreurFichier);
 
+    setEnvoi(true);
+    let doc;
     try {
       // 1. Créer le document (métadonnées)
-      const doc = await creer.mutateAsync({
+      doc = await creer.mutateAsync({
         titre: form.titre.trim(),
         typeDocument: form.typeDocument,
         description: form.description.trim() || null,
         projetId: form.projetId || null,
         concerneEmployeId: form.concerneEmployeId || null,
       });
-
-      // 2. Enregistrer la version avec les infos du fichier
-      await api.post(`/api/documents/${doc.id}/versions`, {
-        url: fichier.name,
-        taille: fichier.size,
-        typeFichier: detectTypeFichier(fichier),
-      });
-
-      toast.success("Document déposé avec succès");
-      onSuccess?.();
-      onClose();
     } catch (err) {
-      toast.error(err?.response?.data?.erreur ?? "Erreur lors du dépôt");
+      setEnvoi(false);
+      return toast.error(err?.response?.data?.erreur ?? "Erreur lors du dépôt");
     }
+
+    try {
+      // 2. Envoyer le fichier : le backend le stocke et crée la version 1
+      await deposerFichier(doc.id, fichier);
+      toast.success("Document déposé avec succès");
+    } catch (err) {
+      toast.error(
+        `Document créé, mais le fichier n'a pas pu être envoyé : ${
+          err?.response?.data?.erreur ?? "erreur réseau"
+        }. Réessayez depuis la fiche du document.`,
+      );
+    } finally {
+      setEnvoi(false);
+    }
+    onSuccess?.();
+    onClose();
   };
 
   return (
@@ -192,7 +208,7 @@ export default function DocumentUploadModal({ onClose, onSuccess }) {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip"
+              accept={FORMATS_ACCEPTES}
               className="hidden"
               onChange={(e) => handleFile(e.target.files[0])}
             />
@@ -300,10 +316,10 @@ export default function DocumentUploadModal({ onClose, onSuccess }) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={creer.isPending}
+            disabled={envoi}
             className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors disabled:opacity-60"
           >
-            {creer.isPending ? "Enregistrement…" : "Déposer le document"}
+            {envoi ? "Envoi en cours…" : "Déposer le document"}
           </button>
         </div>
       </div>
