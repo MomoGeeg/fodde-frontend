@@ -311,7 +311,6 @@ export function IndicateurFormPage() {
   const { data: projets = [] } = useProjets();
   const [f, setF] = useState({
     projetId: params.get("projet") ?? "",
-    code: "",
     libelle: "",
     niveau: "PRODUIT",
     type: "QUANTITATIF",
@@ -332,7 +331,6 @@ export function IndicateurFormPage() {
   const soumettre = async () => {
     const e = {};
     if (!f.projetId) e.projetId = "Choisissez le projet.";
-    if (!f.code.trim()) e.code = "Indiquez un code unique (ex. IND-01).";
     if (!f.libelle.trim()) e.libelle = "Décrivez ce que mesure l'indicateur.";
     if (f.type === "QUANTITATIF" && !(Number(f.valeurCible) > 0)) e.valeurCible = "Indiquez la cible.";
     setErreurs(e);
@@ -342,7 +340,6 @@ export function IndicateurFormPage() {
     try {
       const cree = await creerIndicateur({
         ...f,
-        code: f.code.trim(),
         libelle: f.libelle.trim(),
         unite: f.unite.trim() || null,
         sourceVerification: f.sourceVerification.trim() || null,
@@ -387,14 +384,13 @@ export function IndicateurFormPage() {
           ))}
         </select>
       </Ligne>
-      <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
-        <Ligne libelle="Code" erreur={erreurs.code}>
-          <input value={f.code} onChange={maj("code")} className={CHAMP} maxLength={30} />
-        </Ligne>
-        <Ligne libelle="Ce que mesure l'indicateur" erreur={erreurs.libelle}>
-          <input value={f.libelle} onChange={maj("libelle")} className={CHAMP} />
-        </Ligne>
-      </div>
+      <Ligne
+        libelle="Ce que mesure l'indicateur"
+        erreur={erreurs.libelle}
+        aide="Le code (ex. PROJ-2025-001-IND-03) est attribué automatiquement."
+      >
+        <input value={f.libelle} onChange={maj("libelle")} className={CHAMP} />
+      </Ligne>
       <div className="grid gap-4 sm:grid-cols-3">
         <Ligne libelle="Niveau">{select("niveau", NIVEAUX)}</Ligne>
         <Ligne libelle="Type">{select("type", TYPES)}</Ligne>
