@@ -13,8 +13,8 @@ import LoginPage from "@/pages/auth/LoginPage";
 import DocumentDetail from "@/pages/documents/DocumentDetail";
 import DocumentsPage from "@/pages/documents/DocumentsPage";
 import DocumentValidationPage from "@/pages/documents/DocumentValidationPage";
-import BudgetProjetDetail from "@/pages/finances/BudgetProjetDetail";
-import BudgetsList from "@/pages/finances/BudgetsList";
+import BudgetProjetPage from "@/pages/budgets/BudgetProjetPage";
+import BudgetsPage from "@/pages/budgets/BudgetsPage";
 import DepenseFichePage from "@/pages/depenses/DepenseFichePage";
 import DepenseFormPage from "@/pages/depenses/DepenseFormPage";
 import DepensesPage from "@/pages/depenses/DepensesPage";
@@ -22,7 +22,6 @@ import ProjetDetail from "@/pages/projets/ProjetDetail";
 import ProjetForm from "@/pages/projets/ProjetForm";
 import ProjetsList from "@/pages/projets/ProjetsList";
 import RAFBudgets from "@/pages/raf/RAFBudgets";
-import RAFRapports from "@/pages/raf/RAFRapports";
 import RHAlertes from "@/pages/rh/RHAlertes";
 import RHEmployeDetail from "@/pages/rh/RHEmployeDetail";
 import RHEmployeForm from "@/pages/rh/RHEmployeForm";
@@ -87,8 +86,8 @@ export default function AppRoutes() {
             <Route path="finances/depenses/:id" element={<DepenseFichePage />} />
           </Route>
           <Route element={<Acces roles={ACCES.budgetsProjets} />}>
-            <Route path="finances/budgets" element={<BudgetsList />} />
-            <Route path="finances/budgets/:projet_id" element={<BudgetProjetDetail />} />
+            <Route path="finances/budgets" element={<BudgetsPage />} />
+            <Route path="finances/budgets/:projet_id" element={<BudgetProjetPage />} />
           </Route>
           <Route element={<Acces roles={ACCES.saisieDepenses} />}>
             <Route path="finances/depenses/nouvelle" element={<DepenseFormPage />} />
@@ -111,9 +110,6 @@ export default function AppRoutes() {
           </Route>
           <Route element={<Acces roles={[R.RH]} />}>
             <Route path="conges/nouveau" element={<CongeFormPage />} />
-          </Route>
-          <Route element={<Acces roles={ACCES.rapportsFinanciers} />}>
-            <Route path="raf/rapports" element={<RAFRapports />} />
           </Route>
 
           {/* ── Ressources humaines ─────────────────────────── */}
@@ -175,6 +171,7 @@ export default function AppRoutes() {
           <Route path="secretariat/documents/:id" element={<AncienDocument />} />
           <Route path="raf/validation-depenses" element={<Navigate to="/finances/depenses" replace />} />
           <Route path="raf/missions" element={<Navigate to="/missions" replace />} />
+          <Route path="raf/rapports" element={<Navigate to="/finances/budgets" replace />} />
           <Route path="raf/acquisitions" element={<Navigate to="/acquisitions" replace />} />
           <Route path="rh/conges" element={<Navigate to="/conges" replace />} />
         </Route>

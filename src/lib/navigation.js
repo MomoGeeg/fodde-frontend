@@ -1,5 +1,4 @@
 import {
-  Banknote,
   Briefcase,
   CalendarDays,
   CheckSquare,
@@ -55,7 +54,6 @@ export const ACCES = {
   budgetsProjets: [R.COMPTABLE, R.RAF, R.SE, R.RP],
   budgetAnnuel: [R.RAF, R.SE],
   conges: [R.RH, R.RAF, R.SE],
-  rapportsFinanciers: [R.RAF, R.SE],
   rh: [R.RH, R.SE],
   employes: [R.RH, R.SE, R.RAF, R.RP],
   suiviEvaluation: [R.RSE, R.CP, R.RP, R.SE, R.RAF],
@@ -81,7 +79,6 @@ export const MENU = {
   conges: [R.RH, R.RAF],
   budgetsProjets: [R.COMPTABLE, R.RAF, R.SE, R.RP],
   budgetAnnuel: [R.RAF],
-  rapportsFinanciers: [R.RAF, R.SE],
   employes: [R.RH, R.SE, R.RP],
   rhSeulement: [R.RH],
   indicateurs: [R.RSE, R.CP, R.RP, R.SE],
@@ -117,9 +114,8 @@ export const NAVIGATION = [
     items: [
       { label: "Projets", path: "/projets", icon: FolderKanban, menu: MENU.projets },
       { label: "Activités", path: "/activites", icon: CheckSquare, menu: MENU.activites },
-      { label: "Budgets des projets", path: "/finances/budgets", icon: PieChart, menu: MENU.budgetsProjets },
+      { label: "Suivi budgétaire", path: "/finances/budgets", icon: PieChart, menu: MENU.budgetsProjets },
       { label: "Budget annuel", path: "/raf/budgets", icon: Landmark, menu: MENU.budgetAnnuel },
-      { label: "Rapports financiers", path: "/raf/rapports", icon: Banknote, menu: MENU.rapportsFinanciers },
       { label: "Trésorerie", path: "/raf/tresorerie", icon: Landmark, menu: MENU.pasPret },
     ],
   },

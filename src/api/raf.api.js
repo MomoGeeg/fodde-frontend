@@ -8,25 +8,6 @@ import { toast } from "sonner";
 
 const getUserId = () => useAuthStore.getState().user?.id;
 
-export const rafApi = {
-  // ─── KPI & Alertes ──────────────────────────────────────
-  getProjets: () => api.get("/api/projets").then((r) => r.data),
-
-  // ─── Missions ────────────────────────────────────────────
-  getMissions: () => api.get("/api/missions").then((r) => r.data).catch(() => []),
-  validerMission: (id) => api.patch(`/api/missions/${id}/valider`, { userId: getUserId() }),
-  rejeterMission: (id, motif) => api.patch(`/api/missions/${id}/rejeter`, { motif, userId: getUserId() }),
-
-  // ─── Acquisitions ────────────────────────────────────────
-  getAcquisitions: () => api.get("/api/acquisitions").then((r) => r.data).catch(() => []),
-  validerAcquisition: (id) => api.patch(`/api/acquisitions/${id}/valider`, { userId: getUserId() }),
-  rejeterAcquisition: (id, motif) => api.patch(`/api/acquisitions/${id}/rejeter`, { motif, userId: getUserId() }),
-
-  // ─── Rapports ────────────────────────────────────────────
-  getRapports: () => api.get("/api/rapports").then((r) => r.data).catch(() => []),
-  genererRapport: (params) =>
-    api.post("/api/rapports/generer", params, { params: { userId: getUserId() } }).then((r) => r.data),
-};
 
 // ── Hooks — Projets RAF ───────────────────────────────────────────────────────
 
