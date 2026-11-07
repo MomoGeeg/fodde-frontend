@@ -19,7 +19,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // 401 = session expirée ou compte désactivé : retour à la connexion.
+    // Sauf pour la tentative de connexion elle-même, dont l'erreur doit s'afficher sur la page.
+    const estConnexion = error.config?.url?.includes("/api/auth/login");
+    if (error.response?.status === 401 && !estConnexion) {
       localStorage.removeItem("fodde_token");
       localStorage.removeItem("fodde_user");
       window.location.href = "/login";
