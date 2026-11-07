@@ -25,6 +25,7 @@ export default function FicheDemande({
   arret,
   actions = [],
   champs = [],
+  children,
 }) {
   const lienRetour = (
     <Link to={retour.to} className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
@@ -87,6 +88,9 @@ export default function FicheDemande({
           </dl>
         </div>
       )}
+
+      {/* Contenu propre au type de demande (ex. pièces justificatives d'une dépense) */}
+      {children}
     </div>
   );
 }
