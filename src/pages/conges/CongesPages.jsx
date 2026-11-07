@@ -64,6 +64,7 @@ export function CongeFichePage() {
       isLoading={isLoading}
       introuvable={!c}
       {...(c && {
+        historique: `/api/conges/${c.id}/historique`,
         reference: c.employeNom,
         titre: `${TYPES_CONGE[c.typeConge] ?? c.typeConge} — ${duree(c)}`,
         statut: c.statut,

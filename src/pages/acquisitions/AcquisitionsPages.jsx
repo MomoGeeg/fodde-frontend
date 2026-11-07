@@ -62,7 +62,8 @@ export function AcquisitionFichePage() {
       isLoading={isLoading}
       introuvable={!a}
       {...(a && {
-        reference: a.codeActif ? `Code actif ${a.codeActif}` : CATEGORIES_ACQUISITION[a.categorie],
+        historique: `/api/acquisitions/${a.id}/historique`,
+        reference: a.codeActif ?`Code actif ${a.codeActif}` : CATEGORIES_ACQUISITION[a.categorie],
         titre: a.designation,
         montant: montant(a.valeur),
         statut: a.statut,

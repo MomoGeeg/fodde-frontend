@@ -29,6 +29,7 @@ export default function DepenseFichePage() {
       isLoading={isLoading}
       introuvable={isError || !d}
       {...(d && {
+        historique: `/api/depenses/${d.id}/historique`,
         reference: d.numeroPiece,
         titre: d.libelle,
         montant: montant(d.montant, d.devise),
