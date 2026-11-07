@@ -2,6 +2,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import RequireRole from "@/components/shared/RequireRole";
 import { ACCES, R } from "@/lib/navigation";
 import AccueilPage from "@/pages/accueil/AccueilPage";
+import { BailleurFichePage, BailleurFormPage, BailleursPage, FinancementFormPage } from "@/pages/bailleurs/BailleursPages";
 import { IndicateurFichePage, IndicateurFormPage, IndicateursPage } from "@/pages/indicateurs/IndicateursPages";
 import { GESTIONNAIRES_INDICATEURS } from "@/api/indicateurs";
 import { AcquisitionFichePage, AcquisitionFormPage, AcquisitionsPage } from "@/pages/acquisitions/AcquisitionsPages";
@@ -85,6 +86,14 @@ export default function AppRoutes() {
           </Route>
           <Route element={<Acces roles={ACCES.saisieDepenses} />}>
             <Route path="finances/depenses/nouvelle" element={<DepenseFormPage />} />
+          </Route>
+          <Route element={<Acces roles={ACCES.budgetsProjets} />}>
+            <Route path="bailleurs" element={<BailleursPage />} />
+            <Route path="bailleurs/:id" element={<BailleurFichePage />} />
+          </Route>
+          <Route element={<Acces roles={[R.RAF, R.SE, R.ADMIN]} />}>
+            <Route path="bailleurs/nouveau" element={<BailleurFormPage />} />
+            <Route path="financements/nouveau" element={<FinancementFormPage />} />
           </Route>
           <Route element={<Acces roles={ACCES.budgetAnnuel} />}>
             <Route path="raf/budgets" element={<RAFBudgets />} />

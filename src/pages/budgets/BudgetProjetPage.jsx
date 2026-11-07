@@ -7,13 +7,16 @@ import {
   useLignes,
   useProjets,
 } from "@/api/budgets";
+import { GESTIONNAIRES_BAILLEURS, useFinancements } from "@/api/bailleurs";
 import { MODES_PAIEMENT } from "@/api/depenses";
 import Jauge from "@/components/demande/Jauge";
 import { telechargerCsv } from "@/lib/export";
 import { dateCourte, montant } from "@/lib/format";
-import { ArrowLeft, FileSpreadsheet, Printer } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { aAcces } from "@/lib/navigation";
+import useAuthStore from "@/stores/auth.store";
+import { ArrowLeft, FileSpreadsheet, Handshake, Plus, Printer } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
 const libellePeriode = (du, au) =>
@@ -31,6 +34,26 @@ export default function BudgetProjetPage() {
   const { data: depenses } = useDepensesProjet(id);
   const [du, setDu] = useState("");
   const [au, setAu] = useState("");
+  const { user } = useAuthStore();
+  const [params, setParams] = useSearchParams();
+  const { data: financements = [] } = useFinancements({ projetId: id });
+  const convention = financements.find((f) => f.id === params.get("convention"));
+  const peutGererBailleurs = aAcces(user?.roles ?? [], GESTIONNAIRES_BAILLEURS);
+
+  /** Choisir une convention cale la période sur ses dates ; « Tout le projet » revient au suivi général. */
+  const choisirConvention = (fid) => {
+    const f = financements.find((x) => x.id === fid);
+    setParams(f ? { convention: f.id } : {}, { replace: true });
+    setDu(f?.dateDebut ?? "");
+    setAu(f?.dateFin ?? "");
+  };
+  // Arrivée depuis la fiche d'un bailleur (?convention=…) : caler la période une fois chargée.
+  useEffect(() => {
+    if (convention) {
+      setDu(convention.dateDebut ?? ""); // eslint-disable-line react-hooks/set-state-in-effect
+      setAu(convention.dateFin ?? "");
+    }
+  }, [convention]);
 
   const devise = projet?.devise ?? "XOF";
   const t = totaux(lignes);
@@ -43,12 +66,28 @@ export default function BudgetProjetPage() {
   const totalPeriode = validees.reduce((s, d) => s + nombre(d.montant), 0);
   const lignesTriees = [...lignes].sort((a, b) => (a.code ?? "").localeCompare(b.code ?? ""));
   const avecPeriode = !!(du || au);
+  const accorde = convention ? nombre(convention.montantAccorde) : 0;
+  const titreRapport = convention
+    ? `Rapport financier — ${convention.bailleurNom}${convention.bailleurSigle ? ` (${convention.bailleurSigle})` : ""}`
+    : "Suivi budgétaire";
 
   const exporter = () => {
     const periode = libellePeriode(du, au);
-    telechargerCsv(`Suivi_budgetaire_${projet.code}_${aujourdhui()}`, [
-      ["ONG FODDE — Suivi budgétaire"],
+    const nomFichier = convention
+      ? `Rapport_${convention.bailleurSigle || convention.bailleurNom}_${projet.code}_${aujourdhui()}`
+      : `Suivi_budgetaire_${projet.code}_${aujourdhui()}`;
+    telechargerCsv(nomFichier, [
+      [`ONG FODDE — ${titreRapport}`],
       ["Projet", `${projet.code} — ${projet.titre}`],
+      ...(convention
+        ? [
+            ["Bailleur", convention.bailleurNom],
+            ["Convention", convention.referenceConvention],
+            ["Montant accordé", accorde, convention.devise],
+            ["Dépensé sur la période", totalPeriode],
+            ["Solde de la convention", accorde - totalPeriode],
+          ]
+        : []),
       ["Période des dépenses", periode],
       ["Édité le", dateCourte(aujourdhui())],
       [],
@@ -89,7 +128,12 @@ export default function BudgetProjetPage() {
     <div className="mx-auto max-w-6xl space-y-4">
       {/* En-tête visible uniquement à l'impression */}
       <div className="hidden print:block">
-        <p className="text-sm font-semibold">ONG FODDE — Suivi budgétaire</p>
+        <p className="text-sm font-semibold">ONG FODDE — {titreRapport}</p>
+        {convention && (
+          <p className="text-xs">
+            Convention {convention.referenceConvention} · période {libellePeriode(du, au)}
+          </p>
+        )}
         <p className="text-xs">Édité le {dateCourte(aujourdhui())}</p>
       </div>
 
@@ -106,6 +150,23 @@ export default function BudgetProjetPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-2 print:hidden">
+          {financements.length > 0 && (
+            <label className="text-xs text-gray-600">
+              Rapport pour
+              <select
+                value={convention?.id ?? ""}
+                onChange={(e) => choisirConvention(e.target.value)}
+                className="mt-1 block rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
+              >
+                <option value="">Tout le projet</option>
+                {financements.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.bailleurSigle || f.bailleurNom} — {f.referenceConvention}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="text-xs text-gray-600">
             Du
             <input type="date" value={du} max={au || undefined} onChange={(e) => setDu(e.target.value)} className="mt-1 block rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
@@ -129,6 +190,33 @@ export default function BudgetProjetPage() {
           </button>
         </div>
       </div>
+
+      {convention && (
+        <div className="flex gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-gray-800 print:hidden">
+          <Handshake size={18} className="mt-0.5 shrink-0 text-primary" />
+          <p>
+            Rapport pour <strong>{convention.bailleurNom}</strong>, convention {convention.referenceConvention}. La période
+            est calée sur la convention. Les dépenses comptées sont toutes les dépenses validées du projet sur cette
+            période : si le projet a plusieurs bailleurs, elles ne sont pas réparties entre eux.
+          </p>
+        </div>
+      )}
+
+      {convention && (
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            ["Montant accordé", montant(accorde, convention.devise)],
+            ["Dépensé sur la période", montant(totalPeriode, devise)],
+            ["Solde de la convention", montant(accorde - totalPeriode, convention.devise)],
+            ["Taux d'utilisation", `${accorde > 0 ? Math.round((totalPeriode / accorde) * 100) : 0} %`],
+          ].map(([libelle, valeur]) => (
+            <div key={libelle} className="rounded-lg border border-primary/30 bg-white p-4 print:border-gray-400">
+              <p className="text-xs text-gray-500">{libelle}</p>
+              <p className="mt-1 text-lg font-semibold text-gray-900 tabular-nums">{valeur}</p>
+            </div>
+          ))}
+        </section>
+      )}
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
@@ -245,6 +333,44 @@ export default function BudgetProjetPage() {
               </tr>
             </tbody>
           </table>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-gray-200 bg-white print:hidden">
+        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+          <h3 className="text-sm font-semibold text-gray-900">Financements du projet</h3>
+          {peutGererBailleurs && (
+            <Link
+              to={`/financements/nouveau?projet=${projet.id}`}
+              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              <Plus size={14} /> Ajouter une convention
+            </Link>
+          )}
+        </div>
+        {financements.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-gray-500">Aucune convention de financement enregistrée pour ce projet.</p>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {financements.map((f) => (
+              <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                <span>
+                  <span className="text-gray-900">
+                    {f.bailleurNom} — {f.referenceConvention}
+                  </span>
+                  <span className="block text-xs text-gray-500">
+                    {f.dateDebut || f.dateFin ? `${dateCourte(f.dateDebut)} → ${dateCourte(f.dateFin)}` : "Période non précisée"}
+                  </span>
+                </span>
+                <span className="flex items-center gap-3">
+                  <span className="font-medium tabular-nums">{montant(f.montantAccorde, f.devise)}</span>
+                  <button onClick={() => choisirConvention(f.id)} className="text-xs font-medium text-primary hover:underline">
+                    Voir le rapport
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>

@@ -1,4 +1,5 @@
 import {
+  Handshake,
   CalendarDays,
   CheckSquare,
   FileArchive,
@@ -73,6 +74,7 @@ export const MENU = {
   conges: [R.RH, R.RAF],
   budgetsProjets: [R.COMPTABLE, R.RAF, R.SE, R.RP],
   budgetAnnuel: [R.RAF],
+  bailleurs: [R.RAF, R.SE],
   employes: [R.RH, R.SE, R.RP],
   rhSeulement: [R.RH],
   indicateurs: [R.RSE, R.CP, R.RP, R.SE],
@@ -108,6 +110,7 @@ export const NAVIGATION = [
       { label: "Activités", path: "/activites", icon: CheckSquare, menu: MENU.activites },
       { label: "Suivi budgétaire", path: "/finances/budgets", icon: PieChart, menu: MENU.budgetsProjets },
       { label: "Budget annuel", path: "/raf/budgets", icon: Landmark, menu: MENU.budgetAnnuel },
+      { label: "Bailleurs", path: "/bailleurs", icon: Handshake, menu: MENU.bailleurs },
       { label: "Trésorerie", path: "/raf/tresorerie", icon: Landmark, menu: MENU.pasPret },
     ],
   },
