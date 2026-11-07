@@ -342,8 +342,8 @@ export default function AdminEmployesSansCompte() {
             Employés sans compte utilisateur
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Ces fiches employé ne sont liées à aucun compte : la personne ne voit
-            pas ses congés. Associez un compte déjà créé, ou créez-en un.
+            Les RH enregistrent la fiche de chaque employé ; vous lui ouvrez ensuite
+            l'accès à la plateforme. Créez son compte, ou associez un compte déjà créé.
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-orange-50 px-3 py-2">
@@ -368,7 +368,8 @@ export default function AdminEmployesSansCompte() {
             Tous les employés ont un compte
           </p>
           <p className="text-xs text-gray-400 mt-1">
-            Aucun employé en attente de création de compte.
+            Pour un nouvel employé, les RH enregistrent d'abord sa fiche
+            (Équipe › Employés) : elle apparaîtra ici.
           </p>
         </div>
       ) : (

@@ -2,6 +2,7 @@
 // admin.api.js — API réelle pour la gestion des utilisateurs (ROLE_ADMIN)
 // ─────────────────────────────────────────────────────────────────────────────
 import api from "@/api/axios";
+import { messageErreur } from "@/lib/erreurs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -122,15 +123,33 @@ export function useCreerCompteDepuisEmploye() {
         telephone: employe.telephone ?? null,
         service: employe.departement ?? null,
       });
-      await api.patch(`/api/employes/${employe.id}/associer-compte`, {
-        userId: newUser.id,
-      });
+      try {
+        await api.patch(`/api/employes/${employe.id}/associer-compte`, {
+          userId: newUser.id,
+        });
+      } catch (err) {
+        // Le compte existe déjà : on le dit, pour que l'admin l'associe au lieu d'en recréer un.
+        err.compteCreeNonLie = true;
+        throw err;
+      }
       return newUser;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin"] });
       qc.invalidateQueries({ queryKey: ["rh-comptes-sans-fiche"] });
       toast.success("Compte utilisateur créé avec succès");
+    },
+    onError: (err) => {
+      if (err.compteCreeNonLie) {
+        qc.invalidateQueries({ queryKey: ["admin"] });
+        qc.invalidateQueries({ queryKey: ["rh-comptes-sans-fiche"] });
+        toast.error(
+          `Compte créé, mais pas lié à la fiche (${messageErreur(err, "erreur inconnue")}). Utilisez « Associer un compte existant ».`,
+        );
+      } else {
+        // Ex. « Un utilisateur avec cet email existe déjà »
+        toast.error(messageErreur(err, "Création du compte impossible"));
+      }
     },
   });
 }
@@ -173,7 +192,7 @@ export function useAssocierCompte() {
       qc.invalidateQueries({ queryKey: ["rh-comptes-sans-fiche"] });
       toast.success("Compte associé à la fiche");
     },
-    onError: (err) => toast.error(err?.response?.data?.erreur ?? "Association impossible"),
+    onError: (err) => toast.error(messageErreur(err, "Association impossible")),
   });
 }
 
@@ -187,6 +206,6 @@ export function useDissocierCompte() {
       qc.invalidateQueries({ queryKey: ["rh-comptes-sans-fiche"] });
       toast.success("Lien retiré");
     },
-    onError: (err) => toast.error(err?.response?.data?.erreur ?? "Opération impossible"),
+    onError: (err) => toast.error(messageErreur(err, "Opération impossible")),
   });
 }
