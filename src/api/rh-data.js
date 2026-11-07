@@ -13,6 +13,7 @@ export { joursRestants, urgenceContrat } from "@/api/rhService";
 export const rhKeys = {
   employes: ["rh-employes"],
   employe: (id) => ["rh-employe", id],
+  comptesSansFiche: ["rh-comptes-sans-fiche"],
   conges: ["rh-conges"],
   congesByEmploye: (id) => ["rh-conges", id],
   congesEnAttente: ["rh-conges-attente"],
@@ -51,7 +52,25 @@ export function useCreateEmploye() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload) => rh.createEmploye(payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: rhKeys.employes }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: rhKeys.employes });
+      qc.invalidateQueries({ queryKey: rhKeys.comptesSansFiche });
+      qc.invalidateQueries({ queryKey: ["admin"] });
+    },
+  });
+}
+
+/**
+ * Comptes de la plateforme qui n'ont pas encore de fiche employé (RH et admin).
+ * Chaque personne qui a un compte doit avoir sa fiche : les RH la créent,
+ * déjà liée au compte, depuis « Nouveau dossier ».
+ */
+export function useComptesSansFiche({ enabled = true } = {}) {
+  return useQuery({
+    queryKey: rhKeys.comptesSansFiche,
+    queryFn: rh.getComptesSansFiche,
+    enabled,
+    staleTime: 60_000,
   });
 }
 

@@ -38,6 +38,8 @@ export function useCreateUser() {
       api.post("/api/users", payload).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin"] });
+      // Le nouveau compte n'a pas de fiche : il apparaît chez les RH, « Comptes sans fiche ».
+      qc.invalidateQueries({ queryKey: ["rh-comptes-sans-fiche"] });
     },
   });
 }
@@ -127,6 +129,7 @@ export function useCreerCompteDepuisEmploye() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin"] });
+      qc.invalidateQueries({ queryKey: ["rh-comptes-sans-fiche"] });
       toast.success("Compte utilisateur créé avec succès");
     },
   });
@@ -167,6 +170,7 @@ export function useAssocierCompte() {
       api.patch(`/api/employes/${employeId}/associer-compte`, { userId }).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin"] });
+      qc.invalidateQueries({ queryKey: ["rh-comptes-sans-fiche"] });
       toast.success("Compte associé à la fiche");
     },
     onError: (err) => toast.error(err?.response?.data?.erreur ?? "Association impossible"),
@@ -180,6 +184,7 @@ export function useDissocierCompte() {
     mutationFn: (employeId) => api.patch(`/api/employes/${employeId}/dissocier-compte`).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin"] });
+      qc.invalidateQueries({ queryKey: ["rh-comptes-sans-fiche"] });
       toast.success("Lien retiré");
     },
     onError: (err) => toast.error(err?.response?.data?.erreur ?? "Opération impossible"),

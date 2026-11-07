@@ -8,6 +8,7 @@ import {
   useCreerCompteDepuisEmploye,
   useLiensComptesFiches,
 } from "@/api/admin.api";
+import { useComptesSansFiche } from "@/api/rh-data";
 import { ROLES_DISPONIBLES } from "@/lib/roles";
 
 // ── Modale création de compte depuis employé ──────────────────────────────────
@@ -264,6 +265,32 @@ function AssocierCompteModal({ employe, comptesLibres, onClose }) {
   );
 }
 
+// ── Comptes sans fiche : la fiche (données RH) est créée par les RH ──────────
+function ComptesSansFicheAdmin({ comptes }) {
+  if (comptes.length === 0) return null;
+  return (
+    <div className="space-y-3">
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900">Comptes sans fiche employé ({comptes.length})</h3>
+        <p className="text-xs text-gray-500 mt-0.5">
+          Les RH créent la fiche depuis Équipe › Employés : elle sera liée au compte d'office.
+          Si la fiche existe déjà ci-dessus, utilisez plutôt « Associer un compte existant ».
+        </p>
+      </div>
+      <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 bg-white">
+        {comptes.map((c) => (
+          <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
+            <p className="text-sm text-gray-900">
+              {c.prenom} {c.nom} <span className="text-xs text-gray-500">— {c.email}</span>
+            </p>
+            <span className="text-xs text-gray-500">{c.statut === "ACTIF" ? "Compte actif" : `Compte ${c.statut.toLowerCase().replace("_", " ")}`}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Fiches déjà liées à un compte ─────────────────────────────────────────────
 function FichesLiees({ fiches }) {
   const { mutate: dissocier, isPending } = useDissocierCompte();
@@ -302,6 +329,7 @@ function FichesLiees({ fiches }) {
 export default function AdminEmployesSansCompte() {
   const { data: employes = [], isLoading } = useEmployesSansCompte();
   const { data: liens } = useLiensComptesFiches();
+  const { data: comptesSansFiche = [] } = useComptesSansFiche();
   const [modalTarget, setModalTarget] = useState(null);
   const [associerTarget, setAssocierTarget] = useState(null);
 
@@ -387,6 +415,8 @@ export default function AdminEmployesSansCompte() {
           ))}
         </div>
       )}
+
+      <ComptesSansFicheAdmin comptes={comptesSansFiche} />
 
       <FichesLiees fiches={liens?.fichesLiees ?? []} />
 
