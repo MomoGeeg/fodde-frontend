@@ -50,7 +50,6 @@ export const ACCES = {
   saisieDepenses: [R.COMPTABLE, R.RAF],
   budgetsProjets: [R.COMPTABLE, R.RAF, R.SE, R.RP],
   budgetAnnuel: [R.RAF, R.SE],
-  conges: [R.RH, R.RAF, R.SE],
   rh: [R.RH, R.SE],
   employes: [R.RH, R.SE, R.RAF, R.RP],
   suiviEvaluation: [R.RSE, R.CP, R.RP, R.SE, R.RAF],
@@ -71,7 +70,6 @@ export const MENU = {
   projets: [R.SE, R.RAF, R.RP, R.CP, R.RSE],
   activites: [R.RP, R.CP],
   depenses: [R.COMPTABLE, R.RAF, R.SE],
-  conges: [R.RH, R.RAF],
   budgetsProjets: [R.COMPTABLE, R.RAF, R.SE, R.RP],
   budgetAnnuel: [R.RAF],
   bailleurs: [R.RAF, R.SE],
@@ -100,7 +98,7 @@ export const NAVIGATION = [
       { label: "Dépenses", path: "/finances/depenses", icon: Receipt, menu: MENU.depenses },
       { label: "Missions", path: "/missions", icon: MapPin },
       { label: "Acquisitions", path: "/acquisitions", icon: Package },
-      { label: "Congés", path: "/conges", icon: CalendarDays, menu: MENU.conges },
+      { label: "Congés", path: "/conges", icon: CalendarDays },
     ],
   },
   {
@@ -132,7 +130,7 @@ export const NAVIGATION = [
     titre: "Administration",
     items: [
       { label: "Utilisateurs", path: "/admin/utilisateurs", icon: UserCog, menu: MENU.administration },
-      { label: "Employés sans compte", path: "/admin/sans-compte", icon: UserPlus, menu: MENU.administration },
+      { label: "Comptes et fiches", path: "/admin/sans-compte", icon: UserPlus, menu: MENU.administration },
     ],
   },
   {

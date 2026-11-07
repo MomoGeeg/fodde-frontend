@@ -272,13 +272,23 @@ export default function AdminUsersPage() {
             <option value="INACTIF">Inactif</option>
           </select>
         </div>
-        <button
-          onClick={() => navigate("/admin/utilisateurs/nouveau")}
-          className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
-        >
-          <Plus size={16} />
-          Créer un utilisateur
-        </button>
+        {/* Un compte part d'une fiche employé enregistrée par les RH ;
+            la création libre reste possible pour les personnes sans dossier RH. */}
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={() => navigate("/admin/sans-compte")}
+            className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+          >
+            <Plus size={16} />
+            Nouveau compte
+          </button>
+          <button
+            onClick={() => navigate("/admin/utilisateurs/nouveau")}
+            className="text-xs text-gray-500 underline-offset-2 hover:text-gray-800 hover:underline"
+          >
+            Compte sans fiche employé (prestataire, externe…)
+          </button>
+        </div>
       </div>
 
       {/* Table */}

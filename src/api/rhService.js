@@ -18,6 +18,12 @@ export async function getEmployeById(id) {
   return res.data;
 }
 
+/** Comptes sans fiche employé (RH, admin). */
+export async function getComptesSansFiche() {
+  const res = await api.get("/api/employes/comptes-sans-fiche");
+  return Array.isArray(res.data) ? res.data : [];
+}
+
 export async function createEmploye(payload) {
   const res = await api.post("/api/employes", payload);
   return res.data;

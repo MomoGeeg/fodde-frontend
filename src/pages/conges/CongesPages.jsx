@@ -2,11 +2,13 @@ import {
   ETAPES_CONGE,
   STATUTS_CONGE,
   TYPES_CONGE,
+  VOIT_TOUS_LES_CONGES,
   actionsConge,
   creerConge,
   estATraiter,
   useConges,
   useEmployesActifs,
+  useMaFiche,
 } from "@/api/conges";
 import Cellule from "@/components/demande/Cellule";
 import FicheDemande from "@/components/demande/FicheDemande";
@@ -35,8 +37,11 @@ export function CongesPage() {
   const roles = user?.roles ?? [];
   const { data, isLoading, isError } = useConges();
   const aTraiter = useCallback((c) => estATraiter(c, user?.roles ?? []), [user]);
+  const voitTout = aAcces(roles, VOIT_TOUS_LES_CONGES);
   return (
-    <ListeDemandes
+    <div className="space-y-4">
+      {!voitTout && <MonSolde />}
+      <ListeDemandes
       demandes={data}
       isLoading={isLoading}
       isError={isError}
@@ -48,7 +53,32 @@ export function CongesPage() {
       placeholder="Employé, type de congé…"
       tri={(c) => c.dateDebut ?? ""}
       nouveau={aAcces(roles, [R.RH]) ? { label: "Enregistrer un congé", to: "/conges/nouveau" } : null}
-    />
+      />
+    </div>
+  );
+}
+
+/** Solde de congés de l'employé connecté, ou explication si son compte n'est pas lié à sa fiche. */
+function MonSolde() {
+  const { data: fiche, isLoading } = useMaFiche();
+  if (isLoading) return null;
+  return (
+    <div className="mx-auto max-w-6xl rounded-lg border border-gray-200 bg-white px-5 py-4 text-sm">
+      {fiche ? (
+        <p className="text-gray-900">
+          Solde de congés annuels :{" "}
+          <span className="font-semibold">
+            {fiche.soldeConges != null ? `${fiche.soldeConges} jour${fiche.soldeConges > 1 ? "s" : ""}` : "non renseigné"}
+          </span>
+          <span className="text-gray-500"> · pour poser un congé, adressez-vous aux RH.</span>
+        </p>
+      ) : (
+        <p className="text-gray-600">
+          Votre compte n'est pas encore lié à votre fiche employé : vos congés ne peuvent pas s'afficher.
+          Demandez à l'administrateur de faire le lien.
+        </p>
+      )}
+    </div>
   );
 }
 

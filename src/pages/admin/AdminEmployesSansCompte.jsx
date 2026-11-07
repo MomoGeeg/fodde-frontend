@@ -1,10 +1,14 @@
 import { useState } from "react";
-import { UserPlus, Users, X, Eye, EyeOff } from "lucide-react";
+import { Link2, Unlink, UserPlus, Users, X, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import {
+  useAssocierCompte,
+  useDissocierCompte,
   useEmployesSansCompte,
   useCreerCompteDepuisEmploye,
+  useLiensComptesFiches,
 } from "@/api/admin.api";
+import { useComptesSansFiche } from "@/api/rh-data";
 import { ROLES_DISPONIBLES } from "@/lib/roles";
 
 // ── Modale création de compte depuis employé ──────────────────────────────────
@@ -179,10 +183,155 @@ function CreerCompteModal({ employe, onClose }) {
   );
 }
 
+// ── Modale : associer un compte déjà créé ─────────────────────────────────────
+function AssocierCompteModal({ employe, comptesLibres, onClose }) {
+  const { mutate: associer, isPending } = useAssocierCompte();
+  const [userId, setUserId] = useState("");
+  // Propose en premier les comptes au même nom que la fiche.
+  const memeNom = (u) =>
+    u.nom?.toLowerCase() === employe.nom?.toLowerCase() && u.prenom?.toLowerCase() === employe.prenom?.toLowerCase();
+  const comptes = [...comptesLibres].sort((a, b) => memeNom(b) - memeNom(a));
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!userId) {
+      toast.error("Choisissez un compte");
+      return;
+    }
+    associer({ employeId: employe.id, userId }, { onSuccess: onClose });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">Associer un compte existant</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {employe.prenom} {employe.nom} — {employe.poste}
+            </p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-gray-100 text-gray-400">
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {comptes.length === 0 ? (
+            <p className="text-sm text-gray-600">
+              Tous les comptes sont déjà liés à une fiche. Créez plutôt un compte pour cet employé.
+            </p>
+          ) : (
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Compte <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              >
+                <option value="">Choisir…</option>
+                {comptes.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.prenom} {u.nom} — {u.email}
+                    {u.statut !== "ACTIF" ? ` (${u.statut.toLowerCase()})` : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-xs text-gray-500">
+                La personne verra ensuite ses congés et son solde dans la page Congés.
+              </p>
+            </div>
+          )}
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={isPending || comptes.length === 0}
+              className="flex-1 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+            >
+              {isPending ? "Association…" : "Associer"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Comptes sans fiche : la fiche (données RH) est créée par les RH ──────────
+function ComptesSansFicheAdmin({ comptes }) {
+  if (comptes.length === 0) return null;
+  return (
+    <div className="space-y-3">
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900">Comptes sans fiche employé ({comptes.length})</h3>
+        <p className="text-xs text-gray-500 mt-0.5">
+          Les RH créent la fiche depuis Équipe › Employés : elle sera liée au compte d'office.
+          Si la fiche existe déjà ci-dessus, utilisez plutôt « Associer un compte existant ».
+        </p>
+      </div>
+      <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 bg-white">
+        {comptes.map((c) => (
+          <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
+            <p className="text-sm text-gray-900">
+              {c.prenom} {c.nom} <span className="text-xs text-gray-500">— {c.email}</span>
+            </p>
+            <span className="text-xs text-gray-500">{c.statut === "ACTIF" ? "Compte actif" : `Compte ${c.statut.toLowerCase().replace("_", " ")}`}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Fiches déjà liées à un compte ─────────────────────────────────────────────
+function FichesLiees({ fiches }) {
+  const { mutate: dissocier, isPending } = useDissocierCompte();
+  if (fiches.length === 0) return null;
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-gray-900">Fiches liées à un compte ({fiches.length})</h3>
+      <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 bg-white">
+        {fiches.map((f) => (
+          <div key={f.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-gray-900">
+                {f.prenom} {f.nom} <span className="font-normal text-gray-500">· {f.poste}</span>
+              </p>
+              <p className="text-xs text-gray-500">
+                Compte : {f.compte ? `${f.compte.prenom} ${f.compte.nom} — ${f.compte.email}` : "introuvable"}
+              </p>
+            </div>
+            <button
+              disabled={isPending}
+              onClick={() => {
+                if (window.confirm(`Retirer le lien entre la fiche de ${f.prenom} ${f.nom} et son compte ?`)) dissocier(f.id);
+              }}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            >
+              <Unlink size={13} /> Dissocier
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function AdminEmployesSansCompte() {
   const { data: employes = [], isLoading } = useEmployesSansCompte();
+  const { data: liens } = useLiensComptesFiches();
+  const { data: comptesSansFiche = [] } = useComptesSansFiche();
   const [modalTarget, setModalTarget] = useState(null);
+  const [associerTarget, setAssocierTarget] = useState(null);
 
   return (
     <div className="space-y-6">
@@ -193,8 +342,8 @@ export default function AdminEmployesSansCompte() {
             Employés sans compte utilisateur
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Ces employés ont été ajoutés par le RH mais n'ont pas encore accès
-            à la plateforme. Créez leur compte pour leur donner accès.
+            Les RH enregistrent la fiche de chaque employé ; vous lui ouvrez ensuite
+            l'accès à la plateforme. Créez son compte, ou associez un compte déjà créé.
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-orange-50 px-3 py-2">
@@ -219,7 +368,8 @@ export default function AdminEmployesSansCompte() {
             Tous les employés ont un compte
           </p>
           <p className="text-xs text-gray-400 mt-1">
-            Aucun employé en attente de création de compte.
+            Pour un nouvel employé, les RH enregistrent d'abord sa fiche
+            (Équipe › Employés) : elle apparaîtra ici.
           </p>
         </div>
       ) : (
@@ -246,16 +396,37 @@ export default function AdminEmployesSansCompte() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setModalTarget(emp)}
-                className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
-              >
-                <UserPlus size={15} />
-                Créer le compte
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setAssocierTarget(emp)}
+                  className="flex items-center gap-2 rounded-xl border border-orange-300 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50"
+                >
+                  <Link2 size={15} />
+                  Associer un compte existant
+                </button>
+                <button
+                  onClick={() => setModalTarget(emp)}
+                  className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+                >
+                  <UserPlus size={15} />
+                  Créer le compte
+                </button>
+              </div>
             </div>
           ))}
         </div>
+      )}
+
+      <ComptesSansFicheAdmin comptes={comptesSansFiche} />
+
+      <FichesLiees fiches={liens?.fichesLiees ?? []} />
+
+      {associerTarget && (
+        <AssocierCompteModal
+          employe={associerTarget}
+          comptesLibres={liens?.comptesLibres ?? []}
+          onClose={() => setAssocierTarget(null)}
+        />
       )}
 
       {modalTarget && (

@@ -100,17 +100,15 @@ export default function AppRoutes() {
             <Route path="raf/tresorerie" element={<ModuleEnPreparation titre="Trésorerie" />} />
           </Route>
 
-          {/* ── Demandes ouvertes à tous : missions et achats ── */}
+          {/* ── Demandes ouvertes à tous : missions, achats, congés (chacun voit les siens) ── */}
           <Route path="missions" element={<MissionsPage />} />
           <Route path="missions/nouvelle" element={<MissionFormPage />} />
           <Route path="missions/:id" element={<MissionFichePage />} />
           <Route path="acquisitions" element={<AcquisitionsPage />} />
           <Route path="acquisitions/nouvelle" element={<AcquisitionFormPage />} />
           <Route path="acquisitions/:id" element={<AcquisitionFichePage />} />
-          <Route element={<Acces roles={ACCES.conges} />}>
-            <Route path="conges" element={<CongesPage />} />
-            <Route path="conges/:id" element={<CongeFichePage />} />
-          </Route>
+          <Route path="conges" element={<CongesPage />} />
+          <Route path="conges/:id" element={<CongeFichePage />} />
           <Route element={<Acces roles={[R.RH]} />}>
             <Route path="conges/nouveau" element={<CongeFormPage />} />
           </Route>
