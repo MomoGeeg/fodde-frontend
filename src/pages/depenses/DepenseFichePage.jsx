@@ -9,6 +9,7 @@ import {
   useLignesBudgetaires,
 } from "@/api/depenses";
 import FicheDemande from "@/components/demande/FicheDemande";
+import PiecesJustificatives from "@/pages/depenses/PiecesJustificatives";
 import useAuthStore from "@/stores/auth.store";
 import { useParams } from "react-router-dom";
 
@@ -53,6 +54,8 @@ export default function DepenseFichePage() {
           { libelle: "Saisie le", valeur: dateCourte(d.createdAt) },
         ],
       })}
-    />
+    >
+      {d && <PiecesJustificatives depense={d} />}
+    </FicheDemande>
   );
 }

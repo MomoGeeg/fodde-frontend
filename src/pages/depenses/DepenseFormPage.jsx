@@ -8,9 +8,10 @@ import {
   useProjets,
 } from "@/api/depenses";
 import api from "@/api/axios";
+import { FORMATS_PIECE, SEUIL_PIECE, ajouterPiece, taille, verifierPiece } from "@/api/pieces";
 import useAuthStore from "@/stores/auth.store";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Paperclip, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -48,6 +49,15 @@ export default function DepenseFormPage() {
   const [f, setF] = useState(VIDE);
   const [erreurs, setErreurs] = useState({});
   const [envoi, setEnvoi] = useState(false);
+  const [fichiers, setFichiers] = useState([]);
+
+  const ajouterFichiers = (liste) => {
+    const nouveaux = [...liste];
+    const erreur = nouveaux.map(verifierPiece).find(Boolean);
+    if (erreur) return toast.error(erreur);
+    setFichiers((prev) => [...prev, ...nouveaux]);
+    setErreurs((prev) => ({ ...prev, pieces: undefined }));
+  };
 
   const { data: projets = [] } = useProjets();
   const { data: lignes = [], isLoading: chargementLignes } = useLignesBudgetaires(f.projetId);
@@ -78,6 +88,13 @@ export default function DepenseFormPage() {
 
   const enregistrer = async (soumettre) => {
     if (!verifier()) return;
+    if (soumettre && montantSaisi > SEUIL_PIECE && fichiers.length === 0) {
+      setErreurs((prev) => ({
+        ...prev,
+        pieces: `Joignez la facture ou le reçu : obligatoire au-delà de ${montant(SEUIL_PIECE)}. Vous pouvez aussi enregistrer un brouillon.`,
+      }));
+      return;
+    }
     setEnvoi(true);
     const erreur = (err, defaut) => err?.response?.data?.erreur || err?.response?.data?.message || defaut;
     let creee;
@@ -91,7 +108,17 @@ export default function DepenseFormPage() {
       setEnvoi(false);
       return;
     }
-    if (soumettre) {
+    // Pièces jointes : envoyées avant la soumission (le backend l'exige au-delà du seuil).
+    let piecesOk = true;
+    for (const fichier of fichiers) {
+      try {
+        await ajouterPiece(creee.id, fichier);
+      } catch (err) {
+        piecesOk = false;
+        toast.error(`« ${fichier.name} » n'a pas pu être joint : ${erreur(err, "réessayez depuis la fiche.")}`);
+      }
+    }
+    if (soumettre && piecesOk) {
       try {
         await api.patch(`/api/depenses/${creee.id}/statut`, { statut: "SOUMISE", userId: user.id });
         toast.success(`Dépense ${creee.numeroPiece} soumise au RAF`);
@@ -99,6 +126,8 @@ export default function DepenseFormPage() {
         // Le brouillon existe : on l'ouvre pour que l'utilisateur puisse le soumettre de nouveau.
         toast.error(`Brouillon ${creee.numeroPiece} enregistré, mais la soumission a échoué : ${erreur(err, "réessayez depuis la fiche.")}`);
       }
+    } else if (soumettre) {
+      toast.info(`Brouillon ${creee.numeroPiece} enregistré : joignez la pièce manquante depuis la fiche, puis soumettez.`);
     } else {
       toast.success(`Brouillon ${creee.numeroPiece} enregistré`);
     }
@@ -189,6 +218,46 @@ export default function DepenseFormPage() {
           <Ligne libelle="Date de la dépense" erreur={erreurs.dateDepense}>
             <input type="date" value={f.dateDepense} onChange={maj("dateDepense")} className={champ} max={aujourdhui()} />
           </Ligne>
+        </div>
+
+        <div>
+          <span className="text-sm text-gray-700">Pièces justificatives</span>
+          <span className="ml-1 text-xs text-gray-500">
+            (facture, reçu — PDF, JPG ou PNG{montantSaisi > SEUIL_PIECE ? " — obligatoire pour ce montant" : ""})
+          </span>
+          {fichiers.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {fichiers.map((fi, i) => (
+                <li key={`${fi.name}-${i}`} className="flex items-center gap-2 rounded-md bg-gray-50 px-3 py-1.5 text-sm">
+                  <Paperclip size={14} className="shrink-0 text-gray-400" />
+                  <span className="min-w-0 flex-1 truncate">{fi.name}</span>
+                  <span className="text-xs text-gray-500">{taille(fi.size)}</span>
+                  <button
+                    type="button"
+                    onClick={() => setFichiers((prev) => prev.filter((_, j) => j !== i))}
+                    className="rounded p-0.5 text-gray-400 hover:text-danger"
+                    aria-label={`Retirer ${fi.name}`}
+                  >
+                    <X size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            <Paperclip size={14} /> Joindre un fichier
+            <input
+              type="file"
+              accept={FORMATS_PIECE}
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.length) ajouterFichiers(e.target.files);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {erreurs.pieces && <span className="mt-1 block text-xs text-danger">{erreurs.pieces}</span>}
         </div>
 
         <div className="flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end">
