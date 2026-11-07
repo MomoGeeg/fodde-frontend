@@ -10,6 +10,5 @@ export const ROLES_DISPONIBLES = [
   { value: "ROLE_COMPTABLE",             label: "Comptable" },
   { value: "ROLE_CHARGE_COMMUNICATION",  label: "Chargé de Communication" },
   { value: "ROLE_TECHNICIEN_TERRAIN",    label: "Technicien Terrain" },
-  { value: "ROLE_ANTENNE",               label: "Responsable Antenne" },
   { value: "ROLE_ADMIN",                 label: "Administrateur Système" },
 ];

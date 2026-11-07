@@ -17,6 +17,7 @@ import {
   useEmployes,
   useEvaluations,
   useMissions,
+  POLES,
 } from "@/api/rh-data";
 
 // ── Helpers ────────────────────────────────────────────────
@@ -130,9 +131,6 @@ export default function RHEmployeDetail() {
     [id, allDocuments],
   );
 
-  const superviseur = employe?.superviseurId
-    ? allEmployes.find((e) => e.id === employe.superviseurId)
-    : null;
 
   if (!employe) {
     return (
@@ -269,15 +267,9 @@ export default function RHEmployeDetail() {
                 Poste & Organisation
               </h3>
               <InfoRow label="Poste" value={employe.poste} />
-              <InfoRow label="Département" value={employe.departement} />
-              <InfoRow
-                label="Supérieur"
-                value={
-                  superviseur
-                    ? `${superviseur.prenom} ${superviseur.nom}`
-                    : "Aucun"
-                }
-              />
+              <InfoRow label="Service" value={employe.departement} />
+              <InfoRow label="Pôle" value={POLES[employe.pole]?.label ?? "À préciser"} />
+              <InfoRow label="Supérieur direct" value={employe.superieurNom ?? "Aucun"} />
               <InfoRow
                 label="Date d'embauche"
                 value={fmtDate(employe.dateEmbauche)}
