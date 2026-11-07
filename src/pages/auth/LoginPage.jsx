@@ -1,230 +1,160 @@
 import useAuthStore from "@/stores/auth.store";
-import { Eye, EyeOff, Leaf, Lock, Mail } from "lucide-react";
-import { useState } from "react";
+import { Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
+/** Message lisible selon la réponse du serveur (ou son absence). */
+function messageConnexion(err) {
+  if (!err?.response) {
+    return "Le serveur ne répond pas. Vérifiez votre connexion internet puis réessayez.";
+  }
+  if (err.response.status === 401) {
+    // Compte suspendu, désactivé ou en attente : le backend le précise dans son message.
+    const msg = err.response.data?.erreur ?? "";
+    return /compte/i.test(msg)
+      ? "Votre compte n'est pas actif. Adressez-vous à l'administrateur de la plateforme."
+      : "Adresse e-mail ou mot de passe incorrect.";
+  }
+  if (err.response.status === 400) return "Renseignez votre adresse e-mail et votre mot de passe.";
+  return "La connexion a échoué. Réessayez dans un instant.";
+}
+
+const champ =
+  "mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-[15px] text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
+
+/**
+ * Connexion : photo de l'équipe à gauche (bandeau en haut sur mobile),
+ * formulaire sobre à droite.
+ */
 export default function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [voirMotDePasse, setVoirMotDePasse] = useState(false);
+  const [envoi, setEnvoi] = useState(false);
+  const [lent, setLent] = useState(false);
+  const [erreur, setErreur] = useState("");
+  const minuterie = useRef(null);
 
-  const handleSubmit = async (e) => {
+  useEffect(() => () => clearTimeout(minuterie.current), []);
+
+  const seConnecter = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setErreur("");
+    setEnvoi(true);
+    // Le serveur gratuit peut mettre du temps à se réveiller : on le dit au lieu de laisser attendre.
+    minuterie.current = setTimeout(() => setLent(true), 5000);
     try {
-      await login(email, password);
-      toast.success("Connexion réussie !");
-      navigate("/");
+      await login(email.trim(), password);
+      navigate("/", { replace: true });
     } catch (err) {
-      const msg =
-        err.response?.data?.message ||
-        err.message ||
-        "Email ou mot de passe incorrect";
-      setError(msg);
+      setErreur(messageConnexion(err));
     } finally {
-      setLoading(false);
+      clearTimeout(minuterie.current);
+      setLent(false);
+      setEnvoi(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
-      {/* ── Fond image plein écran ── */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url('/bg-login.jpg')`,
-        }}
-      />
-      {/* Overlay sombre */}
-      <div className="absolute inset-0 bg-black/50" />
-
-      {/* ── Card centrale ── */}
-      <div
-        className="relative z-10 w-full max-w-md mx-4 rounded-2xl p-8 flex flex-col items-center"
-        style={{
-          background: "rgba(15, 30, 15, 0.10)",
-          backdropFilter: "blur(8px)",
-          border: "1px solid rgba(74,124,47,0.3)",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.5)",
-        }}
-      >
-        {/* Logo */}
-        <div className="mb-5">
-          <img
-            src="/fodde-logo.png"
-            alt="FODDE Logo"
-            className="w-20 h-20 object-contain rounded-xl"
-            onError={(e) => {
-              e.target.style.display = "none";
-              e.target.nextSibling.style.display = "flex";
-            }}
-          />
-          {/* Fallback logo si image absente */}
-          <div
-            className="w-20 h-20 rounded-xl items-center justify-content-center text-white font-bold text-2xl hidden"
-            style={{
-              background: "linear-gradient(135deg, #4A7C2F, #2F5420)",
-              display: "none",
-            }}
-          >
-            F
-          </div>
-        </div>
-
-        {/* Titre */}
-        <h1 className="text-2xl font-bold text-white mb-1 tracking-wide">
-          ONG FODDE
-        </h1>
-
-        {/* Sous-titre */}
-        <div className="flex items-center gap-2 mb-8">
-          <Leaf size={15} className="text-green-400" />
-          <span className="text-sm font-medium" style={{ color: "#6AAF42" }}>
+    <div className="flex min-h-screen flex-col bg-white lg:flex-row">
+      {/* ── Photo de l'équipe ─────────────────────────────── */}
+      <div className="relative h-48 shrink-0 overflow-hidden sm:h-64 lg:h-auto lg:w-[55%]">
+        <img src="/bg-login.jpg" alt="L'équipe de FODDE à Kolda" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 hidden p-10 text-white lg:block">
+          <p className="max-w-md text-2xl font-semibold leading-snug">
             Forum pour un Développement Durable Endogène
-          </span>
-          <Leaf size={15} className="text-green-400" />
+          </p>
+          <p className="mt-2 max-w-md text-sm text-white/80">
+            Gestion des projets, des finances, de l'équipe et du suivi-évaluation de l'ONG FODDE.
+          </p>
+          <p className="mt-6 text-xs text-white/60">Kolda, Sénégal</p>
         </div>
+      </div>
 
-        {/* Formulaire */}
-        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-5">
-          {/* Email */}
-          <div>
-            <label
-              className="block text-xs font-semibold tracking-widest mb-2"
-              style={{ color: "rgba(255,255,255,0.6)" }}
-            >
-              ADRESSE EMAIL
-            </label>
-            <div
-              className="flex items-center gap-3 rounded-xl px-4 py-3"
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.12)",
-              }}
-            >
-              <Mail size={17} style={{ color: "rgba(255,255,255,0.4)" }} />
+      {/* ── Formulaire ────────────────────────────────────── */}
+      <main className="flex flex-1 items-center justify-center px-6 py-10 sm:px-10">
+        <div className="w-full max-w-sm">
+          <img src="/fodde-logo.png" alt="Logo FODDE" className="h-16 w-16 object-contain" />
+          <h1 className="mt-6 text-2xl font-semibold text-gray-900">Connexion</h1>
+          <p className="mt-1 text-sm text-gray-600">Accédez à votre espace de travail FODDE.</p>
+
+          <form onSubmit={seConnecter} className="mt-8 space-y-5" noValidate>
+            {erreur && (
+              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-800">
+                {erreur}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="text-sm font-medium text-gray-700">
+                Adresse e-mail
+              </label>
               <input
+                id="email"
+                name="email"
                 type="email"
+                autoComplete="username"
+                inputMode="email"
+                autoFocus
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@ongfodde.org"
-                required
-                className="flex-1 bg-transparent text-white text-sm outline-none placeholder-white/30"
+                placeholder="prenom.nom@ongfodde.org"
+                className={champ}
               />
             </div>
-          </div>
 
-          {/* Mot de passe */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label
-                className="text-xs font-semibold tracking-widest"
-                style={{ color: "rgba(255,255,255,0.6)" }}
-              >
-                MOT DE PASSE
+            <div>
+              <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                Mot de passe
               </label>
-              <span
-                className="text-xs cursor-pointer font-medium"
-                style={{ color: "#6AAF42" }}
-              >
-                Mot de passe oublié ?
-              </span>
-            </div>
-            <div
-              className="flex items-center gap-3 rounded-xl px-4 py-3"
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.12)",
-              }}
-            >
-              <Lock size={17} style={{ color: "rgba(255,255,255,0.4)" }} />
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="flex-1 bg-transparent text-white text-sm outline-none placeholder-white/30"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="text-white/40 hover:text-white/70 transition-colors"
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Message d'erreur */}
-          {error && (
-            <div
-              className="text-sm text-center py-2 px-4 rounded-lg"
-              style={{
-                background: "rgba(220,38,38,0.2)",
-                color: "#fca5a5",
-                border: "1px solid rgba(220,38,38,0.3)",
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          {/* Bouton connexion */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 rounded-xl font-bold text-base text-white tracking-wider mt-1 transition-all duration-200 disabled:opacity-60"
-            style={{
-              background: loading
-                ? "#4A7C2F"
-                : "linear-gradient(135deg, #5A9C3A 0%, #4A7C2F 100%)",
-              boxShadow: "0 4px 20px rgba(74,124,47,0.5)",
-            }}
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg
-                  className="animate-spin h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={voirMotDePasse ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`${champ} pr-11`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setVoirMotDePasse((v) => !v)}
+                  className="absolute inset-y-0 right-0 mt-1.5 flex w-11 items-center justify-center text-gray-500 hover:text-gray-800"
+                  aria-label={voirMotDePasse ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                 >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Connexion en cours...
-              </span>
-            ) : (
-              "SE CONNECTER"
-            )}
-          </button>
-        </form>
+                  {voirMotDePasse ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
 
-        {/* Footer */}
-        <p
-          className="mt-6 text-xs text-center"
-          style={{ color: "rgba(255,255,255,0.25)" }}
-        >
-          FODDE © 2026 — Plateforme sécurisée
-        </p>
-      </div>
+            <button
+              type="submit"
+              disabled={envoi || !email || !password}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[15px] font-medium text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {envoi && <LoaderCircle size={18} className="animate-spin" />}
+              {envoi ? "Connexion…" : "Se connecter"}
+            </button>
+
+            {lent && (
+              <p className="text-center text-xs text-gray-500" aria-live="polite">
+                Le serveur démarre, cela peut prendre jusqu'à une minute.
+              </p>
+            )}
+          </form>
+
+          <p className="mt-8 text-sm text-gray-600">
+            Mot de passe oublié ou compte bloqué ? Adressez-vous à l'administrateur de la plateforme.
+          </p>
+          <p className="mt-10 text-xs text-gray-400">© {new Date().getFullYear()} ONG FODDE</p>
+        </div>
+      </main>
     </div>
   );
 }
