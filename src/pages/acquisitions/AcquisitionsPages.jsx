@@ -8,6 +8,7 @@ import {
   useAcquisitions,
 } from "@/api/acquisitions";
 import { useProjets } from "@/api/depenses";
+import { peutSaisir, useMateriels } from "@/api/logistique";
 import Cellule from "@/components/demande/Cellule";
 import FicheDemande from "@/components/demande/FicheDemande";
 import { CHAMP, CadreFormulaire, Ligne } from "@/components/demande/Formulaire";
@@ -17,7 +18,7 @@ import { dateCourte, montant } from "@/lib/format";
 import useAuthStore from "@/stores/auth.store";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 const COLONNES = [
@@ -80,7 +81,33 @@ export function AcquisitionFichePage() {
           { libelle: "Justification", valeur: a.justification },
         ],
       })}
-    />
+    >
+      {a?.statut === "VALIDEE" && peutSaisir(user?.roles ?? []) && <LienInventaire acquisition={a} />}
+    </FicheDemande>
+  );
+}
+
+/** Acquisition validée : l'ajouter à l'inventaire, ou ouvrir le bien qui en vient. */
+function LienInventaire({ acquisition }) {
+  const { data: materiels, isLoading } = useMateriels();
+  if (isLoading) return null;
+  const bien = materiels?.find((m) => m.acquisitionId === acquisition.id);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white p-5">
+      <p className="text-sm text-gray-700">
+        {bien ? `Dans l'inventaire sous le code ${bien.codeActif}.` : "Acquisition validée : pas encore dans l'inventaire."}
+      </p>
+      <Link
+        to={bien ? `/logistique/materiels/${bien.id}` : `/logistique/materiels/nouveau?acquisition=${acquisition.id}`}
+        className={
+          bien
+            ? "rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+            : "rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
+        }
+      >
+        {bien ? "Voir dans l'inventaire" : "Ajouter à l'inventaire"}
+      </Link>
+    </div>
   );
 }
 

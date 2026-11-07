@@ -23,7 +23,8 @@ export const CATEGORIES_ACQUISITION = {
   AUTRE: "Autre",
 };
 
-const VOIT_TOUT = [R.RAF, R.SE, R.ADMIN];
+// La logistique voit toutes les acquisitions pour inventorier celles qui sont validées.
+const VOIT_TOUT = [R.RAF, R.SE, R.ADMIN, R.LOG];
 
 export function useAcquisitions() {
   const { user } = useAuthStore();
