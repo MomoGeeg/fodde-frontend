@@ -32,6 +32,13 @@ import RHEmployesList from "@/pages/rh/RHEmployesList";
 import RHEvaluations from "@/pages/rh/RHEvaluations";
 import SecretariatRapports from "@/pages/secretariat/SecretariatRapports";
 import SecretariatValidations from "@/pages/secretariat/SecretariatValidations";
+import {
+  LogistiquePage,
+  MaterielFichePage,
+  MaterielFormPage,
+  VehiculeFichePage,
+  VehiculeFormPage,
+} from "@/pages/logistique/LogistiquePages";
 import ModuleEnPreparation from "@/pages/shared/ModuleEnPreparation";
 import useAuthStore from "@/stores/auth.store";
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
@@ -145,7 +152,15 @@ export default function AppRoutes() {
 
           {/* ── Logistique ──────────────────────────────────── */}
           <Route element={<Acces roles={ACCES.logistique} />}>
-            <Route path="logistique/*" element={<ModuleEnPreparation titre="Logistique" />} />
+            <Route path="logistique" element={<LogistiquePage />} />
+            <Route path="logistique/materiels/:id" element={<MaterielFichePage />} />
+            <Route path="logistique/vehicules/:id" element={<VehiculeFichePage />} />
+          </Route>
+          <Route element={<Acces roles={ACCES.saisieLogistique} />}>
+            <Route path="logistique/materiels/nouveau" element={<MaterielFormPage />} />
+            <Route path="logistique/materiels/:id/modifier" element={<MaterielFormPage />} />
+            <Route path="logistique/vehicules/nouveau" element={<VehiculeFormPage />} />
+            <Route path="logistique/vehicules/:id/modifier" element={<VehiculeFormPage />} />
           </Route>
 
           {/* ── Administration ──────────────────────────────── */}

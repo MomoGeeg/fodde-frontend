@@ -56,6 +56,7 @@ export const ACCES = {
   direction: [R.SE],
   validationDocuments: [R.SE],
   logistique: [R.LOG, R.RAF, R.SE, R.ADMIN],
+  saisieLogistique: [R.LOG, R.ADMIN],
   administration: [R.ADMIN],
 };
 
@@ -78,6 +79,7 @@ export const MENU = {
   indicateurs: [R.RSE, R.CP, R.RP, R.SE],
   documentsAValider: [R.SE],
   administration: [R.ADMIN],
+  logistique: [R.LOG, R.RAF, R.SE],
   pasPret: [],
 };
 
@@ -137,7 +139,7 @@ export const NAVIGATION = [
     items: [
       { label: "Documents", path: "/documents", icon: FileArchive, exact: true },
       { label: "Documents à valider", path: "/documents/validation", icon: FileCheck, menu: MENU.documentsAValider },
-      { label: "Logistique", path: "/logistique", icon: Truck, menu: MENU.pasPret },
+      { label: "Logistique", path: "/logistique", icon: Truck, menu: MENU.logistique },
     ],
   },
 ];
