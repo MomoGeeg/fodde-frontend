@@ -131,3 +131,57 @@ export function useCreerCompteDepuisEmploye() {
     },
   });
 }
+
+// ── Lien entre compte utilisateur et fiche employé ───────────────────────────
+
+/**
+ * Fiches employé et comptes, pour relier l'un à l'autre :
+ * - fichesLiees : fiches déjà associées, avec le compte correspondant ;
+ * - comptesLibres : comptes qui ne sont liés à aucune fiche.
+ */
+export function useLiensComptesFiches() {
+  return useQuery({
+    queryKey: ["admin", "liens"],
+    queryFn: async () => {
+      const [{ data: employes }, { data: users }] = await Promise.all([api.get("/api/employes"), api.get("/api/users")]);
+      const comptes = new Map(users.map((u) => [u.id, u]));
+      const pris = new Set(employes.map((e) => e.userId).filter(Boolean));
+      return {
+        fichesLiees: employes
+          .filter((e) => e.userId)
+          .map((e) => ({ ...e, compte: comptes.get(e.userId) ?? null }))
+          .sort((a, b) => `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`)),
+        comptesLibres: users
+          .filter((u) => !pris.has(u.id))
+          .sort((a, b) => `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`)),
+      };
+    },
+  });
+}
+
+/** Associe une fiche employé à un compte existant. */
+export function useAssocierCompte() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ employeId, userId }) =>
+      api.patch(`/api/employes/${employeId}/associer-compte`, { userId }).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin"] });
+      toast.success("Compte associé à la fiche");
+    },
+    onError: (err) => toast.error(err?.response?.data?.erreur ?? "Association impossible"),
+  });
+}
+
+/** Retire le lien entre une fiche et son compte. */
+export function useDissocierCompte() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (employeId) => api.patch(`/api/employes/${employeId}/dissocier-compte`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin"] });
+      toast.success("Lien retiré");
+    },
+    onError: (err) => toast.error(err?.response?.data?.erreur ?? "Opération impossible"),
+  });
+}

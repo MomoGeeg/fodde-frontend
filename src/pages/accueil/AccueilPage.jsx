@@ -93,12 +93,13 @@ async function chargerATraiter(roles, userId) {
   return taches;
 }
 
-/** Suivi des demandes de l'utilisateur : missions, achats et, pour le comptable, dépenses. */
+/** Suivi des demandes de l'utilisateur : missions, achats, congés et, pour le comptable, dépenses. */
 async function chargerMesDemandes(roles, userId) {
-  const [missions, achats, depenses] = await Promise.all([
+  const [missions, achats, depenses, conges] = await Promise.all([
     liste("/api/missions/mes-missions"),
     liste("/api/acquisitions/mes-acquisitions"),
     aAcces(roles, [R.COMPTABLE]) ? liste(`/api/depenses/mes-depenses?userId=${userId}`) : Promise.resolve([]),
+    liste("/api/conges/mes-conges"),
   ]);
   const compter = (l, statuts) => l.filter((x) => statuts.includes(x.statut)).length;
   return [
@@ -108,6 +109,8 @@ async function chargerMesDemandes(roles, userId) {
     { libelle: "Missions validées", nombre: compter(missions, ["VALIDEE_RAF"]), lien: "/missions?vue=toutes" },
     { libelle: "Achats en attente", nombre: compter(achats, ["EN_ATTENTE"]), lien: "/acquisitions?vue=toutes" },
     { libelle: "Achats validés", nombre: compter(achats, ["VALIDEE"]), lien: "/acquisitions?vue=toutes" },
+    { libelle: "Congés en attente", nombre: compter(conges, ["EN_ATTENTE"]), lien: "/conges?vue=toutes" },
+    { libelle: "Congés approuvés à venir", nombre: conges.filter((c) => c.statut === "APPROUVE" && c.dateFin >= new Date().toISOString().slice(0, 10)).length, lien: "/conges?vue=toutes" },
   ].filter((r) => r.nombre > 0);
 }
 
