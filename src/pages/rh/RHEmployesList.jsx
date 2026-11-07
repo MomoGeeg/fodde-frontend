@@ -11,7 +11,38 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { joursRestants, urgenceContrat, useConges, useEmployes } from "@/api/rh-data";
+import { joursRestants, urgenceContrat, useComptesSansFiche, useConges, useEmployes } from "@/api/rh-data";
+
+/** Comptes de la plateforme sans fiche employé, à compléter par les RH. */
+function ComptesSansFiche({ onCreer }) {
+  const { data: comptes = [] } = useComptesSansFiche();
+  if (comptes.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+      <p className="text-sm font-semibold text-amber-900">
+        {comptes.length} compte{comptes.length > 1 ? "s" : ""} sans fiche employé
+      </p>
+      <p className="mt-0.5 text-xs text-amber-800">
+        Ces personnes ont accès à la plateforme mais n'ont pas de dossier : elles ne voient pas leurs congés.
+      </p>
+      <ul className="mt-3 divide-y divide-amber-100 rounded-lg bg-white">
+        {comptes.map((c) => (
+          <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+            <span className="text-sm text-gray-900">
+              {c.prenom} {c.nom} <span className="text-xs text-gray-500">— {c.email}</span>
+            </span>
+            <button
+              onClick={() => onCreer(c.id)}
+              className="rounded-lg border border-green-600 px-3 py-1 text-xs font-medium text-green-700 hover:bg-green-50"
+            >
+              Créer la fiche
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 // ── Constantes ─────────────────────────────────────────────
 const STATUT_COLORS = {
@@ -184,6 +215,9 @@ export default function RHEmployesList() {
           </button>
         )}
       </div>
+
+      {/* Comptes sans fiche : chaque personne qui a un compte doit avoir sa fiche */}
+      {isRH && <ComptesSansFiche onCreer={(id) => navigate(`/rh/employes/nouveau?compte=${id}`)} />}
 
       {/* KPI Cards — visibles RAF, RH, SE */}
       {canSeeAll && (

@@ -3,9 +3,10 @@ import RoleGate from "@/components/shared/RoleGate";
 import useAuthStore from "@/stores/auth.store";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { useCreateEmploye, useEmployes } from "@/api/rh-data";
+import { useComptesSansFiche, useCreateEmploye, useEmployes } from "@/api/rh-data";
+import { messageErreur } from "@/lib/erreurs";
 
 const TYPES_CONTRAT = ["CDI", "CDD", "CONSULTANT", "VOLONTAIRE", "STAGIAIRE"];
 const DEVISES = ["XOF", "EUR", "USD"];
@@ -90,6 +91,36 @@ export default function RHEmployeForm() {
   });
   const [originalSalaire, setOriginalSalaire] = useState(null);
   const [errors, setErrors] = useState({});
+
+  // ── Compte de la personne sur la plateforme (création seulement) ──
+  // La fiche naît liée au compte : la personne voit ensuite ses congés.
+  const [params] = useSearchParams();
+  const { data: comptesSansFiche = [] } = useComptesSansFiche({ enabled: !isEditMode });
+  const [userId, setUserId] = useState("");
+  const choisirCompte = (idCompte) => {
+    setUserId(idCompte);
+    const c = comptesSansFiche.find((x) => x.id === idCompte);
+    if (!c) return;
+    setForm((prev) => ({
+      ...prev,
+      nom: c.nom ?? prev.nom,
+      prenom: c.prenom ?? prev.prenom,
+      telephone: prev.telephone || c.telephone || "",
+      departement: prev.departement || c.service || "",
+    }));
+  };
+  // Fiche existante, sans compte, au même nom que le compte choisi : risque de doublon.
+  const memeTexte = (a, b) => (a ?? "").trim().toLowerCase() === (b ?? "").trim().toLowerCase();
+  const doublon = userId
+    ? allEmployes.find((e) => !e.userId && memeTexte(e.nom, form.nom) && memeTexte(e.prenom, form.prenom))
+    : null;
+  // Arrivée depuis « Créer la fiche » d'un compte : on le présélectionne.
+  const compteDemande = params.get("compte");
+  const [compteApplique, setCompteApplique] = useState(false);
+  if (!isEditMode && compteDemande && !compteApplique && comptesSansFiche.some((c) => c.id === compteDemande)) {
+    setCompteApplique(true);
+    choisirCompte(compteDemande);
+  }
 
   // ── Charger les données en mode édition ──────────────────
   useEffect(() => {
@@ -180,6 +211,7 @@ export default function RHEmployeForm() {
 
     try {
       const employePayload = {
+        userId: userId || null,
         matricule: form.matricule,
         nom: form.nom,
         prenom: form.prenom,
@@ -210,11 +242,8 @@ export default function RHEmployeForm() {
       toast.success("Dossier employé créé avec succès");
       navigate("/rh/employes");
     } catch (err) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Erreur lors de la création du dossier";
-      toast.error(msg);
+      // Ex. « Ce compte est déjà lié à la fiche de … » renvoyé par le backend
+      toast.error(messageErreur(err, "Erreur lors de la création du dossier"));
     }
   };
 
@@ -247,6 +276,42 @@ export default function RHEmployeForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ── Compte sur la plateforme ───────────────── */}
+          {!isEditMode && (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-3">
+              <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-3">
+                Compte sur la plateforme
+              </h2>
+              <div className="sm:w-1/2">
+                <FormLabel>Compte de la personne</FormLabel>
+                <select
+                  value={userId}
+                  onChange={(e) => choisirCompte(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
+                >
+                  <option value="">— Pas encore de compte —</option>
+                  {comptesSansFiche.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.prenom} {c.nom} — {c.email}
+                    </option>
+                  ))}
+                </select>
+                {doublon && (
+                  <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    Une fiche au nom de {doublon.prenom} {doublon.nom} existe déjà, sans compte
+                    {doublon.matricule ? ` (${doublon.matricule})` : ""}. Pour éviter un doublon, demandez plutôt à
+                    l'administrateur de l'associer à ce compte.
+                  </p>
+                )}
+                <p className="mt-1 text-xs text-gray-400">
+                  {comptesSansFiche.length > 0
+                    ? "Comptes qui n'ont pas encore de fiche. Liée à son compte, la personne voit ses congés et son solde."
+                    : "Tous les comptes ont déjà une fiche."}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* ── Identité ────────────────────────────────── */}
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
             <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-3">

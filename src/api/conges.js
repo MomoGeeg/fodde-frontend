@@ -1,10 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Congés : les RH enregistrent la demande d'un employé ; le RAF l'approuve ou
 // la rejette ; les RH peuvent l'annuler tant qu'elle est en attente.
+// Chaque employé dont le compte est lié à sa fiche voit ses propres congés.
 // Circuit : EN_ATTENTE → APPROUVE
 // ─────────────────────────────────────────────────────────────────────────────
 import api from "@/api/axios";
 import { R, aAcces } from "@/lib/navigation";
+import useAuthStore from "@/stores/auth.store";
 import { useQuery } from "@tanstack/react-query";
 
 export const STATUTS_CONGE = {
@@ -25,17 +27,47 @@ export const TYPES_CONGE = {
   MISSION: "Mission",
 };
 
-/** Demandes de congé, avec le nom de l'employé (la réponse du backend ne le contient pas). */
-export function useConges() {
+/** Rôles qui voient les congés de tout le monde ; les autres voient les leurs. */
+export const VOIT_TOUS_LES_CONGES = [R.RH, R.RAF, R.SE, R.RP];
+
+const tableau = (r) => (Array.isArray(r.data) ? r.data : []);
+
+/**
+ * Fiche employé liée au compte connecté (solde de congés…), ou null si
+ * l'administrateur ne l'a pas encore associée (le backend répond 204).
+ */
+export function useMaFiche() {
+  const { user } = useAuthStore();
   return useQuery({
-    queryKey: ["conges"],
+    queryKey: ["employes", "moi", user?.id],
+    queryFn: () => api.get("/api/employes/moi").then((r) => (r.status === 204 || !r.data ? null : r.data)),
+    enabled: !!user,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * Demandes de congé, avec le nom de l'employé (la réponse du backend ne le contient pas).
+ * RH, RAF, SE et responsable des programmes voient tout ; chacun voit les siennes
+ * (par la fiche employé liée à son compte).
+ */
+export function useConges() {
+  const { user } = useAuthStore();
+  const voitTout = aAcces(user?.roles ?? [], VOIT_TOUS_LES_CONGES);
+  return useQuery({
+    queryKey: ["conges", voitTout ? "tous" : "miens", user?.id],
     queryFn: async () => {
+      if (!voitTout) {
+        const [conges, moi] = await Promise.all([
+          api.get("/api/conges/mes-conges").then(tableau),
+          api.get("/api/employes/moi").then((r) => (r.status === 204 ? null : r.data)).catch(() => null),
+        ]);
+        const nom = moi ? `${moi.prenom} ${moi.nom}` : "Moi";
+        return conges.map((c) => ({ ...c, employeNom: nom, employePoste: moi?.poste }));
+      }
       const [conges, employes] = await Promise.all([
-        api.get("/api/conges").then((r) => (Array.isArray(r.data) ? r.data : [])),
-        api
-          .get("/api/employes")
-          .then((r) => (Array.isArray(r.data) ? r.data : []))
-          .catch(() => []),
+        api.get("/api/conges").then(tableau),
+        api.get("/api/employes").then(tableau).catch(() => []),
       ]);
       const parId = new Map(employes.map((e) => [e.id, e]));
       return conges.map((c) => {
@@ -43,6 +75,7 @@ export function useConges() {
         return { ...c, employeNom: e ? `${e.prenom} ${e.nom}` : "Employé inconnu", employePoste: e?.poste };
       });
     },
+    enabled: !!user,
     staleTime: 30_000,
   });
 }

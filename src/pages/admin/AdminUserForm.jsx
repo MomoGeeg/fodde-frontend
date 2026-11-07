@@ -1,8 +1,9 @@
 import { useCreateUser, useUpdateUser, useUser } from "@/api/admin.api";
+import { messageErreur } from "@/lib/erreurs";
 import { ROLES_DISPONIBLES } from "@/lib/roles";
 import { ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 const emptyForm = {
@@ -89,14 +90,8 @@ export default function AdminUserForm() {
       ...(isEditMode ? {} : { motDePasse: form.password }),
     };
 
-    const onError = (error) => {
-      const msg =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Une erreur est survenue";
-      toast.error(msg);
-    };
+    // Ex. « Un utilisateur avec cet email existe déjà » renvoyé par le backend ({ erreur })
+    const onError = (error) => toast.error(messageErreur(error, "Une erreur est survenue"));
 
     if (isEditMode) {
       updateUser(
@@ -130,6 +125,21 @@ export default function AdminUserForm() {
         <ArrowLeft size={16} />
         Retour à la liste
       </button>
+
+      {/* Création libre : réservée aux personnes sans dossier RH */}
+      {!isEditMode && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+          <p className="font-medium">Compte sans fiche employé</p>
+          <p className="mt-1 text-amber-800">
+            Réservé aux personnes qui n'ont pas de dossier RH (prestataire, auditeur, partenaire…). Pour un
+            employé, demandez aux RH d'enregistrer sa fiche puis créez le compte depuis{" "}
+            <Link to="/admin/sans-compte" className="font-medium underline">
+              Comptes et fiches
+            </Link>
+            .
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Informations personnelles */}
