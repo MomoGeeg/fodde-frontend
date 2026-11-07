@@ -1,5 +1,5 @@
 import useAuthStore from "@/stores/auth.store";
-import { Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { ArrowRight, CircleAlert, Eye, EyeOff, LifeBuoy, LoaderCircle, LockKeyhole, Mail } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -20,11 +20,13 @@ function messageConnexion(err) {
 }
 
 const champ =
-  "mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-[15px] text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
+  "block h-11 w-full rounded-xl border border-gray-200 bg-gray-50/60 pl-10 pr-3.5 text-[15px] text-gray-900 placeholder:text-gray-400 transition focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10";
+
+const MODULES = ["Projets", "Finances", "Équipe", "Suivi-évaluation"];
 
 /**
- * Connexion : photo de l'équipe à gauche (bandeau en haut sur mobile),
- * formulaire sobre à droite.
+ * Connexion : photo de l'équipe teintée aux couleurs de FODDE (bandeau sur
+ * mobile), formulaire sur une carte flottante.
  */
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -58,60 +60,91 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white lg:flex-row">
+    <div className="min-h-screen bg-gray-50 lg:grid lg:grid-cols-[1.15fr_1fr]">
       {/* ── Photo de l'équipe ─────────────────────────────── */}
-      <div className="relative h-48 shrink-0 overflow-hidden sm:h-64 lg:h-auto lg:w-[55%]">
+      <section className="relative h-60 overflow-hidden sm:h-72 lg:h-auto lg:min-h-screen">
         <img src="/bg-login.jpg" alt="L'équipe de FODDE à Kolda" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 hidden p-10 text-white lg:block">
-          <p className="max-w-md text-2xl font-semibold leading-snug">
-            Forum pour un Développement Durable Endogène
-          </p>
-          <p className="mt-2 max-w-md text-sm text-white/80">
-            Gestion des projets, des finances, de l'équipe et du suivi-évaluation de l'ONG FODDE.
-          </p>
-          <p className="mt-6 text-xs text-white/60">Kolda, Sénégal</p>
+        {/* Teinte verte de la charte, puis assombrissement du bas pour la lisibilité */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/70 via-primary-dark/25 to-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+
+        <div className="relative flex h-full flex-col justify-between p-6 text-white sm:p-8 lg:p-12">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-lg shadow-black/20">
+              <img src="/fodde-logo.png" alt="" className="h-8 w-8 object-contain" />
+            </span>
+            <span className="text-lg font-semibold tracking-tight">ONG FODDE</span>
+          </div>
+
+          <div className="hidden max-w-lg lg:block">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/70">Plateforme de gestion</p>
+            <h2 className="mt-3 text-4xl font-semibold leading-tight tracking-tight">
+              Forum pour un Développement Durable Endogène
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-white/80">
+              Un seul espace pour piloter les projets, suivre les budgets, valider les demandes et rendre compte aux
+              partenaires.
+            </p>
+            <ul className="mt-8 flex flex-wrap gap-2">
+              {MODULES.map((m) => (
+                <li
+                  key={m}
+                  className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium backdrop-blur-sm"
+                >
+                  {m}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-10 text-xs text-white/60">Kolda · Sénégal</p>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* ── Formulaire ────────────────────────────────────── */}
-      <main className="flex flex-1 items-center justify-center px-6 py-10 sm:px-10">
-        <div className="w-full max-w-sm">
-          <img src="/fodde-logo.png" alt="Logo FODDE" className="h-16 w-16 object-contain" />
-          <h1 className="mt-6 text-2xl font-semibold text-gray-900">Connexion</h1>
-          <p className="mt-1 text-sm text-gray-600">Accédez à votre espace de travail FODDE.</p>
+      <main className="relative -mt-8 flex justify-center px-4 pb-16 sm:-mt-12 lg:mt-0 lg:items-center lg:px-12 lg:py-12">
+        {/* Halo discret aux couleurs de la charte */}
+        <div className="pointer-events-none absolute right-0 top-1/4 hidden h-72 w-72 rounded-full bg-primary/10 blur-3xl lg:block" />
+
+        <div className="relative w-full max-w-md rounded-3xl bg-white p-7 shadow-xl shadow-gray-900/5 ring-1 ring-gray-900/5 sm:p-10">
+          <h1 className="text-[26px] font-semibold tracking-tight text-gray-900">Connexion</h1>
+          <p className="mt-1.5 text-sm text-gray-500">Heureux de vous revoir. Connectez-vous à votre espace de travail.</p>
 
           <form onSubmit={seConnecter} className="mt-8 space-y-5" noValidate>
             {erreur && (
-              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-800">
-                {erreur}
+              <div role="alert" className="flex gap-2.5 rounded-xl border border-red-100 bg-red-50 px-3.5 py-3 text-sm text-red-800">
+                <CircleAlert size={18} className="mt-px shrink-0" />
+                <span>{erreur}</span>
               </div>
             )}
 
             <div>
-              <label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700">
                 Adresse e-mail
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="username"
-                inputMode="email"
-                autoFocus
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="prenom.nom@ongfodde.org"
-                className={champ}
-              />
+              <div className="relative">
+                <Mail size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="username"
+                  inputMode="email"
+                  autoFocus
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="prenom.nom@ongfodde.org"
+                  className={champ}
+                />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
                 Mot de passe
               </label>
               <div className="relative">
+                <LockKeyhole size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   id="password"
                   name="password"
@@ -125,7 +158,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setVoirMotDePasse((v) => !v)}
-                  className="absolute inset-y-0 right-0 mt-1.5 flex w-11 items-center justify-center text-gray-500 hover:text-gray-800"
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-gray-400 transition hover:text-gray-700"
                   aria-label={voirMotDePasse ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                 >
                   {voirMotDePasse ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -136,10 +169,18 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={envoi || !email || !password}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[15px] font-medium text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+              className="group flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-primary-light to-primary text-[15px] font-medium text-white shadow-md shadow-primary/25 transition hover:shadow-lg hover:shadow-primary/30 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
             >
-              {envoi && <LoaderCircle size={18} className="animate-spin" />}
-              {envoi ? "Connexion…" : "Se connecter"}
+              {envoi ? (
+                <>
+                  <LoaderCircle size={18} className="animate-spin" /> Connexion…
+                </>
+              ) : (
+                <>
+                  Se connecter
+                  <ArrowRight size={18} className="transition group-hover:translate-x-0.5" />
+                </>
+              )}
             </button>
 
             {lent && (
@@ -149,11 +190,17 @@ export default function LoginPage() {
             )}
           </form>
 
-          <p className="mt-8 text-sm text-gray-600">
-            Mot de passe oublié ou compte bloqué ? Adressez-vous à l'administrateur de la plateforme.
-          </p>
-          <p className="mt-10 text-xs text-gray-400">© {new Date().getFullYear()} ONG FODDE</p>
+          <div className="mt-8 flex gap-3 rounded-xl bg-gray-50 px-4 py-3.5 text-sm text-gray-600">
+            <LifeBuoy size={18} className="mt-0.5 shrink-0 text-primary" />
+            <p>
+              <span className="font-medium text-gray-800">Mot de passe oublié ou compte bloqué ?</span>
+              <br />
+              Adressez-vous à l'administrateur de la plateforme.
+            </p>
+          </div>
         </div>
+
+        <p className="absolute bottom-5 left-0 right-0 text-center text-xs text-gray-400">© {new Date().getFullYear()} ONG FODDE</p>
       </main>
     </div>
   );
