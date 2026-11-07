@@ -1,5 +1,6 @@
 import BarreActions from "@/components/demande/BarreActions";
 import Circuit from "@/components/demande/Circuit";
+import HistoriqueDemande from "@/components/demande/HistoriqueDemande";
 import StatutBadge from "@/components/demande/StatutBadge";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -11,6 +12,7 @@ import { Link } from "react-router-dom";
  * @param {{to, label}} retour
  * @param {{titre, motif}} [arret]  si la demande est rejetée ou annulée
  * @param {{libelle, valeur}[]} champs
+ * @param {string} [historique]  route du backend donnant l'historique des validations
  */
 export default function FicheDemande({
   retour,
@@ -25,6 +27,7 @@ export default function FicheDemande({
   arret,
   actions = [],
   champs = [],
+  historique,
   children,
 }) {
   const lienRetour = (
@@ -91,6 +94,9 @@ export default function FicheDemande({
 
       {/* Contenu propre au type de demande (ex. pièces justificatives d'une dépense) */}
       {children}
+
+      {/* Qui a validé, quand, avec quel motif */}
+      {historique && <HistoriqueDemande url={historique} statuts={statuts} />}
     </div>
   );
 }

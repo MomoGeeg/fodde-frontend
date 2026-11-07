@@ -54,6 +54,7 @@ export function MissionFichePage() {
       isLoading={isLoading}
       introuvable={!m}
       {...(m && {
+        historique: `/api/missions/${m.id}/historique`,
         reference: `Mission de ${m.employeNom ?? "—"}`,
         titre: `${m.destination} — ${m.motif}`,
         montant: montant(m.budgetEstime),
