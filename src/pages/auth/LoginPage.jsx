@@ -62,13 +62,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50 lg:grid lg:grid-cols-[1.15fr_1fr]">
       {/* ── Photo de l'équipe ─────────────────────────────── */}
-      <section className="relative h-60 overflow-hidden sm:h-72 lg:h-auto lg:min-h-screen">
-        <img src="/bg-login.jpg" alt="L'équipe de FODDE à Kolda" className="absolute inset-0 h-full w-full object-cover" />
-        {/* Teinte verte de la charte, puis assombrissement du bas pour la lisibilité */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/70 via-primary-dark/25 to-black/20" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+      {/* Fond vert de la charte ; la photo y est posée en entier (aucune personne coupée). */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary-dark via-[#24411a] to-black-fodde text-white">
+        {/* Halos lumineux discrets */}
+        <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-primary-light/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
 
-        <div className="relative flex h-full flex-col justify-between p-6 text-white sm:p-8 lg:p-12">
+        <div className="relative flex h-full flex-col gap-6 p-5 sm:p-8 lg:min-h-screen lg:justify-center lg:gap-6 lg:p-10">
           <div className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-lg shadow-black/20">
               <img src="/fodde-logo.png" alt="" className="h-8 w-8 object-contain" />
@@ -76,16 +76,26 @@ export default function LoginPage() {
             <span className="text-lg font-semibold tracking-tight">ONG FODDE</span>
           </div>
 
-          <div className="hidden max-w-lg lg:block">
+          {/* Photo entière : même proportion que l'image d'origine (2560 × 1751) */}
+          {/* Sur ordinateur, la largeur est plafonnée pour que la photo tienne dans ~40 % de la hauteur d'écran */}
+          <figure className="overflow-hidden rounded-2xl shadow-2xl shadow-black/40 ring-1 ring-white/15 lg:max-w-[calc(42vh*2560/1751)]">
+            <img
+              src="/bg-login.jpg"
+              alt="L'équipe de FODDE à Kolda"
+              className="aspect-[2560/1751] w-full object-cover"
+            />
+          </figure>
+
+          <div className="hidden max-w-xl lg:block">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/70">Plateforme de gestion</p>
-            <h2 className="mt-3 text-4xl font-semibold leading-tight tracking-tight">
+            <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-tight xl:text-4xl">
               Forum pour un Développement Durable Endogène
             </h2>
             <p className="mt-4 text-base leading-relaxed text-white/80">
               Un seul espace pour piloter les projets, suivre les budgets, valider les demandes et rendre compte aux
               partenaires.
             </p>
-            <ul className="mt-8 flex flex-wrap gap-2">
+            <ul className="mt-6 flex flex-wrap gap-2">
               {MODULES.map((m) => (
                 <li
                   key={m}
@@ -95,13 +105,13 @@ export default function LoginPage() {
                 </li>
               ))}
             </ul>
-            <p className="mt-10 text-xs text-white/60">Kolda · Sénégal</p>
+            <p className="mt-6 text-xs text-white/60">Kolda · Sénégal</p>
           </div>
         </div>
       </section>
 
       {/* ── Formulaire ────────────────────────────────────── */}
-      <main className="relative -mt-8 flex justify-center px-4 pb-16 sm:-mt-12 lg:mt-0 lg:items-center lg:px-12 lg:py-12">
+      <main className="relative flex justify-center px-4 pb-16 pt-6 sm:pt-8 lg:items-center lg:px-12 lg:py-12">
         {/* Halo discret aux couleurs de la charte */}
         <div className="pointer-events-none absolute right-0 top-1/4 hidden h-72 w-72 rounded-full bg-primary/10 blur-3xl lg:block" />
 
