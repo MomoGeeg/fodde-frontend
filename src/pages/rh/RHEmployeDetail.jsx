@@ -10,7 +10,9 @@ import {
   User,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { STATUTS_MISSION } from "@/api/missions";
+import StatutBadge from "@/components/demande/StatutBadge";
 import {
   useConges,
   useDocumentsEmploye,
@@ -46,11 +48,6 @@ const STATUT_EVAL_COLORS = {
   EN_RETARD: "bg-red-100 text-red-700",
 };
 
-const STATUT_MISSION_COLORS = {
-  VALIDE: "bg-green-100 text-green-700",
-  EN_ATTENTE: "bg-yellow-100 text-yellow-700",
-  REJETE: "bg-red-100 text-red-600",
-};
 
 function Badge({ statut, colors }) {
   return (
@@ -123,7 +120,8 @@ export default function RHEmployeDetail() {
     [id, allEvaluations],
   );
   const empMissions = useMemo(
-    () => allMissions.filter((m) => m.employeId === id),
+    // Missions où la personne fait partie de l'équipe ou conduit.
+    () => allMissions.filter((m) => m.chauffeurId === id || (m.participants ?? []).some((p) => p.employeId === id)),
     [id, allMissions],
   );
   const empDocuments = useMemo(
@@ -605,7 +603,7 @@ export default function RHEmployeDetail() {
                     Budget
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Statut RAF
+                    Statut
                   </th>
                 </tr>
               </thead>
@@ -613,22 +611,21 @@ export default function RHEmployeDetail() {
                 {empMissions.map((m) => (
                   <tr key={m.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {m.destination}
+                      <Link to={`/missions/${m.id}`} className="hover:underline">
+                        {m.destination}
+                      </Link>
                     </td>
                     <td className="px-6 py-4 text-xs font-mono text-gray-600">
-                      {m.projet}
+                      {m.projetCode}
                     </td>
                     <td className="px-6 py-4 text-xs text-gray-500">
                       {fmtDate(m.dateDebut)} → {fmtDate(m.dateFin)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {fmt(m.budget)} XOF
+                      {fmt(m.budgetEstime)} XOF
                     </td>
                     <td className="px-6 py-4">
-                      <Badge
-                        statut={m.statutRAF}
-                        colors={STATUT_MISSION_COLORS}
-                      />
+                      <StatutBadge statut={m.statut} statuts={STATUTS_MISSION} />
                     </td>
                   </tr>
                 ))}

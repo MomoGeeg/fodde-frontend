@@ -7,7 +7,7 @@ import { IndicateurFichePage, IndicateurFormPage, IndicateursPage } from "@/page
 import { GESTIONNAIRES_INDICATEURS } from "@/api/indicateurs";
 import { AcquisitionFichePage, AcquisitionFormPage, AcquisitionsPage } from "@/pages/acquisitions/AcquisitionsPages";
 import { CongeFichePage, CongeFormPage, CongesPage } from "@/pages/conges/CongesPages";
-import { MissionFichePage, MissionFormPage, MissionsPage } from "@/pages/missions/MissionsPages";
+import { MissionFichePage, MissionFormPage, MissionsPage, OrdreMissionPage } from "@/pages/missions/MissionsPages";
 import ActivitesList from "@/pages/activites/ActivitesList";
 import AdminEmployesSansCompte from "@/pages/admin/AdminEmployesSansCompte";
 import AdminUserForm from "@/pages/admin/AdminUserForm";
@@ -112,6 +112,7 @@ export default function AppRoutes() {
           <Route path="missions" element={<MissionsPage />} />
           <Route path="missions/nouvelle" element={<MissionFormPage />} />
           <Route path="missions/:id" element={<MissionFichePage />} />
+          <Route path="missions/:id/ordre" element={<OrdreMissionPage />} />
           <Route path="acquisitions" element={<AcquisitionsPage />} />
           <Route path="acquisitions/nouvelle" element={<AcquisitionFormPage />} />
           <Route path="acquisitions/:id" element={<AcquisitionFichePage />} />
