@@ -37,11 +37,7 @@ async function chargerATraiter(roles, userId) {
           ajouter("Dépenses à vérifier ou valider", soumises.length + verifiees.length, "/finances/depenses"),
       ),
       liste("/api/missions").then((m) =>
-        ajouter(
-          "Missions à valider",
-          m.filter((x) => x.statut === "SOUMISE" || x.statut === "APPROUVEE_N1").length,
-          "/missions",
-        ),
+        ajouter("Missions à valider (équipe et budget)", m.filter((x) => x.statut === "ORGANISEE").length, "/missions"),
       ),
       liste("/api/acquisitions").then((a) =>
         ajouter("Acquisitions à valider", a.filter((x) => x.statut === "EN_ATTENTE").length, "/acquisitions"),
@@ -50,18 +46,18 @@ async function chargerATraiter(roles, userId) {
     );
   }
 
-  // Accord N+1 sur les missions (responsable des programmes, SE)
-  if (aAcces(roles, [R.RP, R.SE])) {
-    appels.push(
-      liste("/api/missions").then((m) =>
-        ajouter(
-          "Missions à approuver (accord du responsable)",
-          m.filter((x) => x.statut === "SOUMISE" && x.employeId !== userId).length,
-          "/missions",
-        ),
-      ),
-    );
-  }
+  // Missions : accord du supérieur direct (quel que soit son rôle), puis chaque service à son étape
+  appels.push(
+    liste("/api/missions").then((m) => {
+      ajouter("Missions à approuver (supérieur direct)", m.filter((x) => x.statut === "SOUMISE" && x.n1Id === userId).length, "/missions");
+      if (aAcces(roles, [R.LOG]))
+        ajouter("Missions à organiser (véhicule, chauffeur)", m.filter((x) => x.statut === "APPROUVEE_N1").length, "/missions");
+      if (aAcces(roles, [R.SE]))
+        ajouter("Missions à valider", m.filter((x) => x.statut === "EN_VALIDATION_SE").length, "/missions");
+      if (aAcces(roles, [R.COMPTABLE]))
+        ajouter("Missions : fonds à débloquer", m.filter((x) => x.statut === "VALIDEE").length, "/missions");
+    }),
+  );
 
   if (aAcces(roles, [R.SE])) {
     appels.push(
@@ -105,8 +101,8 @@ async function chargerMesDemandes(roles, userId) {
   return [
     { libelle: "Dépenses en cours de validation", nombre: compter(depenses, ["SOUMISE", "VERIFIEE", "EN_APPROBATION_SE"]), lien: "/finances/depenses?vue=toutes" },
     { libelle: "Dépenses rejetées", nombre: compter(depenses, ["REJETEE"]), lien: "/finances/depenses" },
-    { libelle: "Missions en cours de validation", nombre: compter(missions, ["SOUMISE", "APPROUVEE_N1"]), lien: "/missions?vue=toutes" },
-    { libelle: "Missions validées", nombre: compter(missions, ["VALIDEE_RAF"]), lien: "/missions?vue=toutes" },
+    { libelle: "Missions en préparation", nombre: compter(missions, ["SOUMISE", "APPROUVEE_N1", "ORGANISEE", "EN_VALIDATION_SE", "VALIDEE"]), lien: "/missions?vue=toutes" },
+    { libelle: "Missions prêtes à venir", nombre: missions.filter((x) => x.statut === "PRETE" && x.dateFin >= new Date().toISOString().slice(0, 10)).length, lien: "/missions?vue=toutes" },
     { libelle: "Achats en attente", nombre: compter(achats, ["EN_ATTENTE"]), lien: "/acquisitions?vue=toutes" },
     { libelle: "Achats validés", nombre: compter(achats, ["VALIDEE"]), lien: "/acquisitions?vue=toutes" },
     { libelle: "Congés en attente", nombre: compter(conges, ["EN_ATTENTE"]), lien: "/conges?vue=toutes" },
