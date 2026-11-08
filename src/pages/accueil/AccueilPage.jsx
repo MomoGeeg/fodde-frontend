@@ -39,10 +39,26 @@ async function chargerATraiter(roles, userId) {
       liste("/api/missions").then((m) =>
         ajouter("Missions à valider (équipe et budget)", m.filter((x) => x.statut === "ORGANISEE").length, "/missions"),
       ),
+      liste("/api/projets").then((p) =>
+        ajouter("Projets : budget à vérifier", p.filter((x) => x.statut === "EN_VALIDATION").length, "/projets"),
+      ),
       liste("/api/acquisitions").then((a) =>
         ajouter("Acquisitions à valider", a.filter((x) => x.statut === "EN_ATTENTE").length, "/acquisitions"),
       ),
       liste("/api/conges/en-attente").then((c) => ajouter("Congés à approuver", c.length, "/conges")),
+    );
+  }
+
+  // Projets renvoyés en montage au RP ou au chef de projet
+  if (aAcces(roles, [R.RP, R.CP])) {
+    appels.push(
+      liste("/api/projets").then((p) =>
+        ajouter(
+          "Projets renvoyés en montage",
+          p.filter((x) => x.statut === "BROUILLON" && x.motifRenvoi && (x.responsableId === userId || x.chefProjetId === userId)).length,
+          "/projets",
+        ),
+      ),
     );
   }
 
@@ -65,7 +81,7 @@ async function chargerATraiter(roles, userId) {
         ajouter("Dépenses à approuver", d.length, "/finances/depenses"),
       ),
       liste("/api/projets").then((p) =>
-        ajouter("Projets à valider", p.filter((x) => x.statut === "EN_VALIDATION").length, "/secretariat/validations"),
+        ajouter("Projets à valider", p.filter((x) => x.statut === "EN_VALIDATION_SE").length, "/projets"),
       ),
       liste("/api/allocations/en-validation").then((a) =>
         ajouter("Allocations budgétaires à valider", a.length, "/secretariat/validations"),
