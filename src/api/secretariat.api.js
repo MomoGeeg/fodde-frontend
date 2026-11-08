@@ -40,7 +40,7 @@ async function fetchKPI() {
     projetsEnRetard: projets.filter(
       (p) => p.statut === "ACTIF" && p.dateFin && p.dateFin < today
     ).length,
-    projetsEnValidation: projets.filter((p) => p.statut === "EN_VALIDATION").length,
+    projetsEnValidation: projets.filter((p) => p.statut === "EN_VALIDATION_SE").length,
     depensesMoisCourant,
     depensesEnAttenteApprobation: depAttente.length,
     avancesNonJustifiees: avances.length,
@@ -52,7 +52,7 @@ async function fetchKPI() {
   };
 }
 
-// ── Validations — projets EN_VALIDATION + dépenses EN_APPROBATION_SE + budgets EN_VALIDATION ──
+// ── Validations — projets EN_VALIDATION_SE (budget vérifié par le RAF) + dépenses EN_APPROBATION_SE + budgets EN_VALIDATION ──
 async function fetchValidations() {
   // Projets et dépenses en parallèle (toujours disponibles)
   const [projetsRes, depensesRes] = await Promise.all([
@@ -72,7 +72,7 @@ async function fetchValidations() {
   const projets = projetsRes.data ?? [];
 
   const projetsEnValidation = projets
-    .filter((p) => p.statut === "EN_VALIDATION")
+    .filter((p) => p.statut === "EN_VALIDATION_SE")
     .map((p) => ({
       id: p.id,
       type: "PROJET",
@@ -158,22 +158,14 @@ export function useAlertesNonLuesCount() {
 export function useApprouverProjet() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, commentaire }) => {
-      const { user } = useAuthStore.getState();
-      return api
-        .patch(`/api/projets/${id}/statut`, {
-          statut: "ACTIF",
-          validateurId: user?.id,
-          commentaire,
-        })
-        .then((r) => r.data);
-    },
+    // Le validateur vient du jeton ; le commentaire de validation n'est pas conservé.
+    mutationFn: ({ id }) => api.patch(`/api/projets/${id}/valider`).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["secretariat"] });
       qc.invalidateQueries({ queryKey: ["projets"] });
-      toast.success("Projet approuvé — statut : ACTIF");
+      toast.success("Projet validé : il est actif");
     },
-    onError: () => toast.error("Erreur lors de l'approbation"),
+    onError: (err) => toast.error(err?.response?.data?.erreur ?? "Erreur lors de la validation"),
   });
 }
 
@@ -182,14 +174,14 @@ export function useRejeterProjet() {
   return useMutation({
     mutationFn: ({ id, commentaire }) =>
       api
-        .patch(`/api/projets/${id}/statut`, { statut: "BROUILLON", commentaire })
+        .patch(`/api/projets/${id}/renvoyer`, { motif: commentaire })
         .then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["secretariat"] });
       qc.invalidateQueries({ queryKey: ["projets"] });
-      toast.success("Projet rejeté — renvoyé au responsable");
+      toast.success("Projet renvoyé en montage");
     },
-    onError: () => toast.error("Erreur lors du rejet"),
+    onError: (err) => toast.error(err?.response?.data?.erreur ?? "Erreur lors du renvoi"),
   });
 }
 

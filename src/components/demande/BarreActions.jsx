@@ -14,7 +14,8 @@ const STYLES = {
 /**
  * Boutons d'action d'une demande. Chaque action peut demander une confirmation
  * et un motif ; après succès, les données sont rechargées.
- * @param {{cle,label,style,motif,confirmation,executer}[]} actions
+ * @param {{cle,label,style,motif,confirmation,executer,desactive,aide}[]} actions
+ *   desactive : bouton grisé (aide = raison affichée au survol)
  */
 export default function BarreActions({ actions }) {
   const queryClient = useQueryClient();
@@ -43,7 +44,8 @@ export default function BarreActions({ actions }) {
         {actions.map((a) => (
           <button
             key={a.cle}
-            disabled={enCours}
+            disabled={enCours || a.desactive}
+            title={a.desactive ? a.aide : undefined}
             onClick={() => (a.confirmation || a.motif ? setOuverte(a) : lancer(a))}
             className={`rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50 ${STYLES[a.style] ?? STYLES.secondaire}`}
           >
