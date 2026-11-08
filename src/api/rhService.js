@@ -29,6 +29,23 @@ export async function createEmploye(payload) {
   return res.data;
 }
 
+export async function modifierEmploye(id, payload) {
+  const { data } = await api.put(`/api/employes/${id}`, payload);
+  return data;
+}
+
+/** Pôle et supérieur proposés d'après les rôles du compte (formulaire RH). */
+export async function getPropositionRattachement(userId) {
+  const { data } = await api.get("/api/employes/proposition-rattachement", { params: { userId } });
+  return data;
+}
+
+/** Employés présents avec poste, pôle et supérieur : de quoi dessiner l'organigramme. */
+export async function getOrganigramme() {
+  const { data } = await api.get("/api/employes/organigramme");
+  return data;
+}
+
 export async function changerStatutEmploye(id, statut) {
   const res = await api.patch(`/api/employes/${id}/statut`, null, {
     params: { statut },

@@ -5,7 +5,8 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { useComptesSansFiche, useCreateEmploye, useEmployes } from "@/api/rh-data";
+import { POLES, useComptesSansFiche, useCreateEmploye, useEmployes, useModifierEmploye } from "@/api/rh-data";
+import { getPropositionRattachement } from "@/api/rhService";
 import { messageErreur } from "@/lib/erreurs";
 
 const TYPES_CONTRAT = ["CDI", "CDD", "CONSULTANT", "VOLONTAIRE", "STAGIAIRE"];
@@ -22,7 +23,8 @@ const emptyForm = {
   adresse: "",
   poste: "",
   departement: "",
-  superviseurId: "",
+  pole: "",
+  superieurId: "",
   typeContrat: "CDD",
   dateDebutContrat: "",
   dateFinContrat: "",
@@ -84,6 +86,26 @@ export default function RHEmployeForm() {
   const { data: allEmployes = [] } = useEmployes();
 
   const createEmployeMutation = useCreateEmploye();
+  const modifierEmployeMutation = useModifierEmploye();
+  const enregistrement = createEmployeMutation.isPending || modifierEmployeMutation.isPending;
+
+  // ── Pôle et supérieur proposés d'après les rôles du compte ──
+  const [proposition, setProposition] = useState(null);
+  const proposer = async (idCompte, { remplacer = false } = {}) => {
+    setProposition(null);
+    if (!idCompte) return;
+    try {
+      const p = await getPropositionRattachement(idCompte);
+      setProposition(p);
+      setForm((prev) => ({
+        ...prev,
+        pole: remplacer || !prev.pole ? p.pole || prev.pole : prev.pole,
+        superieurId: remplacer || !prev.superieurId ? p.superieurId || prev.superieurId : prev.superieurId,
+      }));
+    } catch {
+      // Proposition indisponible : les RH choisissent eux-mêmes.
+    }
+  };
 
   const [form, setForm] = useState({
     ...emptyForm,
@@ -99,6 +121,7 @@ export default function RHEmployeForm() {
   const [userId, setUserId] = useState("");
   const choisirCompte = (idCompte) => {
     setUserId(idCompte);
+    proposer(idCompte);
     const c = comptesSansFiche.find((x) => x.id === idCompte);
     if (!c) return;
     setForm((prev) => ({
@@ -138,7 +161,8 @@ export default function RHEmployeForm() {
           adresse: emp.adresse || "",
           poste: emp.poste,
           departement: emp.departement || "",
-          superviseurId: emp.superviseurId || "",
+          pole: emp.pole || "",
+          superieurId: emp.superieurId || "",
           typeContrat: emp.typeContrat,
           dateDebutContrat: emp.dateDebutContrat || "",
           dateFinContrat: emp.dateFinContrat || "",
@@ -158,8 +182,9 @@ export default function RHEmployeForm() {
 
   // ── Superviseurs disponibles ─────────────────────────────
   const superviseurs = allEmployes.filter(
-    (e) => e.id !== id && e.statut === "ACTIF",
+    (e) => e.id !== id && e.statut !== "PARTI",
   );
+  const ficheEditee = isEditMode ? allEmployes.find((e) => e.id === id) : null;
 
   // ── Validation ───────────────────────────────────────────
   const validate = () => {
@@ -173,6 +198,8 @@ export default function RHEmployeForm() {
     if (!form.poste.trim()) errs.poste = "Le poste est obligatoire";
     if (!form.departement.trim())
       errs.departement = "Le service est obligatoire";
+    if (isEditMode) return errs; // le contrat et le salaire ne se modifient pas ici
+
     if (!form.typeContrat)
       errs.typeContrat = "Le type de contrat est obligatoire";
     if (!form.dateDebutContrat)
@@ -223,8 +250,16 @@ export default function RHEmployeForm() {
         poste: form.poste,
         departement: form.departement,
         dateEmbauche: form.dateDebutContrat,
-        superviseurId: form.superviseurId || null,
+        pole: form.pole || null,
+        superieurId: form.superieurId || null,
       };
+
+      if (isEditMode) {
+        await modifierEmployeMutation.mutateAsync({ id, payload: employePayload });
+        toast.success("Fiche enregistrée");
+        navigate(`/rh/employes/${id}`);
+        return;
+      }
 
       const employe = await createEmployeMutation.mutateAsync(employePayload);
 
@@ -243,7 +278,7 @@ export default function RHEmployeForm() {
       navigate("/rh/employes");
     } catch (err) {
       // Ex. « Ce compte est déjà lié à la fiche de … » renvoyé par le backend
-      toast.error(messageErreur(err, "Erreur lors de la création du dossier"));
+      toast.error(messageErreur(err, isEditMode ? "Erreur lors de l'enregistrement" : "Erreur lors de la création du dossier"));
     }
   };
 
@@ -416,10 +451,26 @@ export default function RHEmployeForm() {
                 <FieldError msg={errors.departement} />
               </div>
               <div>
-                <FormLabel>Supérieur hiérarchique</FormLabel>
+                <FormLabel>Pôle</FormLabel>
                 <select
-                  value={form.superviseurId}
-                  onChange={set("superviseurId")}
+                  value={form.pole}
+                  onChange={set("pole")}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
+                >
+                  <option value="">— À préciser —</option>
+                  {Object.entries(POLES).map(([code, p]) => (
+                    <option key={code} value={code}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+                {form.pole && <p className="mt-1 text-xs text-gray-400">{POLES[form.pole]?.detail}</p>}
+              </div>
+              <div>
+                <FormLabel>Supérieur direct (N+1)</FormLabel>
+                <select
+                  value={form.superieurId}
+                  onChange={set("superieurId")}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
                 >
                   <option value="">— Aucun —</option>
@@ -429,11 +480,33 @@ export default function RHEmployeForm() {
                     </option>
                   ))}
                 </select>
+                <p className="mt-1 text-xs text-gray-400">
+                  Reçoit en premier ses demandes (missions, congés).
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                {proposition?.message && (
+                  <p className="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                    {proposition.superieurNom
+                      ? `Proposé d'après les rôles du compte : ${POLES[proposition.pole]?.label ?? ""}, supérieur ${proposition.superieurNom}. Vous pouvez le changer.`
+                      : proposition.message}
+                  </p>
+                )}
+                {isEditMode && ficheEditee?.userId && (
+                  <button
+                    type="button"
+                    onClick={() => proposer(ficheEditee.userId, { remplacer: true })}
+                    className="mt-2 text-xs font-medium text-green-700 hover:underline"
+                  >
+                    Proposer d'après les rôles de son compte
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
-          {/* ── Contrat ─────────────────────────────────── */}
+          {/* ── Contrat (création seulement) ────────────── */}
+          {!isEditMode && (
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
             <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-3">
               Contrat
@@ -539,6 +612,8 @@ export default function RHEmployeForm() {
             </div>
           </div>
 
+          )}
+
           {/* ── Actions ─────────────────────────────────── */}
           <div className="flex items-center justify-end gap-3 rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm">
             <button
@@ -552,13 +627,13 @@ export default function RHEmployeForm() {
             </button>
             <button
               type="submit"
-              disabled={createEmployeMutation.isPending}
+              disabled={enregistrement}
               className="rounded-lg px-5 py-2 text-sm font-medium text-white disabled:opacity-60 transition-colors"
               style={{
                 background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)",
               }}
             >
-              {createEmployeMutation.isPending
+              {enregistrement
                 ? isEditMode
                   ? "Enregistrement..."
                   : "Création..."

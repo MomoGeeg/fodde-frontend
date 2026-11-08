@@ -25,6 +25,7 @@ import ProjetDetail from "@/pages/projets/ProjetDetail";
 import ProjetForm from "@/pages/projets/ProjetForm";
 import ProjetsList from "@/pages/projets/ProjetsList";
 import RAFBudgets from "@/pages/raf/RAFBudgets";
+import OrganigrammePage from "@/pages/rh/OrganigrammePage";
 import RHAlertes from "@/pages/rh/RHAlertes";
 import RHEmployeDetail from "@/pages/rh/RHEmployeDetail";
 import RHEmployeForm from "@/pages/rh/RHEmployeForm";
@@ -121,6 +122,7 @@ export default function AppRoutes() {
           </Route>
 
           {/* ── Ressources humaines ─────────────────────────── */}
+          <Route path="organigramme" element={<OrganigrammePage />} />
           <Route element={<Acces roles={ACCES.employes} />}>
             <Route path="rh/employes" element={<RHEmployesList />} />
             <Route path="rh/employes/:id" element={<RHEmployeDetail />} />

@@ -9,6 +9,7 @@ import {
   Home,
   Landmark,
   MapPin,
+  Network,
   Package,
   PieChart,
   Receipt,
@@ -118,6 +119,7 @@ export const NAVIGATION = [
     titre: "Équipe",
     items: [
       { label: "Employés", path: "/rh/employes", icon: Users, menu: MENU.employes },
+      { label: "Organigramme", path: "/organigramme", icon: Network },
       { label: "Évaluations", path: "/rh/evaluations", icon: Star, menu: MENU.rhSeulement },
       { label: "Alertes RH", path: "/rh/alertes", icon: TriangleAlert, menu: MENU.rhSeulement },
     ],
