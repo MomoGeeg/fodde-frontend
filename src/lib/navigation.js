@@ -6,6 +6,7 @@ import {
   FileCheck,
   FileText,
   FolderKanban,
+  History,
   Home,
   Landmark,
   MapPin,
@@ -135,6 +136,7 @@ export const NAVIGATION = [
     items: [
       { label: "Utilisateurs", path: "/admin/utilisateurs", icon: UserCog, menu: MENU.administration },
       { label: "Comptes et fiches", path: "/admin/sans-compte", icon: UserPlus, menu: MENU.administration },
+      { label: "Connexions", path: "/admin/connexions", icon: History, menu: MENU.administration },
     ],
   },
   {

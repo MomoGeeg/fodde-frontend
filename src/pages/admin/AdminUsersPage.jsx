@@ -371,9 +371,15 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">
-                    {u.derniereConnexion
-                      ? new Date(u.derniereConnexion).toLocaleDateString("fr-SN")
-                      : "—"}
+                    <button
+                      onClick={() => navigate(`/admin/connexions?userId=${u.id}`)}
+                      className="hover:text-gray-900 hover:underline"
+                      title="Historique des connexions"
+                    >
+                      {u.derniereConnexion
+                        ? new Date(u.derniereConnexion).toLocaleDateString("fr-SN")
+                        : "—"}
+                    </button>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <ActionsMenu

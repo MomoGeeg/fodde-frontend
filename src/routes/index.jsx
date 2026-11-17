@@ -9,6 +9,7 @@ import { AcquisitionFichePage, AcquisitionFormPage, AcquisitionsPage } from "@/p
 import { CongeFichePage, CongeFormPage, CongesPage } from "@/pages/conges/CongesPages";
 import { MissionFichePage, MissionFormPage, MissionsPage, OrdreMissionPage } from "@/pages/missions/MissionsPages";
 import ActivitesList from "@/pages/activites/ActivitesList";
+import AdminConnexionsPage from "@/pages/admin/AdminConnexionsPage";
 import AdminEmployesSansCompte from "@/pages/admin/AdminEmployesSansCompte";
 import AdminUserForm from "@/pages/admin/AdminUserForm";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
@@ -178,6 +179,7 @@ export default function AppRoutes() {
             <Route path="admin/utilisateurs/nouveau" element={<AdminUserForm />} />
             <Route path="admin/utilisateurs/:id/edit" element={<AdminUserForm />} />
             <Route path="admin/sans-compte" element={<AdminEmployesSansCompte />} />
+            <Route path="admin/connexions" element={<AdminConnexionsPage />} />
           </Route>
 
           {/* Anciennes adresses (favoris, liens d'alertes) */}

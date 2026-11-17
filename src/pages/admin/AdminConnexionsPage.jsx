@@ -1,0 +1,200 @@
+import { useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Download } from "lucide-react";
+import api from "@/api/axios";
+import { useUsers } from "@/api/admin.api";
+import { telechargerCsv } from "@/lib/export";
+
+const PERIODES = [
+  { jours: 1, label: "Aujourd'hui" },
+  { jours: 7, label: "7 derniers jours" },
+  { jours: 30, label: "30 derniers jours" },
+  { jours: 90, label: "3 derniers mois" },
+  { jours: 365, label: "12 derniers mois" },
+];
+
+const MOTIFS = {
+  MOT_DE_PASSE: "Mot de passe incorrect",
+  COMPTE_INACTIF: "Compte désactivé",
+  COMPTE_VERROUILLE: "Compte verrouillé",
+  COMPTE_INCONNU: "Adresse e-mail inconnue",
+};
+
+/** Navigateur et système lisibles à partir du User-Agent. */
+export function appareil(ua) {
+  if (!ua) return "—";
+  const nav = /Edg\//.test(ua)
+    ? "Edge"
+    : /OPR\/|Opera/.test(ua)
+      ? "Opera"
+      : /Firefox\//.test(ua)
+        ? "Firefox"
+        : /Chrome\//.test(ua)
+          ? "Chrome"
+          : /Safari\//.test(ua)
+            ? "Safari"
+            : "Autre navigateur";
+  const os = /Android/.test(ua)
+    ? "Android"
+    : /iPhone|iPad/.test(ua)
+      ? "iOS"
+      : /Windows/.test(ua)
+        ? "Windows"
+        : /Mac OS X/.test(ua)
+          ? "macOS"
+          : /Linux/.test(ua)
+            ? "Linux"
+            : "";
+  return os ? `${nav} · ${os}` : nav;
+}
+
+const dateHeure = (d) =>
+  new Date(d).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+function useConnexions(userId, jours) {
+  return useQuery({
+    queryKey: ["admin", "connexions", userId || "tous", jours],
+    queryFn: async () => {
+      const { data } = await api.get("/api/admin/connexions", { params: { userId: userId || undefined, jours } });
+      return data;
+    },
+  });
+}
+
+const champ =
+  "rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400";
+
+export default function AdminConnexionsPage() {
+  const [params, setParams] = useSearchParams();
+  const userId = params.get("userId") || "";
+  const jours = Number(params.get("jours")) || 30;
+  const resultat = params.get("resultat") || "";
+
+  const changer = (cle, valeur) => {
+    const p = new URLSearchParams(params);
+    if (valeur) p.set(cle, valeur);
+    else p.delete(cle);
+    setParams(p, { replace: true });
+  };
+
+  const { data: users = [] } = useUsers();
+  const { data: connexions = [], isLoading, isError } = useConnexions(userId, jours);
+
+  const lignes = useMemo(
+    () =>
+      connexions.filter((c) => (resultat === "succes" ? c.succes : resultat === "echec" ? !c.succes : true)),
+    [connexions, resultat],
+  );
+  const refusees = connexions.filter((c) => !c.succes).length;
+
+  const exporter = () =>
+    telechargerCsv(`connexions_${new Date().toISOString().slice(0, 10)}`, [
+      ["Date et heure", "Utilisateur", "E-mail", "Résultat", "Motif", "Adresse IP", "Appareil"],
+      ...lignes.map((c) => [
+        dateHeure(c.dateConnexion),
+        c.nomComplet || "",
+        c.email,
+        c.succes ? "Réussie" : "Refusée",
+        c.succes ? "" : MOTIFS[c.motifEchec] || c.motifEchec || "",
+        c.adresseIp || "",
+        appareil(c.navigateur),
+      ]),
+    ]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-gray-900">Historique des connexions</h2>
+        <button
+          onClick={exporter}
+          disabled={lignes.length === 0}
+          className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+        >
+          <Download size={16} />
+          Excel
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <select value={userId} onChange={(e) => changer("userId", e.target.value)} className={champ} aria-label="Utilisateur">
+          <option value="">Tous les utilisateurs</option>
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.prenom} {u.nom}
+            </option>
+          ))}
+        </select>
+        <select value={jours} onChange={(e) => changer("jours", e.target.value === "30" ? "" : e.target.value)} className={champ} aria-label="Période">
+          {PERIODES.map((p) => (
+            <option key={p.jours} value={p.jours}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+        <select value={resultat} onChange={(e) => changer("resultat", e.target.value)} className={champ} aria-label="Résultat">
+          <option value="">Toutes ({connexions.length})</option>
+          <option value="succes">Réussies ({connexions.length - refusees})</option>
+          <option value="echec">Refusées ({refusees})</option>
+        </select>
+      </div>
+
+      <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white">
+        <table className="w-full min-w-[720px] text-sm">
+          <thead>
+            <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+              <th className="px-4 py-3">Date et heure</th>
+              <th className="px-4 py-3">Utilisateur</th>
+              <th className="px-4 py-3">Résultat</th>
+              <th className="px-4 py-3">Adresse IP</th>
+              <th className="px-4 py-3">Appareil</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {isLoading ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                  Chargement…
+                </td>
+              </tr>
+            ) : isError ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-red-600">
+                  Historique indisponible.
+                </td>
+              </tr>
+            ) : lignes.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                  Aucune connexion sur la période.
+                </td>
+              </tr>
+            ) : (
+              lignes.map((c) => (
+                <tr key={c.id} className="hover:bg-gray-50/60">
+                  <td className="whitespace-nowrap px-4 py-3 tabular-nums text-gray-700">{dateHeure(c.dateConnexion)}</td>
+                  <td className="px-4 py-3">
+                    <p className="font-medium text-gray-900">{c.nomComplet || "—"}</p>
+                    <p className="text-xs text-gray-500">{c.email}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    {c.succes ? (
+                      <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">Réussie</span>
+                    ) : (
+                      <span className="inline-flex flex-col">
+                        <span className="w-fit rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">Refusée</span>
+                        <span className="mt-1 text-xs text-gray-500">{MOTIFS[c.motifEchec] || c.motifEchec}</span>
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 tabular-nums text-gray-600">{c.adresseIp || "—"}</td>
+                  <td className="px-4 py-3 text-gray-600">{appareil(c.navigateur)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
