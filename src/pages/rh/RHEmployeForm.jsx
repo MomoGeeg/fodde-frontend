@@ -7,6 +7,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { POLES, useComptesSansFiche, useCreateEmploye, useEmployes, useModifierEmploye } from "@/api/rh-data";
 import { getPropositionRattachement } from "@/api/rhService";
+import { OptionsServices } from "@/lib/services";
 import { messageErreur } from "@/lib/erreurs";
 
 const TYPES_CONTRAT = ["CDI", "CDD", "CONSULTANT", "VOLONTAIRE", "STAGIAIRE"];
@@ -439,12 +440,14 @@ export default function RHEmployeForm() {
                 <FieldError msg={errors.poste} />
               </div>
               <div>
-                <FormLabel required>Service / Département</FormLabel>
-                <FormInput
+                <FormLabel required>Service</FormLabel>
+                <select
                   value={form.departement}
                   onChange={set("departement")}
-                  placeholder="Ex: Programmes"
-                />
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
+                >
+                  <OptionsServices valeur={form.departement} />
+                </select>
                 <FieldError msg={errors.departement} />
               </div>
               <div>
