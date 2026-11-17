@@ -269,9 +269,12 @@ function ComptesSansFicheAdmin({ comptes }) {
       <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 bg-white">
         {comptes.map((c) => (
           <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
-            <p className="text-sm text-gray-900">
-              {c.prenom} {c.nom} <span className="text-xs text-gray-500">— {c.email}</span>
-            </p>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-gray-900">
+                {c.prenom} {c.nom}
+              </p>
+              <p className="text-xs text-gray-500">{c.email}</p>
+            </div>
             <span className="text-xs text-gray-500">{c.statut === "ACTIF" ? "Compte actif" : `Compte ${c.statut.toLowerCase().replace("_", " ")}`}</span>
           </div>
         ))}
@@ -294,9 +297,11 @@ function FichesLiees({ fiches }) {
               <p className="text-sm font-medium text-gray-900">
                 {f.prenom} {f.nom} <span className="font-normal text-gray-500">· {f.poste}</span>
               </p>
-              <p className="text-xs text-gray-500">
-                Compte : {f.compte ? `${f.compte.prenom} ${f.compte.nom} — ${f.compte.email}` : "introuvable"}
-              </p>
+              {f.compte ? (
+                <p className="text-xs text-gray-500">{f.compte.email}</p>
+              ) : (
+                <p className="text-xs text-gray-500">Compte introuvable</p>
+              )}
             </div>
             <button
               disabled={isPending}
@@ -326,9 +331,7 @@ export default function AdminEmployesSansCompte() {
     <div className="space-y-6">
       {/* En-tête */}
       <div className="flex items-start justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Employés sans compte utilisateur
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900">Comptes</h2>
         <div className="flex items-center gap-2 rounded-xl bg-orange-50 px-3 py-2">
           <Users size={16} className="text-orange-600" />
           <span className="text-sm font-semibold text-orange-700">
