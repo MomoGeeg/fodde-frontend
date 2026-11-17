@@ -115,7 +115,7 @@ function ResetPasswordModal({ user, onClose }) {
             <button
               type="submit"
               disabled={isPending}
-              className="flex-1 rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-60"
+              className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-60"
             >
               {isPending ? "Envoi…" : "Réinitialiser"}
             </button>
@@ -315,7 +315,7 @@ export default function AdminUsersPage() {
           </button>
           <button
             onClick={() => navigate("/admin/utilisateurs/nouveau")}
-            className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
             title="RAF, responsable des programmes, Secrétaire exécutif, personnes sans dossier RH"
           >
             <Plus size={16} />

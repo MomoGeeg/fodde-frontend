@@ -114,7 +114,7 @@ function CreerCompteModal({ employe, onClose }) {
                   <span
                     className={`h-3 w-3 shrink-0 rounded border-2 ${
                       form.roles.includes(r.value)
-                        ? "border-orange-500 bg-orange-500"
+                        ? "border-primary bg-primary"
                         : "border-gray-300"
                     }`}
                   />
@@ -172,7 +172,7 @@ function CreerCompteModal({ employe, onClose }) {
             <button
               type="submit"
               disabled={isPending}
-              className="flex-1 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+              className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60"
             >
               {isPending ? "Création…" : "Créer le compte"}
             </button>
@@ -249,7 +249,7 @@ function AssocierCompteModal({ employe, comptesLibres, onClose }) {
             <button
               type="submit"
               disabled={isPending || comptes.length === 0}
-              className="flex-1 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+              className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60"
             >
               {isPending ? "Association…" : "Associer"}
             </button>
@@ -388,7 +388,7 @@ export default function AdminEmployesSansCompte() {
                 </button>
                 <button
                   onClick={() => setModalTarget(emp)}
-                  className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+                  className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
                 >
                   <UserPlus size={15} />
                   Créer le compte
