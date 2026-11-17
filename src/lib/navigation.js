@@ -66,6 +66,7 @@ export const ACCES = {
 // quotidien. C'est plus étroit que les droits d'accès (ACCES) : une page hors
 // menu reste ouverte depuis un lien (accueil, fiche…) si le rôle y a droit.
 // `menu` absent = tout le monde ; `menu: []` = personne (module pas prêt).
+// `sauf` : rôles pour qui l'entrée est masquée quand ils n'ont pas d'autre rôle.
 // ─────────────────────────────────────────────────────────────────────────────
 export const MENU = {
   direction: [R.SE],
@@ -82,6 +83,8 @@ export const MENU = {
   administration: [R.ADMIN],
   logistique: [R.LOG, R.RAF, R.SE],
   pasPret: [],
+  /** Les RH gèrent le personnel : pas de missions ni d'achats à demander. */
+  sansDemandesTerrain: [R.RH],
 };
 
 export const NAVIGATION = [
@@ -99,8 +102,8 @@ export const NAVIGATION = [
     titre: "Demandes",
     items: [
       { label: "Dépenses", path: "/finances/depenses", icon: Receipt, menu: MENU.depenses },
-      { label: "Missions", path: "/missions", icon: MapPin },
-      { label: "Acquisitions", path: "/acquisitions", icon: Package },
+      { label: "Missions", path: "/missions", icon: MapPin, sauf: MENU.sansDemandesTerrain },
+      { label: "Acquisitions", path: "/acquisitions", icon: Package, sauf: MENU.sansDemandesTerrain },
       { label: "Congés", path: "/conges", icon: CalendarDays },
     ],
   },
@@ -162,8 +165,15 @@ export function aAcces(userRoles = [], roles) {
   return userRoles.some((r) => roles.includes(r));
 }
 
+/** Vrai si tous les rôles de l'utilisateur font partie de la liste (et qu'il en a au moins un). */
+const seulement = (userRoles, roles) => userRoles.length > 0 && userRoles.every((r) => roles.includes(r));
+
+/** Vrai si l'utilisateur ne fait pas de demandes de terrain (missions, achats). */
+export const sansDemandesTerrain = (userRoles = []) => seulement(userRoles, MENU.sansDemandesTerrain);
+
 /** Vrai si l'entrée doit figurer dans le menu de cet utilisateur. */
-const dansMenu = (userRoles, item) => !item.menu || userRoles.some((r) => item.menu.includes(r));
+const dansMenu = (userRoles, item) =>
+  (!item.menu || userRoles.some((r) => item.menu.includes(r))) && !(item.sauf && seulement(userRoles, item.sauf));
 
 /** Menu de l'utilisateur, selon son métier : sections vides retirées. */
 export function menuPour(userRoles = []) {

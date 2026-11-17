@@ -1,5 +1,5 @@
 import api from "@/api/axios";
-import { R, aAcces } from "@/lib/navigation";
+import { R, aAcces, sansDemandesTerrain } from "@/lib/navigation";
 import useAuthStore from "@/stores/auth.store";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, TriangleAlert } from "lucide-react";
@@ -212,14 +212,16 @@ export default function AccueilPage() {
         <section className="rounded-lg border border-gray-200 bg-white">
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <h2 className="text-sm font-semibold text-gray-900">Mes demandes</h2>
-            <span className="flex gap-3 text-xs font-medium">
-              <Link to="/missions/nouvelle" className="text-primary hover:underline">
-                Mission
-              </Link>
-              <Link to="/acquisitions/nouvelle" className="text-primary hover:underline">
-                Achat
-              </Link>
-            </span>
+            {!sansDemandesTerrain(roles) && (
+              <span className="flex gap-3 text-xs font-medium">
+                <Link to="/missions/nouvelle" className="text-primary hover:underline">
+                  Mission
+                </Link>
+                <Link to="/acquisitions/nouvelle" className="text-primary hover:underline">
+                  Achat
+                </Link>
+              </span>
+            )}
           </div>
           {mesDemandes.data?.length ? (
             <ul className="divide-y divide-gray-100">
