@@ -235,7 +235,7 @@ export default function AdminUserForm() {
                 <span
                   className={`h-4 w-4 shrink-0 rounded border-2 flex items-center justify-center ${
                     form.roles.includes(r.value)
-                      ? "border-orange-500 bg-orange-500"
+                      ? "border-primary bg-primary"
                       : "border-gray-300"
                   }`}
                 >
@@ -370,7 +370,7 @@ export default function AdminUserForm() {
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-xl bg-orange-500 px-5 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+            className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60"
           >
             {isPending
               ? isEditMode
