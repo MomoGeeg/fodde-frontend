@@ -21,6 +21,22 @@ export function useUsers() {
   });
 }
 
+/**
+ * Comptes connectés en ce moment : session réussie, sans déconnexion et pas encore expirée
+ * (le serveur renvoie finSession vide). Une session dure au plus la durée du jeton (24 h),
+ * d'où la fenêtre de 2 jours. Rafraîchi toutes les 30 secondes.
+ */
+export function useConnectes() {
+  return useQuery({
+    queryKey: ["admin", "connexions", "connectes"],
+    queryFn: async () => {
+      const { data } = await api.get("/api/admin/connexions", { params: { jours: 2 } });
+      return new Set(data.filter((c) => c.succes && !c.finSession && c.userId).map((c) => c.userId));
+    },
+    refetchInterval: 30_000,
+  });
+}
+
 export function useUser(id) {
   return useQuery({
     queryKey: ["admin", "user", id],
