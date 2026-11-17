@@ -152,20 +152,6 @@ export default function TableauDeBordRH({ userId }) {
 
   return (
     <div className="space-y-6">
-      <Bloc titre={`À traiter${aTraiter.length ? ` (${aTraiter.length})` : ""}`}>
-        {chargeEmployes ? (
-          <Vide>Chargement…</Vide>
-        ) : aTraiter.length ? (
-          <ul className="divide-y divide-gray-100">
-            {aTraiter.map((t) => (
-              <Ligne key={t.id} lien={t.lien} gauche={t.type} titre={t.titre} detail={t.detail} />
-            ))}
-          </ul>
-        ) : (
-          <Vide>Rien à traiter.</Vide>
-        )}
-      </Bloc>
-
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Carte libelle="Employés" valeur={presents.length} chargement={chargeEmployes} lien="/rh/employes" />
         <Carte libelle="En congé aujourd'hui" valeur={nbEnConge} chargement={chargeEmployes || chargeConges} lien="/conges" />
@@ -185,6 +171,20 @@ export default function TableauDeBordRH({ userId }) {
           alerte={alertes.length > 0}
         />
       </section>
+
+      <Bloc titre={`À traiter${aTraiter.length ? ` (${aTraiter.length})` : ""}`}>
+        {chargeEmployes ? (
+          <Vide>Chargement…</Vide>
+        ) : aTraiter.length ? (
+          <ul className="divide-y divide-gray-100">
+            {aTraiter.map((t) => (
+              <Ligne key={t.id} lien={t.lien} gauche={t.type} titre={t.titre} detail={t.detail} />
+            ))}
+          </ul>
+        ) : (
+          <Vide>Rien à traiter.</Vide>
+        )}
+      </Bloc>
 
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         <Bloc titre="Contrats en phase finale" lien="/rh/alertes" libelleLien="Alertes RH">
