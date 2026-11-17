@@ -1,10 +1,20 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Download } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Download, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import api from "@/api/axios";
 import { useUsers } from "@/api/admin.api";
+import { messageErreur } from "@/lib/erreurs";
 import { telechargerCsv } from "@/lib/export";
+
+/** Choix de la fenêtre « Supprimer l'historique » : 0 = tout. */
+const ANCIENNETES = [
+  { jours: 30, label: "Plus de 1 mois" },
+  { jours: 90, label: "Plus de 3 mois" },
+  { jours: 180, label: "Plus de 6 mois" },
+  { jours: 0, label: "Tout l'historique" },
+];
 
 const PERIODES = [
   { jours: 1, label: "Aujourd'hui" },
@@ -72,6 +82,65 @@ function useConnexions(userId, jours) {
   });
 }
 
+function useSupprimerConnexions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (avantJours) => api.delete("/api/admin/connexions", { params: { avantJours } }).then((r) => r.data),
+    onSuccess: ({ supprimees }) => {
+      qc.invalidateQueries({ queryKey: ["admin", "connexions"] });
+      toast.success(supprimees === 0 ? "Aucune connexion à supprimer" : `${supprimees} connexion${supprimees > 1 ? "s" : ""} supprimée${supprimees > 1 ? "s" : ""}`);
+    },
+    onError: (err) => toast.error(messageErreur(err, "Suppression impossible")),
+  });
+}
+
+function ModaleSuppression({ onClose }) {
+  const [jours, setJours] = useState(90);
+  const { mutate, isPending } = useSupprimerConnexions();
+  const choix = ANCIENNETES.find((a) => a.jours === jours);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+        <h3 className="text-base font-semibold text-gray-900">Supprimer l'historique</h3>
+        <label className="mt-4 block text-xs font-medium text-gray-700" htmlFor="anciennete">
+          Connexions à supprimer
+        </label>
+        <select
+          id="anciennete"
+          value={jours}
+          onChange={(e) => setJours(Number(e.target.value))}
+          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+        >
+          {ANCIENNETES.map((a) => (
+            <option key={a.jours} value={a.jours}>
+              {a.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-3 text-sm text-gray-600">
+          {choix.jours === 0 ? "Tout l'historique sera supprimé." : `Les connexions de ${choix.label.toLowerCase()} seront supprimées.`}{" "}
+          Cette action est irréversible.
+        </p>
+        <div className="mt-5 flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Annuler
+          </button>
+          <button
+            disabled={isPending}
+            onClick={() => mutate(jours, { onSuccess: onClose })}
+            className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+          >
+            {isPending ? "Suppression…" : "Supprimer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const champ =
   "rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400";
 
@@ -88,6 +157,7 @@ export default function AdminConnexionsPage() {
     setParams(p, { replace: true });
   };
 
+  const [suppression, setSuppression] = useState(false);
   const { data: users = [] } = useUsers();
   const { data: connexions = [], isLoading, isError } = useConnexions(userId, jours);
 
@@ -117,15 +187,25 @@ export default function AdminConnexionsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-gray-900">Historique des connexions</h2>
-        <button
-          onClick={exporter}
-          disabled={lignes.length === 0}
-          className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-        >
-          <Download size={16} />
-          Excel
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={exporter}
+            disabled={lignes.length === 0}
+            className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <Download size={16} />
+            Excel
+          </button>
+          <button
+            onClick={() => setSuppression(true)}
+            className="flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+          >
+            <Trash2 size={16} />
+            Supprimer l'historique
+          </button>
+        </div>
       </div>
+      {suppression && <ModaleSuppression onClose={() => setSuppression(false)} />}
 
       <div className="flex flex-wrap gap-2">
         <select value={userId} onChange={(e) => changer("userId", e.target.value)} className={champ} aria-label="Utilisateur">
