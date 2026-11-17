@@ -10,6 +10,7 @@ import {
   LockOpen,
   Power,
   Trash2,
+  Wifi,
   ShieldCheck,
   UserCheck,
   UserX,
@@ -22,6 +23,7 @@ import {
   useToggleStatutUser,
   useResetPassword,
   useDeverrouillerUser,
+  useConnectes,
 } from "@/api/admin.api";
 import { ROLES_DISPONIBLES } from "@/lib/roles";
 
@@ -212,11 +214,12 @@ export default function AdminUsersPage() {
 
   const actifCount = users.filter((u) => u.statut === "ACTIF").length;
   const inactifCount = users.filter((u) => u.statut === "INACTIF").length;
+  const { data: connectes = new Set() } = useConnectes();
 
   return (
     <div className="space-y-6">
       {/* En-tête KPI */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="rounded-xl border border-gray-100 bg-white p-4 flex items-center gap-3">
           <div className="rounded-lg bg-orange-100 p-2">
             <Users size={18} className="text-orange-600" />
@@ -244,6 +247,19 @@ export default function AdminUsersPage() {
             <p className="text-xl font-bold text-gray-900">{inactifCount}</p>
           </div>
         </div>
+        <button
+          onClick={() => navigate("/admin/connexions")}
+          className="rounded-xl border border-gray-100 bg-white p-4 flex items-center gap-3 text-left hover:border-green-200"
+          title="Historique des connexions"
+        >
+          <div className="rounded-lg bg-green-100 p-2">
+            <Wifi size={18} className="text-green-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Connectés</p>
+            <p className="text-xl font-bold text-gray-900">{connectes.size}</p>
+          </div>
+        </button>
       </div>
 
       {/* Barre d'actions */}
@@ -346,8 +362,11 @@ export default function AdminUsersPage() {
                         {u.prenom[0]}{u.nom[0]}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">
+                        <p className="flex items-center gap-1.5 font-medium text-gray-900">
                           {u.prenom} {u.nom}
+                          {connectes.has(u.id) && (
+                            <span className="h-2 w-2 rounded-full bg-green-500" title="Connecté" aria-label="Connecté" />
+                          )}
                         </p>
                         <p className="text-xs text-gray-400">{u.email}</p>
                       </div>
