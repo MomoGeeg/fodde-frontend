@@ -7,6 +7,7 @@ import {
   MoreVertical,
   Pencil,
   KeyRound,
+  LockOpen,
   Power,
   Trash2,
   ShieldCheck,
@@ -20,6 +21,7 @@ import {
   useDeleteUser,
   useToggleStatutUser,
   useResetPassword,
+  useDeverrouillerUser,
 } from "@/api/admin.api";
 import { ROLES_DISPONIBLES } from "@/lib/roles";
 
@@ -123,7 +125,7 @@ function ResetPasswordModal({ user, onClose }) {
 }
 
 // ── Menu actions par ligne ────────────────────────────────────────────────────
-function ActionsMenu({ user, onEdit, onReset, onToggle, onDelete }) {
+function ActionsMenu({ user, onEdit, onReset, onToggle, onUnlock, onDelete }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -150,6 +152,14 @@ function ActionsMenu({ user, onEdit, onReset, onToggle, onDelete }) {
             >
               <KeyRound size={14} /> Réinitialiser le mot de passe
             </button>
+            {user.verrouille && (
+              <button
+                onClick={() => { setOpen(false); onUnlock(); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-green-700 hover:bg-gray-50"
+              >
+                <LockOpen size={14} /> Débloquer
+              </button>
+            )}
             <button
               onClick={() => { setOpen(false); onToggle(); }}
               className={`flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 ${
@@ -179,6 +189,7 @@ export default function AdminUsersPage() {
   const { data: users = [], isLoading } = useUsers();
   const { mutate: deleteUser } = useDeleteUser();
   const { mutate: toggleStatut } = useToggleStatutUser();
+  const { mutate: deverrouiller } = useDeverrouillerUser();
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("");
   const [filterStatut, setFilterStatut] = useState("");
@@ -369,6 +380,11 @@ export default function AdminUsersPage() {
                       />
                       {u.statut === "ACTIF" ? "Actif" : "Inactif"}
                     </span>
+                    {u.verrouille && (
+                      <span className="ml-1.5 inline-flex rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                        Verrouillé
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">
                     <button
@@ -387,6 +403,7 @@ export default function AdminUsersPage() {
                       onEdit={() => navigate(`/admin/utilisateurs/${u.id}/edit`)}
                       onReset={() => setResetTarget(u)}
                       onToggle={() => toggleStatut({ id: u.id, statut: u.statut === "ACTIF" ? "INACTIF" : "ACTIF" })}
+                      onUnlock={() => deverrouiller(u.id)}
                       onDelete={() => setDeleteConfirm(u)}
                     />
                   </td>

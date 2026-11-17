@@ -82,6 +82,19 @@ export function useToggleStatutUser() {
   });
 }
 
+/** Remet à zéro les mots de passe incorrects d'un compte verrouillé. */
+export function useDeverrouillerUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.patch(`/api/users/${id}/deverrouiller`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin"] });
+      toast.success("Compte débloqué");
+    },
+    onError: (err) => toast.error(messageErreur(err, "Déblocage impossible")),
+  });
+}
+
 export function useResetPassword() {
   return useMutation({
     mutationFn: ({ id, motDePasse }) =>
