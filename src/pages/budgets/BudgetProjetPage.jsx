@@ -195,9 +195,7 @@ export default function BudgetProjetPage() {
         <div className="flex gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-gray-800 print:hidden">
           <Handshake size={18} className="mt-0.5 shrink-0 text-primary" />
           <p>
-            Rapport pour <strong>{convention.bailleurNom}</strong>, convention {convention.referenceConvention}. La période
-            est calée sur la convention. Les dépenses comptées sont toutes les dépenses validées du projet sur cette
-            période : si le projet a plusieurs bailleurs, elles ne sont pas réparties entre eux.
+            Rapport pour <strong>{convention.bailleurNom}</strong>, convention {convention.referenceConvention}
           </p>
         </div>
       )}

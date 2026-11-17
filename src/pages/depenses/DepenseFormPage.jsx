@@ -198,7 +198,7 @@ export default function DepenseFormPage() {
         </div>
         {montantSaisi > SEUIL_APPROBATION_SE && (
           <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Au-delà de {montant(SEUIL_APPROBATION_SE)}, la dépense devra aussi être approuvée par le Secrétaire exécutif.
+            Approbation du Secrétaire exécutif requise (plus de {montant(SEUIL_APPROBATION_SE)}).
           </p>
         )}
 

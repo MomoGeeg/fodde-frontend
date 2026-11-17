@@ -217,9 +217,7 @@ function AssocierCompteModal({ employe, comptesLibres, onClose }) {
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {comptes.length === 0 ? (
-            <p className="text-sm text-gray-600">
-              Tous les comptes sont déjà liés à une fiche. Créez plutôt un compte pour cet employé.
-            </p>
+            <p className="text-sm text-gray-600">Aucun compte disponible.</p>
           ) : (
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -238,9 +236,6 @@ function AssocierCompteModal({ employe, comptesLibres, onClose }) {
                   </option>
                 ))}
               </select>
-              <p className="mt-1.5 text-xs text-gray-500">
-                La personne verra ensuite ses congés et son solde dans la page Congés.
-              </p>
             </div>
           )}
           <div className="flex gap-2 pt-1">
@@ -270,13 +265,7 @@ function ComptesSansFicheAdmin({ comptes }) {
   if (comptes.length === 0) return null;
   return (
     <div className="space-y-3">
-      <div>
-        <h3 className="text-sm font-semibold text-gray-900">Comptes sans fiche employé ({comptes.length})</h3>
-        <p className="text-xs text-gray-500 mt-0.5">
-          Les RH créent la fiche depuis Équipe › Employés : elle sera liée au compte d'office.
-          Si la fiche existe déjà ci-dessus, utilisez plutôt « Associer un compte existant ».
-        </p>
-      </div>
+      <h3 className="text-sm font-semibold text-gray-900">Comptes sans fiche employé ({comptes.length})</h3>
       <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 bg-white">
         {comptes.map((c) => (
           <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
@@ -337,15 +326,9 @@ export default function AdminEmployesSansCompte() {
     <div className="space-y-6">
       {/* En-tête */}
       <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">
-            Employés sans compte utilisateur
-          </h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Les RH enregistrent la fiche de chaque employé ; vous lui ouvrez ensuite
-            l'accès à la plateforme. Créez son compte, ou associez un compte déjà créé.
-          </p>
-        </div>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Employés sans compte utilisateur
+        </h2>
         <div className="flex items-center gap-2 rounded-xl bg-orange-50 px-3 py-2">
           <Users size={16} className="text-orange-600" />
           <span className="text-sm font-semibold text-orange-700">
@@ -366,10 +349,6 @@ export default function AdminEmployesSansCompte() {
           </div>
           <p className="text-sm font-medium text-gray-700">
             Tous les employés ont un compte
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
-            Pour un nouvel employé, les RH enregistrent d'abord sa fiche
-            (Équipe › Employés) : elle apparaîtra ici.
           </p>
         </div>
       ) : (
