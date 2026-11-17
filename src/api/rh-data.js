@@ -14,7 +14,6 @@ export const rhKeys = {
   employes: ["rh-employes"],
   employe: (id) => ["rh-employe", id],
   comptesSansFiche: ["rh-comptes-sans-fiche"],
-  organigramme: ["rh-organigramme"],
   conges: ["rh-conges"],
   congesByEmploye: (id) => ["rh-conges", id],
   congesEnAttente: ["rh-conges-attente"],
@@ -56,7 +55,6 @@ export function useCreateEmploye() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: rhKeys.employes });
       qc.invalidateQueries({ queryKey: rhKeys.comptesSansFiche });
-      qc.invalidateQueries({ queryKey: rhKeys.organigramme });
       qc.invalidateQueries({ queryKey: ["admin"] });
     },
   });
@@ -83,17 +81,11 @@ export function useModifierEmploye() {
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: rhKeys.employes });
       qc.invalidateQueries({ queryKey: rhKeys.employe(id) });
-      qc.invalidateQueries({ queryKey: rhKeys.organigramme });
     },
   });
 }
 
-/** Organigramme de l'ONG (tous les comptes connectés). */
-export function useOrganigramme() {
-  return useQuery({ queryKey: rhKeys.organigramme, queryFn: rh.getOrganigramme, staleTime: 5 * 60_000 });
-}
-
-/** Pôles de l'organigramme, dans l'ordre d'affichage. Les antennes viendront en V2. */
+/** Pôles de l'ONG, dans l'ordre d'affichage. */
 export const POLES = {
   DIRECTION: { label: "Direction", detail: "Secrétaire exécutif, suivi-évaluation" },
   RAF: { label: "Administration et finances (RAF)", detail: "Secrétariat, comptabilité, logistique, RH" },

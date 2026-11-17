@@ -40,12 +40,6 @@ export async function getPropositionRattachement(userId) {
   return data;
 }
 
-/** Employés présents avec poste, pôle et supérieur : de quoi dessiner l'organigramme. */
-export async function getOrganigramme() {
-  const { data } = await api.get("/api/employes/organigramme");
-  return data;
-}
-
 export async function changerStatutEmploye(id, statut) {
   const res = await api.patch(`/api/employes/${id}/statut`, null, {
     params: { statut },
