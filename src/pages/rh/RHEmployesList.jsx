@@ -22,9 +22,6 @@ function ComptesSansFiche({ onCreer }) {
       <p className="text-sm font-semibold text-amber-900">
         {comptes.length} compte{comptes.length > 1 ? "s" : ""} sans fiche employé
       </p>
-      <p className="mt-0.5 text-xs text-amber-800">
-        Ces personnes ont accès à la plateforme mais n'ont pas de dossier : elles ne voient pas leurs congés.
-      </p>
       <ul className="mt-3 divide-y divide-amber-100 rounded-lg bg-white">
         {comptes.map((c) => (
           <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">

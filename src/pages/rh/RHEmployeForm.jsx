@@ -334,15 +334,12 @@ export default function RHEmployeForm() {
                 {doublon && (
                   <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     Une fiche au nom de {doublon.prenom} {doublon.nom} existe déjà, sans compte
-                    {doublon.matricule ? ` (${doublon.matricule})` : ""}. Pour éviter un doublon, demandez plutôt à
-                    l'administrateur de l'associer à ce compte.
+                    {doublon.matricule ? ` (${doublon.matricule})` : ""}.
                   </p>
                 )}
-                <p className="mt-1 text-xs text-gray-400">
-                  {comptesSansFiche.length > 0
-                    ? "Comptes qui n'ont pas encore de fiche. Liée à son compte, la personne voit ses congés et son solde."
-                    : "Tous les comptes ont déjà une fiche."}
-                </p>
+                {comptesSansFiche.length === 0 && (
+                  <p className="mt-1 text-xs text-gray-400">Tous les comptes ont déjà une fiche.</p>
+                )}
               </div>
             </div>
           )}

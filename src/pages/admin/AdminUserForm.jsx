@@ -126,22 +126,6 @@ export default function AdminUserForm() {
         Retour à la liste
       </button>
 
-      {/* Création directe : rôles de direction (RAF, responsable des programmes, SE) et personnes
-          sans dossier RH. La fiche employé, si elle existe plus tard, s'associe dans « Comptes et fiches ». */}
-      {!isEditMode && (
-        <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm text-blue-900">
-          <p className="font-medium">Création directe d'un compte</p>
-          <p className="mt-1 text-blue-800">
-            Pour le <strong>RAF</strong>, le <strong>responsable des programmes</strong>, le{" "}
-            <strong>Secrétaire exécutif</strong>, ainsi que les personnes sans dossier RH (prestataire, auditeur…).
-            Quand les RH auront enregistré sa fiche employé, associez-la à ce compte dans{" "}
-            <Link to="/admin/sans-compte" className="font-medium underline">
-              Comptes et fiches
-            </Link>
-            . Pour les autres employés, créez le compte depuis leur fiche.
-          </p>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Informations personnelles */}
@@ -232,9 +216,6 @@ export default function AdminUserForm() {
               Rôle(s) assigné(s) <span className="text-red-500">*</span>
             </h3>
           </div>
-          <p className="text-xs text-gray-500">
-            Sélectionnez un ou plusieurs rôles pour cet utilisateur.
-          </p>
           <div className="grid grid-cols-2 gap-2">
             {ROLES_DISPONIBLES.map((r) => (
               <label

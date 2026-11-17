@@ -356,9 +356,6 @@ function FormPreparation({ m }) {
 
   return (
     <Bloc titre="Équipe et budget (RAF)">
-      <p className="mb-3 text-sm text-gray-600">
-        Seules les personnes libres sur ces dates sont proposées. Enregistrez, puis validez la mission en haut de la fiche.
-      </p>
       <ChoixEquipe personnes={personnes} equipe={equipe} setEquipe={setEquipe} chef={chef} setChef={setChef} />
 
       <h4 className="mt-6 mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Budget</h4>
@@ -467,9 +464,6 @@ function BlocDiffusion({ m }) {
         </Link>
       }
     >
-      <p className="mb-3 text-sm text-gray-600">
-        Envoyez l'ordre de mission à chaque personne : WhatsApp s'ouvre avec le message déjà rédigé.
-      </p>
       <ul className="divide-y divide-gray-100 text-sm">
         {destinataires.map((d) => {
           const numero = numeroWhatsApp(d.telephone);

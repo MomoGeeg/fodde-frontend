@@ -40,12 +40,7 @@ export default function OrganigrammePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Organigramme</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Chacun sous son supérieur direct, d'après les fiches employés. Les antennes viendront plus tard.
-        </p>
-      </div>
+      <h1 className="text-2xl font-bold text-gray-900">Organigramme</h1>
 
       <div className="flex flex-wrap gap-2">
         {Object.entries(POLES).map(([code, p]) => (
@@ -72,9 +67,6 @@ export default function OrganigrammePage() {
       {aCompleter.length > 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
           <h2 className="text-sm font-semibold text-amber-900">À compléter ({aCompleter.length})</h2>
-          <p className="mt-1 text-xs text-amber-800">
-            Pôle ou supérieur direct non renseigné : leurs demandes ne sauront pas à qui aller en premier.
-          </p>
           <ul className="mt-3 space-y-1 text-sm text-amber-900">
             {aCompleter.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-2">
