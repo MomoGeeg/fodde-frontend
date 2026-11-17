@@ -4,6 +4,7 @@ import useAuthStore from "@/stores/auth.store";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, TriangleAlert } from "lucide-react";
 import { Link } from "react-router-dom";
+import TableauDeBordRH from "./TableauDeBordRH";
 import TableauDeBordRP from "./TableauDeBordRP";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -139,11 +140,14 @@ export default function AccueilPage() {
   const voitChiffres = aAcces(roles, [R.SE, R.RAF]);
   // Le responsable des programmes a son propre tableau de bord (s'il n'a pas aussi un rôle de direction).
   const estRP = aAcces(roles, [R.RP]) && !aAcces(roles, [R.SE, R.RAF]);
+  // Les RH ont aussi leur tableau de bord (sauf s'ils ont un rôle de direction ou de programme).
+  const estRH = aAcces(roles, [R.RH]) && !aAcces(roles, [R.SE, R.RAF, R.RP]);
+  const tableauDeBord = estRP || estRH;
 
   const aTraiter = useQuery({
     queryKey: ["accueil", "a-traiter", roles],
     queryFn: () => chargerATraiter(roles, user?.id),
-    enabled: !estRP,
+    enabled: !tableauDeBord,
     staleTime: 60_000,
   });
   const mesDemandes = useQuery({
@@ -165,7 +169,7 @@ export default function AccueilPage() {
   });
 
   return (
-    <div className={`mx-auto space-y-6 ${estRP ? "max-w-6xl" : "max-w-5xl"}`}>
+    <div className={`mx-auto space-y-6 ${tableauDeBord ? "max-w-6xl" : "max-w-5xl"}`}>
       <p className="text-sm text-gray-600">Bonjour {user?.prenom},</p>
 
       {voitChiffres && (
@@ -182,8 +186,9 @@ export default function AccueilPage() {
       )}
 
       {estRP && <TableauDeBordRP userId={user?.id} />}
+      {estRH && <TableauDeBordRH userId={user?.id} />}
 
-      {!estRP && (
+      {!tableauDeBord && (
         <section className="rounded-lg border border-gray-200 bg-white">
           <h2 className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">À traiter</h2>
           {aTraiter.isLoading ? (

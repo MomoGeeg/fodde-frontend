@@ -6,6 +6,7 @@ import api from "@/api/axios";
 import { useFinancements, nomCourt } from "@/api/bailleurs";
 import { totaux, useLignesDesProjets, useProjets, SEUIL_ALERTE } from "@/api/budgets";
 import Jauge from "@/components/demande/Jauge";
+import { Bloc, Carte } from "@/components/tableau/Blocs";
 import { dateCourte, montant } from "@/lib/format";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -51,32 +52,6 @@ function useMissionsAApprouver(userId) {
       liste(await api.get("/api/missions")).filter((m) => m.statut === "SOUMISE" && m.n1Id === userId),
     staleTime: 60_000,
   });
-}
-
-function Carte({ libelle, valeur, detail, chargement }) {
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <p className="text-xs text-gray-500">{libelle}</p>
-      <p className="mt-1 text-lg font-semibold text-gray-900 tabular-nums">{chargement ? "…" : valeur}</p>
-      {detail && !chargement && <p className="text-xs text-gray-500 tabular-nums">{detail}</p>}
-    </div>
-  );
-}
-
-function Bloc({ titre, lien, libelleLien, children }) {
-  return (
-    <section className="rounded-lg border border-gray-200 bg-white">
-      <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-        <h2 className="text-sm font-semibold text-gray-900">{titre}</h2>
-        {lien && (
-          <Link to={lien} className="text-xs font-medium text-primary hover:underline">
-            {libelleLien}
-          </Link>
-        )}
-      </div>
-      {children}
-    </section>
-  );
 }
 
 export default function TableauDeBordRP({ userId }) {
