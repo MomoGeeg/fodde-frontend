@@ -272,21 +272,25 @@ export default function AdminUsersPage() {
             <option value="INACTIF">Inactif</option>
           </select>
         </div>
-        {/* Un compte part d'une fiche employé enregistrée par les RH ;
-            la création libre reste possible pour les personnes sans dossier RH. */}
-        <div className="flex flex-col items-end gap-1">
+        {/* Deux façons de créer un compte :
+            - directement : RAF, responsable des programmes, SE (et personnes sans dossier RH) ;
+            - depuis la fiche RH : tous les autres employés. */}
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <button
             onClick={() => navigate("/admin/sans-compte")}
-            className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+            className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            title="Pour les employés dont les RH ont enregistré la fiche"
           >
             <Plus size={16} />
-            Nouveau compte
+            Depuis une fiche RH
           </button>
           <button
             onClick={() => navigate("/admin/utilisateurs/nouveau")}
-            className="text-xs text-gray-500 underline-offset-2 hover:text-gray-800 hover:underline"
+            className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+            title="RAF, responsable des programmes, Secrétaire exécutif, personnes sans dossier RH"
           >
-            Compte sans fiche employé (prestataire, externe…)
+            <Plus size={16} />
+            Nouveau compte (RAF, RP, SE…)
           </button>
         </div>
       </div>

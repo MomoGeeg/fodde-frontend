@@ -126,17 +126,19 @@ export default function AdminUserForm() {
         Retour à la liste
       </button>
 
-      {/* Création libre : réservée aux personnes sans dossier RH */}
+      {/* Création directe : rôles de direction (RAF, responsable des programmes, SE) et personnes
+          sans dossier RH. La fiche employé, si elle existe plus tard, s'associe dans « Comptes et fiches ». */}
       {!isEditMode && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          <p className="font-medium">Compte sans fiche employé</p>
-          <p className="mt-1 text-amber-800">
-            Réservé aux personnes qui n'ont pas de dossier RH (prestataire, auditeur, partenaire…). Pour un
-            employé, demandez aux RH d'enregistrer sa fiche puis créez le compte depuis{" "}
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm text-blue-900">
+          <p className="font-medium">Création directe d'un compte</p>
+          <p className="mt-1 text-blue-800">
+            Pour le <strong>RAF</strong>, le <strong>responsable des programmes</strong>, le{" "}
+            <strong>Secrétaire exécutif</strong>, ainsi que les personnes sans dossier RH (prestataire, auditeur…).
+            Quand les RH auront enregistré sa fiche employé, associez-la à ce compte dans{" "}
             <Link to="/admin/sans-compte" className="font-medium underline">
               Comptes et fiches
             </Link>
-            .
+            . Pour les autres employés, créez le compte depuis leur fiche.
           </p>
         </div>
       )}
