@@ -46,6 +46,7 @@ const useAuthStore = create((set, get) => ({
       nom: data.nom,
       prenom: data.prenom,
       roles: data.roles ?? [],
+      connexionId: data.connexionId ?? null,
     };
 
     localStorage.setItem("fodde_token", data.token);
@@ -57,6 +58,15 @@ const useAuthStore = create((set, get) => ({
 
   /* ── Logout ────────────────────────────────────────────────────── */
   logout: () => {
+    // Le serveur note l'heure de déconnexion (historique des connexions). Le jeton est passé
+    // explicitement : il est retiré du navigateur juste après. Une erreur n'empêche pas de sortir.
+    const token = localStorage.getItem("fodde_token");
+    const connexionId = get().user?.connexionId;
+    if (token && connexionId) {
+      api
+        .post("/api/auth/deconnexion", { connexionId }, { headers: { Authorization: `Bearer ${token}` } })
+        .catch(() => {});
+    }
     localStorage.removeItem("fodde_token");
     localStorage.removeItem("fodde_user");
     set({ user: null, isAuthenticated: false });

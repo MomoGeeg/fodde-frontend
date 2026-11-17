@@ -51,6 +51,16 @@ export function appareil(ua) {
 
 const dateHeure = (d) =>
   new Date(d).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const heure = (d) => new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const memeJour = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
+
+/** Fin de session : heure seule si le même jour que la connexion, sinon date et heure. */
+function finSession(c) {
+  if (!c.succes) return "—";
+  if (!c.finSession) return "En cours";
+  const quand = memeJour(c.dateConnexion, c.finSession) ? heure(c.finSession) : dateHeure(c.finSession);
+  return c.typeFin === "EXPIRATION" ? `${quand} (expirée)` : quand;
+}
 
 function useConnexions(userId, jours) {
   return useQuery({
@@ -90,9 +100,10 @@ export default function AdminConnexionsPage() {
 
   const exporter = () =>
     telechargerCsv(`connexions_${new Date().toISOString().slice(0, 10)}`, [
-      ["Date et heure", "Utilisateur", "E-mail", "Résultat", "Motif", "Adresse IP", "Appareil"],
+      ["Connexion", "Déconnexion", "Utilisateur", "E-mail", "Résultat", "Motif", "Adresse IP", "Appareil"],
       ...lignes.map((c) => [
         dateHeure(c.dateConnexion),
+        c.succes && c.finSession ? dateHeure(c.finSession) + (c.typeFin === "EXPIRATION" ? " (expirée)" : "") : c.succes ? "En cours" : "",
         c.nomComplet || "",
         c.email,
         c.succes ? "Réussie" : "Refusée",
@@ -140,10 +151,11 @@ export default function AdminConnexionsPage() {
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-              <th className="px-4 py-3">Date et heure</th>
+              <th className="px-4 py-3">Connexion</th>
+              <th className="px-4 py-3">Déconnexion</th>
               <th className="px-4 py-3">Utilisateur</th>
               <th className="px-4 py-3">Résultat</th>
               <th className="px-4 py-3">Adresse IP</th>
@@ -153,19 +165,19 @@ export default function AdminConnexionsPage() {
           <tbody className="divide-y divide-gray-50">
             {isLoading ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                   Chargement…
                 </td>
               </tr>
             ) : isError ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-red-600">
+                <td colSpan={6} className="px-4 py-8 text-center text-red-600">
                   Historique indisponible.
                 </td>
               </tr>
             ) : lignes.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                   Aucune connexion sur la période.
                 </td>
               </tr>
@@ -173,6 +185,13 @@ export default function AdminConnexionsPage() {
               lignes.map((c) => (
                 <tr key={c.id} className="hover:bg-gray-50/60">
                   <td className="whitespace-nowrap px-4 py-3 tabular-nums text-gray-700">{dateHeure(c.dateConnexion)}</td>
+                  <td
+                    className={`whitespace-nowrap px-4 py-3 tabular-nums ${
+                      c.succes && !c.finSession ? "font-medium text-green-700" : "text-gray-700"
+                    }`}
+                  >
+                    {finSession(c)}
+                  </td>
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-900">{c.nomComplet || "—"}</p>
                     <p className="text-xs text-gray-500">{c.email}</p>
