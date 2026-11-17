@@ -1,6 +1,6 @@
 import AppLayout from "@/components/layout/AppLayout";
 import RequireRole from "@/components/shared/RequireRole";
-import { ACCES, R } from "@/lib/navigation";
+import { ACCES, ACCUEIL_ADMIN, R, estAdminSeul } from "@/lib/navigation";
 import AccueilPage from "@/pages/accueil/AccueilPage";
 import { BailleurFichePage, BailleurFormPage, BailleursPage, FinancementFormPage } from "@/pages/bailleurs/BailleursPages";
 import { IndicateurFichePage, IndicateurFormPage, IndicateursPage } from "@/pages/indicateurs/IndicateursPages";
@@ -42,11 +42,16 @@ import {
 } from "@/pages/logistique/LogistiquePages";
 import ModuleEnPreparation from "@/pages/shared/ModuleEnPreparation";
 import useAuthStore from "@/stores/auth.store";
-import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 
 function PrivateRoute({ children }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const location = useLocation();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // L'administrateur seul ne voit que la gestion des comptes : toute autre page y renvoie.
+  if (estAdminSeul(user?.roles) && !location.pathname.startsWith("/admin")) {
+    return <Navigate to={ACCUEIL_ADMIN} replace />;
+  }
   return children;
 }
 

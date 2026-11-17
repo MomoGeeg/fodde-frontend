@@ -146,6 +146,16 @@ export const NAVIGATION = [
   },
 ];
 
+/**
+ * Vrai pour un compte qui n'a que le rôle administrateur. Son métier est la
+ * gestion des comptes utilisateurs, rien d'autre : un seul espace, /admin.
+ * (Un compte qui cumule admin et un rôle métier garde son menu métier.)
+ */
+export const estAdminSeul = (userRoles = []) => userRoles.length > 0 && userRoles.every((r) => r === R.ADMIN);
+
+/** Adresse d'accueil d'un administrateur seul. */
+export const ACCUEIL_ADMIN = "/admin/utilisateurs";
+
 /** Vrai si l'utilisateur possède au moins un des rôles (ou si aucun rôle n'est exigé). */
 export function aAcces(userRoles = [], roles) {
   if (!roles || roles.length === 0) return true;
@@ -157,6 +167,10 @@ const dansMenu = (userRoles, item) => !item.menu || userRoles.some((r) => item.m
 
 /** Menu de l'utilisateur, selon son métier : sections vides retirées. */
 export function menuPour(userRoles = []) {
+  // L'administrateur gère uniquement les comptes : rien d'autre dans son menu.
+  if (estAdminSeul(userRoles)) {
+    return NAVIGATION.filter((section) => section.titre === "Administration");
+  }
   return NAVIGATION.map((section) => ({
     ...section,
     items: section.items.filter((item) => dansMenu(userRoles, item)),
