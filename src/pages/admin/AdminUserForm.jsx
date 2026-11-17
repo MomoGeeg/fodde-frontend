@@ -1,6 +1,7 @@
 import { useCreateUser, useUpdateUser, useUser } from "@/api/admin.api";
 import { messageErreur } from "@/lib/erreurs";
 import { ROLES_DISPONIBLES } from "@/lib/roles";
+import { OptionsServices } from "@/lib/services";
 import { ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -194,16 +195,17 @@ export default function AdminUserForm() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Service / Département
+              <label htmlFor="service" className="block text-xs font-medium text-gray-700 mb-1">
+                Service
               </label>
-              <input
-                type="text"
+              <select
+                id="service"
                 value={form.service}
                 onChange={set("service")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                placeholder="Programmes"
-              />
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <OptionsServices valeur={form.service} />
+              </select>
             </div>
           </div>
         </div>
