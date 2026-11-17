@@ -4,6 +4,7 @@ import useAuthStore from "@/stores/auth.store";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, TriangleAlert } from "lucide-react";
 import { Link } from "react-router-dom";
+import TableauDeBordRP from "./TableauDeBordRP";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Page d'accueil commune : ce que j'ai à faire, où en sont mes demandes,
@@ -136,10 +137,13 @@ export default function AccueilPage() {
 
   const voitAlertes = aAcces(roles, [R.SE, R.RAF, R.ADMIN]);
   const voitChiffres = aAcces(roles, [R.SE, R.RAF]);
+  // Le responsable des programmes a son propre tableau de bord (s'il n'a pas aussi un rôle de direction).
+  const estRP = aAcces(roles, [R.RP]) && !aAcces(roles, [R.SE, R.RAF]);
 
   const aTraiter = useQuery({
     queryKey: ["accueil", "a-traiter", roles],
     queryFn: () => chargerATraiter(roles, user?.id),
+    enabled: !estRP,
     staleTime: 60_000,
   });
   const mesDemandes = useQuery({
@@ -161,7 +165,7 @@ export default function AccueilPage() {
   });
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className={`mx-auto space-y-6 ${estRP ? "max-w-6xl" : "max-w-5xl"}`}>
       <p className="text-sm text-gray-600">Bonjour {user?.prenom},</p>
 
       {voitChiffres && (
@@ -177,28 +181,32 @@ export default function AccueilPage() {
         </section>
       )}
 
-      <section className="rounded-lg border border-gray-200 bg-white">
-        <h2 className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">À traiter</h2>
-        {aTraiter.isLoading ? (
-          <p className="px-4 py-6 text-sm text-gray-500">Chargement…</p>
-        ) : aTraiter.data?.length ? (
-          <ul className="divide-y divide-gray-100">
-            {aTraiter.data.map((t) => (
-              <li key={t.libelle}>
-                <Link to={t.lien} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50">
-                  <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-2 text-xs font-semibold text-white tabular-nums">
-                    {t.nombre}
-                  </span>
-                  <span className="flex-1 text-gray-800">{t.libelle}</span>
-                  <ChevronRight size={16} className="text-gray-400" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="px-4 py-6 text-sm text-gray-500">Rien à traiter pour le moment.</p>
-        )}
-      </section>
+      {estRP && <TableauDeBordRP userId={user?.id} />}
+
+      {!estRP && (
+        <section className="rounded-lg border border-gray-200 bg-white">
+          <h2 className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">À traiter</h2>
+          {aTraiter.isLoading ? (
+            <p className="px-4 py-6 text-sm text-gray-500">Chargement…</p>
+          ) : aTraiter.data?.length ? (
+            <ul className="divide-y divide-gray-100">
+              {aTraiter.data.map((t) => (
+                <li key={t.libelle}>
+                  <Link to={t.lien} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50">
+                    <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-2 text-xs font-semibold text-white tabular-nums">
+                      {t.nombre}
+                    </span>
+                    <span className="flex-1 text-gray-800">{t.libelle}</span>
+                    <ChevronRight size={16} className="text-gray-400" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-4 py-6 text-sm text-gray-500">Rien à traiter pour le moment.</p>
+          )}
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-lg border border-gray-200 bg-white">
