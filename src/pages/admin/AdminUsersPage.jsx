@@ -184,6 +184,8 @@ export default function AdminUsersPage() {
   const [filterStatut, setFilterStatut] = useState("");
   const [resetTarget, setResetTarget] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  // Suppression refusée par le serveur (données liées, propre compte, dernier admin)
+  const [refus, setRefus] = useState(null);
 
   const filtered = users.filter((u) => {
     const q = search.toLowerCase();
@@ -402,6 +404,35 @@ export default function AdminUsersPage() {
         <ResetPasswordModal user={resetTarget} onClose={() => setResetTarget(null)} />
       )}
 
+      {/* Suppression refusée : explication et désactivation en un clic */}
+      {refus && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-base font-semibold text-gray-900">Suppression impossible</h3>
+            <p className="mt-2 text-sm text-gray-600">{refus.message}</p>
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={() => setRefus(null)}
+                className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Fermer
+              </button>
+              {refus.user.statut === "ACTIF" && /Désactivez/.test(refus.message) && (
+                <button
+                  onClick={() => {
+                    toggleStatut({ id: refus.user.id, statut: "INACTIF" });
+                    setRefus(null);
+                  }}
+                  className="flex-1 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600"
+                >
+                  Désactiver le compte
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modale confirmation suppression */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -415,7 +446,8 @@ export default function AdminUsersPage() {
             <p className="text-sm text-gray-600">
               Voulez-vous supprimer définitivement le compte de{" "}
               <strong>{deleteConfirm.prenom} {deleteConfirm.nom}</strong> ({deleteConfirm.email}) ?
-              Cette action est irréversible.
+              Cette action est irréversible. Si le compte a déjà servi (dépenses, missions, validations…),
+              la suppression sera refusée : il faudra le désactiver.
             </p>
             <div className="flex gap-2 mt-5">
               <button
@@ -426,8 +458,15 @@ export default function AdminUsersPage() {
               </button>
               <button
                 onClick={() => {
-                  deleteUser(deleteConfirm.id);
+                  const cible = deleteConfirm;
                   setDeleteConfirm(null);
+                  deleteUser(cible.id, {
+                    onError: (err) =>
+                      setRefus({
+                        user: cible,
+                        message: err?.response?.data?.erreur || "La suppression a échoué. Réessayez.",
+                      }),
+                  });
                 }}
                 className="flex-1 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600"
               >
