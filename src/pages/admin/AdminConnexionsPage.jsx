@@ -82,6 +82,47 @@ function useConnexions(userId, jours) {
   });
 }
 
+function useSupprimerUneConnexion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.delete(`/api/admin/connexions/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "connexions"] });
+      toast.success("Connexion supprimée");
+    },
+    onError: (err) => toast.error(messageErreur(err, "Suppression impossible")),
+  });
+}
+
+function ModaleSuppressionUne({ connexion, onClose }) {
+  const { mutate, isPending } = useSupprimerUneConnexion();
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+        <h3 className="text-base font-semibold text-gray-900">Supprimer cette connexion</h3>
+        <p className="mt-2 text-sm text-gray-600">
+          {connexion.nomComplet || connexion.email}, {dateHeure(connexion.dateConnexion)}. Cette action est irréversible.
+        </p>
+        <div className="mt-5 flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Annuler
+          </button>
+          <button
+            disabled={isPending}
+            onClick={() => mutate(connexion.id, { onSuccess: onClose })}
+            className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+          >
+            {isPending ? "Suppression…" : "Supprimer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function useSupprimerConnexions() {
   const qc = useQueryClient();
   return useMutation({
@@ -158,6 +199,7 @@ export default function AdminConnexionsPage() {
   };
 
   const [suppression, setSuppression] = useState(false);
+  const [aSupprimer, setASupprimer] = useState(null);
   const { data: users = [] } = useUsers();
   const { data: connexions = [], isLoading, isError } = useConnexions(userId, jours);
 
@@ -206,6 +248,7 @@ export default function AdminConnexionsPage() {
         </div>
       </div>
       {suppression && <ModaleSuppression onClose={() => setSuppression(false)} />}
+      {aSupprimer && <ModaleSuppressionUne connexion={aSupprimer} onClose={() => setASupprimer(null)} />}
 
       <div className="flex flex-wrap gap-2">
         <select value={userId} onChange={(e) => changer("userId", e.target.value)} className={champ} aria-label="Utilisateur">
@@ -231,7 +274,7 @@ export default function AdminConnexionsPage() {
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white">
-        <table className="w-full min-w-[820px] text-sm">
+        <table className="w-full min-w-[860px] text-sm">
           <thead>
             <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
               <th className="px-4 py-3">Connexion</th>
@@ -240,24 +283,27 @@ export default function AdminConnexionsPage() {
               <th className="px-4 py-3">Résultat</th>
               <th className="px-4 py-3">Adresse IP</th>
               <th className="px-4 py-3">Appareil</th>
+              <th className="w-12 px-2 py-3">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                   Chargement…
                 </td>
               </tr>
             ) : isError ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-red-600">
+                <td colSpan={7} className="px-4 py-8 text-center text-red-600">
                   Historique indisponible.
                 </td>
               </tr>
             ) : lignes.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                   Aucune connexion sur la période.
                 </td>
               </tr>
@@ -288,6 +334,16 @@ export default function AdminConnexionsPage() {
                   </td>
                   <td className="px-4 py-3 tabular-nums text-gray-600">{c.adresseIp || "—"}</td>
                   <td className="px-4 py-3 text-gray-600">{appareil(c.navigateur)}</td>
+                  <td className="px-2 py-3 text-right">
+                    <button
+                      onClick={() => setASupprimer(c)}
+                      className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                      title="Supprimer cette connexion"
+                      aria-label="Supprimer cette connexion"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
