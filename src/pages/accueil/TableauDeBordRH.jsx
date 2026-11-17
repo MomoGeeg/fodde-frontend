@@ -186,7 +186,7 @@ export default function TableauDeBordRH({ userId }) {
         />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         <Bloc titre="Contrats en phase finale" lien="/rh/alertes" libelleLien="Alertes RH">
           {chargeEmployes ? (
             <Vide>Chargement…</Vide>
@@ -242,22 +242,6 @@ export default function TableauDeBordRH({ userId }) {
             </ul>
           ) : (
             <Vide>Personne n'est en congé ni ne part dans les 15 jours.</Vide>
-          )}
-        </Bloc>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Bloc titre="Alertes" lien="/rh/alertes" libelleLien="Toutes les alertes">
-          {chargeEmployes || chargeConges ? (
-            <Vide>Chargement…</Vide>
-          ) : alertes.length ? (
-            <ul className="divide-y divide-gray-100">
-              {alertes.map((a) => (
-                <Ligne key={a.id} lien={a.lien} titre={a.titre} detail={a.detail} />
-              ))}
-            </ul>
-          ) : (
-            <Vide>Aucune alerte.</Vide>
           )}
         </Bloc>
 

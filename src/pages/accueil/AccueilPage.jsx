@@ -153,6 +153,7 @@ export default function AccueilPage() {
   const mesDemandes = useQuery({
     queryKey: ["accueil", "mes-demandes", user?.id],
     queryFn: () => chargerMesDemandes(roles, user?.id),
+    enabled: !estRH,
     staleTime: 60_000,
   });
   const alertes = useQuery({
@@ -214,37 +215,39 @@ export default function AccueilPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-lg border border-gray-200 bg-white">
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-            <h2 className="text-sm font-semibold text-gray-900">Mes demandes</h2>
-            {!sansDemandesTerrain(roles) && (
-              <span className="flex gap-3 text-xs font-medium">
-                <Link to="/missions/nouvelle" className="text-primary hover:underline">
-                  Mission
-                </Link>
-                <Link to="/acquisitions/nouvelle" className="text-primary hover:underline">
-                  Achat
-                </Link>
-              </span>
-            )}
-          </div>
-          {mesDemandes.data?.length ? (
-            <ul className="divide-y divide-gray-100">
-              {mesDemandes.data.map((m) => (
-                <li key={m.libelle}>
-                  <Link to={m.lien} className="flex items-center justify-between px-4 py-3 text-sm hover:bg-gray-50">
-                    <span className="text-gray-700">{m.libelle}</span>
-                    <span className="font-semibold text-gray-900 tabular-nums">{m.nombre}</span>
+        {!estRH && (
+          <section className="rounded-lg border border-gray-200 bg-white">
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <h2 className="text-sm font-semibold text-gray-900">Mes demandes</h2>
+              {!sansDemandesTerrain(roles) && (
+                <span className="flex gap-3 text-xs font-medium">
+                  <Link to="/missions/nouvelle" className="text-primary hover:underline">
+                    Mission
                   </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="px-4 py-6 text-sm text-gray-500">
-              {mesDemandes.isLoading ? "Chargement…" : "Aucune demande en cours."}
-            </p>
-          )}
-        </section>
+                  <Link to="/acquisitions/nouvelle" className="text-primary hover:underline">
+                    Achat
+                  </Link>
+                </span>
+              )}
+            </div>
+            {mesDemandes.data?.length ? (
+              <ul className="divide-y divide-gray-100">
+                {mesDemandes.data.map((m) => (
+                  <li key={m.libelle}>
+                    <Link to={m.lien} className="flex items-center justify-between px-4 py-3 text-sm hover:bg-gray-50">
+                      <span className="text-gray-700">{m.libelle}</span>
+                      <span className="font-semibold text-gray-900 tabular-nums">{m.nombre}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="px-4 py-6 text-sm text-gray-500">
+                {mesDemandes.isLoading ? "Chargement…" : "Aucune demande en cours."}
+              </p>
+            )}
+          </section>
+        )}
 
         {voitAlertes && (
           <section className="rounded-lg border border-gray-200 bg-white">
