@@ -36,6 +36,7 @@ const STATUT_COLORS = {
 const STATUT_CONGE_COLORS = {
   EN_ATTENTE: "bg-yellow-100 text-yellow-700",
   VALIDE_N1: "bg-blue-100 text-blue-700",
+  VALIDE_RH: "bg-blue-100 text-blue-700",
   APPROUVE: "bg-green-100 text-green-700",
   REJETE: "bg-red-100 text-red-600",
   ANNULE: "bg-gray-100 text-gray-500",

@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Congés : les RH enregistrent la demande d'un employé ; le RAF l'approuve ou
-// la rejette ; les RH peuvent l'annuler tant qu'elle est en attente.
-// Chaque employé dont le compte est lié à sa fiche voit ses propres congés.
-// Circuit : EN_ATTENTE → APPROUVE
+// Congés : l'employé demande ; les RH valident et transmettent ; le RAF approuve.
+// Les RH peuvent aussi enregistrer un congé pour un employé (il part au RAF).
+// Chacun voit ses propres congés (fiche employé liée à son compte).
+// Circuit : EN_ATTENTE (chez les RH), VALIDE_RH (chez le RAF), APPROUVE
 // ─────────────────────────────────────────────────────────────────────────────
 import api from "@/api/axios";
 import { R, aAcces } from "@/lib/navigation";
@@ -10,7 +10,8 @@ import useAuthStore from "@/stores/auth.store";
 import { useQuery } from "@tanstack/react-query";
 
 export const STATUTS_CONGE = {
-  EN_ATTENTE: { label: "En attente", ton: "info" },
+  EN_ATTENTE: { label: "Chez les RH", ton: "info" },
+  VALIDE_RH: { label: "Chez le RAF", ton: "info" },
   VALIDE_N1: { label: "Accord du responsable", ton: "info" },
   APPROUVE: { label: "Approuvé", ton: "succes" },
   REJETE: { label: "Rejeté", ton: "danger" },
@@ -81,9 +82,10 @@ export function useConges() {
 }
 
 /** Employés actifs, pour choisir à qui s'applique une demande (avec leur solde). */
-export function useEmployesActifs() {
+export function useEmployesActifs({ enabled = true } = {}) {
   return useQuery({
     queryKey: ["employes", "actifs"],
+    enabled,
     queryFn: async () => {
       const { data } = await api.get("/api/employes");
       return (Array.isArray(data) ? data : [])
@@ -97,15 +99,46 @@ export function useEmployesActifs() {
 export const creerConge = (payload) => api.post("/api/conges", payload).then((r) => r.data);
 
 export const ETAPES_CONGE = [
-  { code: "EN_ATTENTE", label: "Enregistrée par les RH" },
+  { code: "EN_ATTENTE", label: "Demandée" },
+  { code: "VALIDE_RH", label: "Validée par les RH" },
   { code: "APPROUVE", label: "Approuvée par le RAF" },
 ];
 
-export const estATraiter = (c, roles) => aAcces(roles, [R.RAF]) && c.statut === "EN_ATTENTE";
+/** Demande qui attend l'utilisateur : les RH à la première étape, le RAF à la seconde. */
+export const estATraiter = (c, roles) =>
+  (aAcces(roles, [R.RH]) && c.statut === "EN_ATTENTE") || (aAcces(roles, [R.RAF]) && c.statut === "VALIDE_RH");
 
-export function actionsConge(c, roles, userId) {
+const rejet = (c) => ({
+  cle: "rejeter",
+  label: "Rejeter",
+  style: "danger",
+  motif: true,
+  confirmation: "Rejeter cette demande de congé ?",
+  executer: async (motif) => {
+    await api.patch(`/api/conges/${c.id}/rejeter`, null, { params: { motif } });
+    return "Demande rejetée";
+  },
+});
+
+/** Actions possibles ; `estMoi` = la demande concerne la personne connectée. */
+export function actionsConge(c, roles, estMoi = false) {
   const actions = [];
-  if (estATraiter(c, roles)) {
+  if (aAcces(roles, [R.RH]) && c.statut === "EN_ATTENTE") {
+    actions.push(
+      {
+        cle: "valider-rh",
+        label: "Valider et transmettre au RAF",
+        style: "principal",
+        confirmation: `Valider ce congé de ${c.nbJours ?? "?"} jour(s) et le transmettre au RAF ?`,
+        executer: async () => {
+          await api.patch(`/api/conges/${c.id}/valider-rh`);
+          return "Congé transmis au RAF";
+        },
+      },
+      rejet(c),
+    );
+  }
+  if (aAcces(roles, [R.RAF]) && c.statut === "VALIDE_RH") {
     actions.push(
       {
         cle: "approuver",
@@ -113,24 +146,14 @@ export function actionsConge(c, roles, userId) {
         style: "principal",
         confirmation: `Approuver ce congé de ${c.nbJours ?? "?"} jour(s) ?`,
         executer: async () => {
-          await api.patch(`/api/conges/${c.id}/approuver`, null, { params: { validateurId: userId } });
+          await api.patch(`/api/conges/${c.id}/approuver`);
           return "Congé approuvé";
         },
       },
-      {
-        cle: "rejeter",
-        label: "Rejeter",
-        style: "danger",
-        motif: true,
-        confirmation: "Rejeter cette demande de congé ?",
-        executer: async (motif) => {
-          await api.patch(`/api/conges/${c.id}/rejeter`, null, { params: { validateurId: userId, motif } });
-          return "Demande rejetée";
-        },
-      },
+      rejet(c),
     );
   }
-  if (aAcces(roles, [R.RH]) && c.statut === "EN_ATTENTE") {
+  if ((estMoi || aAcces(roles, [R.RH])) && ["EN_ATTENTE", "VALIDE_RH"].includes(c.statut)) {
     actions.push({
       cle: "annuler",
       label: "Annuler la demande",

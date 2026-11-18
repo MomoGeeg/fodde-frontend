@@ -123,9 +123,7 @@ export default function AppRoutes() {
           <Route path="acquisitions/:id" element={<AcquisitionFichePage />} />
           <Route path="conges" element={<CongesPage />} />
           <Route path="conges/:id" element={<CongeFichePage />} />
-          <Route element={<Acces roles={[R.RH]} />}>
-            <Route path="conges/nouveau" element={<CongeFormPage />} />
-          </Route>
+          <Route path="conges/nouveau" element={<CongeFormPage />} />
 
           {/* ── Ressources humaines ─────────────────────────── */}
           <Route element={<Acces roles={ACCES.employes} />}>

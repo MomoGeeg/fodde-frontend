@@ -17,7 +17,7 @@ import { dateCourte } from "@/lib/format";
 const FENETRE_CONTRATS = 90;
 /** Contrats comptés comme urgents dans les chiffres clés. */
 const CONTRATS_URGENTS = 60;
-const EN_ATTENTE = ["EN_ATTENTE", "VALIDE_N1"];
+const EN_ATTENTE = ["EN_ATTENTE", "VALIDE_RH"];
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const joursDepuis = (d) => (new Date() - new Date(d)) / 86_400_000;
@@ -81,6 +81,15 @@ export default function TableauDeBordRH({ userId }) {
   // ── À traiter : dossiers à compléter ──────────────────────────────────────
   const incompletes = presents.filter((e) => !e.pole || (!e.superieurId && e.pole !== "DIRECTION"));
   const aTraiter = [
+    ...conges
+      .filter((c) => c.statut === "EN_ATTENTE")
+      .map((c) => ({
+        id: `cg-${c.id}`,
+        lien: `/conges/${c.id}`,
+        type: "Congé à valider",
+        titre: c.employeNom,
+        detail: `${TYPES_CONGE[c.typeConge] ?? c.typeConge}, du ${dateCourte(c.dateDebut)} au ${dateCourte(c.dateFin)}`,
+      })),
     ...missions.map((m) => ({
       id: `m-${m.id}`,
       lien: `/missions/${m.id}`,

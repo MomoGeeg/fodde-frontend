@@ -158,7 +158,7 @@ function CongesAttenteSection() {
   const { data: allConges = [] } = useConges();
   const maintenant = new Date();
   const enAttente = allConges
-    .filter((c) => c.statut === "EN_ATTENTE" || c.statut === "VALIDE_N1")
+    .filter((c) => c.statut === "EN_ATTENTE" || c.statut === "VALIDE_RH")
     .map((c) => {
       const created = new Date(c.createdAt || c.dateDebut);
       const joursAttente = Math.floor(
@@ -265,7 +265,7 @@ export default function RHAlertes() {
     (e) => e.statut === "EN_RETARD",
   ).length;
   const congesAttente = allConges.filter((c) =>
-    ["EN_ATTENTE", "VALIDE_N1"].includes(c.statut),
+    ["EN_ATTENTE", "VALIDE_RH"].includes(c.statut),
   ).length;
   const soldesNegatifs = allEmployes.filter(
     (e) =>
