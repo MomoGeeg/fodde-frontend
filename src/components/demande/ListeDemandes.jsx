@@ -1,4 +1,6 @@
 import StatutBadge from "@/components/demande/StatutBadge";
+import { neCreeRien } from "@/lib/navigation";
+import useAuthStore from "@/stores/auth.store";
 import { Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -7,6 +9,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
  * Liste commune à toutes les demandes (dépenses, missions, acquisitions, congés).
  * Deux vues : « À traiter » (ce qui attend une action de l'utilisateur) et
  * « Toutes » ; recherche, filtre de statut ; lignes cliquables vers la fiche.
+ * Le Secrétaire exécutif a une vue d'ensemble : toutes les demandes, avec le
+ * nombre par statut (ses décisions passent par l'accueil, « À valider »).
  *
  * @param {object[]} demandes
  * @param {(d) => boolean} aTraiter       vrai si la demande attend l'utilisateur
@@ -31,53 +35,104 @@ export default function ListeDemandes({
   tri = (d) => d.createdAt ?? "",
 }) {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const vueEnsemble = neCreeRien(user?.roles);
   const [params, setParams] = useSearchParams();
-  const vue = params.get("vue") === "toutes" ? "toutes" : "a-traiter";
+  const vue =
+    vueEnsemble || params.get("vue") === "toutes" ? "toutes" : "a-traiter";
   const [recherche, setRecherche] = useState("");
   const [statut, setStatut] = useState("");
 
-  const enAttente = useMemo(() => demandes.filter(aTraiter), [demandes, aTraiter]);
+  const enAttente = useMemo(
+    () => demandes.filter(aTraiter),
+    [demandes, aTraiter],
+  );
 
   const affichees = useMemo(() => {
     const q = recherche.trim().toLowerCase();
     return (vue === "a-traiter" ? enAttente : demandes)
       .filter((d) => !statut || d.statut === statut)
-      .filter((d) => !q || texteRecherche(d).some((v) => v?.toString().toLowerCase().includes(q)))
+      .filter(
+        (d) =>
+          !q ||
+          texteRecherche(d).some((v) =>
+            v?.toString().toLowerCase().includes(q),
+          ),
+      )
       .sort((a, b) => tri(b).localeCompare(tri(a)));
   }, [vue, enAttente, demandes, statut, recherche, texteRecherche, tri]);
 
-  const changerVue = (v) => setParams(v === "toutes" ? { vue: "toutes" } : {}, { replace: true });
+  const changerVue = (v) =>
+    setParams(v === "toutes" ? { vue: "toutes" } : {}, { replace: true });
+
+  // Vue d'ensemble : nombre de demandes par statut, dans l'ordre des statuts.
+  const parStatut = useMemo(
+    () =>
+      Object.entries(statuts)
+        .map(([code, s]) => ({
+          code,
+          label: s.label,
+          nombre: demandes.filter((d) => d.statut === code).length,
+        }))
+        .filter((s) => s.nombre > 0),
+    [demandes, statuts],
+  );
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex rounded-md border border-gray-200 bg-white p-0.5 text-sm">
+      {vueEnsemble ? (
+        <div className="flex flex-wrap gap-2 text-sm">
           {[
-            ["a-traiter", `À traiter (${enAttente.length})`],
-            ["toutes", "Toutes"],
-          ].map(([v, label]) => (
+            { code: "", label: "Toutes", nombre: demandes.length },
+            ...parStatut,
+          ].map((s) => (
             <button
-              key={v}
-              onClick={() => changerVue(v)}
-              className={`rounded px-3 py-1.5 ${vue === v ? "bg-primary text-white" : "text-gray-700 hover:bg-gray-50"}`}
+              key={s.code || "toutes"}
+              onClick={() => setStatut(s.code)}
+              className={`rounded-md border px-3 py-1.5 ${
+                statut === s.code
+                  ? "border-primary bg-primary text-white"
+                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
             >
-              {label}
+              {s.label}{" "}
+              <span className="tabular-nums opacity-80">({s.nombre})</span>
             </button>
           ))}
         </div>
-        {nouveau && (
-          <Link
-            to={nouveau.to}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
-          >
-            <Plus size={16} /> {nouveau.label}
-          </Link>
-        )}
-      </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex rounded-md border border-gray-200 bg-white p-0.5 text-sm">
+            {[
+              ["a-traiter", `À traiter (${enAttente.length})`],
+              ["toutes", "Toutes"],
+            ].map(([v, label]) => (
+              <button
+                key={v}
+                onClick={() => changerVue(v)}
+                className={`rounded px-3 py-1.5 ${vue === v ? "bg-primary text-white" : "text-gray-700 hover:bg-gray-50"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {nouveau && (
+            <Link
+              to={nouveau.to}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+            >
+              <Plus size={16} /> {nouveau.label}
+            </Link>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <label className="relative flex-1">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
           <input
             value={recherche}
             onChange={(e) => setRecherche(e.target.value)}
@@ -85,36 +140,47 @@ export default function ListeDemandes({
             className="w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm focus:border-primary focus:outline-none"
           />
         </label>
-        <select
-          value={statut}
-          onChange={(e) => setStatut(e.target.value)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-          aria-label="Statut"
-        >
-          <option value="">Tous les statuts</option>
-          {Object.entries(statuts).map(([code, s]) => (
-            <option key={code} value={code}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+        {!vueEnsemble && (
+          <select
+            value={statut}
+            onChange={(e) => setStatut(e.target.value)}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+            aria-label="Statut"
+          >
+            <option value="">Tous les statuts</option>
+            {Object.entries(statuts).map(([code, s]) => (
+              <option key={code} value={code}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
         {isLoading ? (
-          <p className="px-4 py-8 text-center text-sm text-gray-500">Chargement…</p>
+          <p className="px-4 py-8 text-center text-sm text-gray-500">
+            Chargement…
+          </p>
         ) : isError ? (
-          <p className="px-4 py-8 text-center text-sm text-danger">Impossible de charger la liste.</p>
+          <p className="px-4 py-8 text-center text-sm text-danger">
+            Impossible de charger la liste.
+          </p>
         ) : affichees.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-gray-500">
-            {vue === "a-traiter" ? "Rien ne vous attend ici." : "Aucune demande."}
+            {vue === "a-traiter"
+              ? "Rien ne vous attend ici."
+              : "Aucune demande."}
           </p>
         ) : (
           <table className="w-full text-sm">
             <thead className="hidden border-b border-gray-200 bg-gray-50 text-left text-xs text-gray-500 md:table-header-group">
               <tr>
                 {colonnes.map((c) => (
-                  <th key={c.titre} className={`px-4 py-2 font-medium ${c.droite ? "text-right" : ""}`}>
+                  <th
+                    key={c.titre}
+                    className={`px-4 py-2 font-medium ${c.droite ? "text-right" : ""}`}
+                  >
                     {c.titre}
                   </th>
                 ))}
