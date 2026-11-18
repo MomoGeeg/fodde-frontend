@@ -1,7 +1,5 @@
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
-import api from "@/api/axios";
 import { TYPES_CONGE, useConges } from "@/api/conges";
 import { POLES, joursRestants, useComptesSansFiche, useEmployes, useEvaluations } from "@/api/rh-data";
 import { Bloc, Carte, Vide } from "@/components/tableau/Blocs";
@@ -43,16 +41,7 @@ function Ligne({ lien, gauche, titre, detail, droite, classeGauche = "text-prima
   );
 }
 
-export default function TableauDeBordRH({ userId }) {
-  // Rare, mais possible : la personne RH est le supérieur direct d'un missionnaire.
-  const { data: missions = [] } = useQuery({
-    queryKey: ["accueil", "rh", "missions", userId],
-    queryFn: async () => {
-      const { data } = await api.get("/api/missions");
-      return (Array.isArray(data) ? data : []).filter((m) => m.statut === "SOUMISE" && m.n1Id === userId);
-    },
-    staleTime: 60_000,
-  });
+export default function TableauDeBordRH() {
   const { data: employes = [], isLoading: chargeEmployes } = useEmployes();
   const { data: conges = [], isLoading: chargeConges } = useConges();
   const { data: evaluations = [] } = useEvaluations();
@@ -90,13 +79,6 @@ export default function TableauDeBordRH({ userId }) {
         titre: c.employeNom,
         detail: `${TYPES_CONGE[c.typeConge] ?? c.typeConge}, du ${dateCourte(c.dateDebut)} au ${dateCourte(c.dateFin)}`,
       })),
-    ...missions.map((m) => ({
-      id: `m-${m.id}`,
-      lien: `/missions/${m.id}`,
-      type: "Mission",
-      titre: `${m.demandeurNom} · ${m.destination}`,
-      detail: `${dateCourte(m.dateDebut)} → ${dateCourte(m.dateFin)}`,
-    })),
     ...comptesSansFiche.map((c) => ({
       id: `c-${c.id}`,
       lien: `/rh/employes/nouveau?compte=${c.id}`,

@@ -1,7 +1,5 @@
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
-import api from "@/api/axios";
 import { Bloc, Carte } from "@/components/tableau/Blocs";
 import { dateCourte, montant } from "@/lib/format";
 import { enRetard, joursAvant, usePortefeuille } from "./portefeuille";
@@ -12,18 +10,7 @@ import TableauProjets from "./TableauProjets";
 // clés du portefeuille, l'état de chaque projet en cours et les activités à suivre.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const liste = (r) => (Array.isArray(r.data) ? r.data : []);
-
-function useMissionsAApprouver(userId) {
-  return useQuery({
-    queryKey: ["accueil", "rp", "missions", userId],
-    queryFn: async () =>
-      liste(await api.get("/api/missions")).filter((m) => m.statut === "SOUMISE" && m.n1Id === userId),
-    staleTime: 60_000,
-  });
-}
-
-export default function TableauDeBordRP({ userId }) {
+export default function TableauDeBordRP() {
   const {
     projets,
     chargeProjets,
@@ -38,19 +25,11 @@ export default function TableauDeBordRP({ userId }) {
     prevuTotal,
     depenseTotal,
   } = usePortefeuille();
-  const missions = useMissionsAApprouver(userId);
 
   // ── À valider ─────────────────────────────────────────────────────────────
   const renvoyes = projets.filter((p) => p.statut === "BROUILLON" && p.motifRenvoi);
   const brouillons = projets.filter((p) => p.statut === "BROUILLON" && !p.motifRenvoi);
   const aValider = [
-    ...(missions.data ?? []).map((m) => ({
-      id: `m-${m.id}`,
-      lien: `/missions/${m.id}`,
-      type: "Mission",
-      titre: `${m.demandeurNom} · ${m.destination}`,
-      detail: `${dateCourte(m.dateDebut)} → ${dateCourte(m.dateFin)}${m.projetCode ? ` · ${m.projetCode}` : ""}`,
-    })),
     ...renvoyes.map((p) => ({
       id: `r-${p.id}`,
       lien: `/projets/${p.id}`,
@@ -82,7 +61,7 @@ export default function TableauDeBordRP({ userId }) {
   return (
     <div className="space-y-6">
       <Bloc titre={`À valider${aValider.length ? ` (${aValider.length})` : ""}`}>
-        {missions.isLoading || chargeProjets ? (
+        {chargeProjets ? (
           <p className="px-4 py-6 text-sm text-gray-500">Chargement…</p>
         ) : aValider.length ? (
           <ul className="divide-y divide-gray-100">

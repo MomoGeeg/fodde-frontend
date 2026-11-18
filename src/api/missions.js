@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Missions, d'après l'organisation de l'ONG :
-//   demandeur → supérieur direct (accord) → logistique (véhicule, chauffeur)
-//   → RAF (équipe, budget, validation) → SE (au-delà du seuil ou sur demande)
-//   → comptabilité (fonds débloqués : avance au chef de mission) → prête.
+//   demandeur → RAF (équipe, budget, validation) → SE (au-delà du seuil ou sur
+//   demande) → logistique (véhicule, chauffeur) → comptabilité (fonds débloqués :
+//   avance au chef de mission) → prête.
 // Les étapes sans objet sont sautées par le backend.
 // ─────────────────────────────────────────────────────────────────────────────
 import api from "@/api/axios";
@@ -11,8 +11,8 @@ import useAuthStore from "@/stores/auth.store";
 import { useQuery } from "@tanstack/react-query";
 
 export const STATUTS_MISSION = {
-  SOUMISE: { label: "Chez le supérieur", ton: "info" },
-  APPROUVEE_N1: { label: "À organiser (logistique)", ton: "info" },
+  SOUMISE: { label: "Chez le RAF", ton: "info" },
+  APPROUVEE_N1: { label: "Chez la logistique", ton: "info" },
   ORGANISEE: { label: "Chez le RAF", ton: "info" },
   EN_VALIDATION_SE: { label: "Chez le SE", ton: "attention" },
   VALIDEE: { label: "Fonds à débloquer", ton: "attention" },
@@ -81,26 +81,24 @@ export function etapesMission(m) {
   }
   const log = besoinLogistique(m);
   const avecFrais = Number(m.budgetEstime) > 0;
-  const apresValidation = avecFrais ? "VALIDEE" : "PRETE";
-  const apresN1 = log ? "APPROUVEE_N1" : "ORGANISEE";
-  const etapes = [{ code: m.n1Id ? "SOUMISE" : apresN1, label: "Demandée" }];
-  if (m.n1Id) etapes.push({ code: apresN1, label: `Accord de ${m.n1Nom ?? "son supérieur"}` });
-  if (log) etapes.push({ code: "ORGANISEE", label: "Véhicule et chauffeur" });
+  const apresLogistique = avecFrais ? "VALIDEE" : "PRETE";
+  const apresValidation = log ? "APPROUVEE_N1" : apresLogistique;
+  const etapes = [{ code: "SOUMISE", label: "Demandée" }];
   etapes.push({ code: m.validationSeRequise ? "EN_VALIDATION_SE" : apresValidation, label: "Validation du RAF" });
   if (m.validationSeRequise) etapes.push({ code: apresValidation, label: "Validation du SE" });
+  if (log) etapes.push({ code: apresLogistique, label: "Véhicule et chauffeur" });
   if (avecFrais) etapes.push({ code: "PRETE", label: "Fonds débloqués" });
   return etapes;
 }
 
 /** Ce qui attend l'utilisateur sur cette mission. */
-export function estATraiter(m, roles, userId) {
+export function estATraiter(m, roles) {
   switch (m.statut) {
     case "SOUMISE":
-      return m.n1Id === userId;
-    case "APPROUVEE_N1":
-      return aAcces(roles, [R.LOG]);
     case "ORGANISEE":
       return aAcces(roles, [R.RAF]);
+    case "APPROUVEE_N1":
+      return aAcces(roles, [R.LOG]);
     case "EN_VALIDATION_SE":
       return aAcces(roles, [R.SE]);
     case "VALIDEE":
@@ -122,6 +120,14 @@ const rejet = (m, qui) => ({
   },
 });
 
+/** Étape qui suit la dernière validation (RAF ou SE). */
+const suiteValidation = (m) =>
+  besoinLogistique(m)
+    ? "La logistique affectera ensuite le véhicule et le chauffeur."
+    : Number(m.budgetEstime) > 0
+      ? "La comptabilité débloquera ensuite les fonds."
+      : "L'ordre de mission sera aussitôt disponible.";
+
 /**
  * Décisions de la barre d'actions. L'organisation (logistique) et la préparation (RAF)
  * se font dans des formulaires sur la fiche.
@@ -131,39 +137,22 @@ export function actionsMission(m, roles, userId) {
   const raf = aAcces(roles, [R.RAF]);
   const admin = aAcces(roles, [R.ADMIN]);
 
-  if (m.statut === "SOUMISE" && (m.n1Id === userId || admin)) {
-    actions.push(
-      {
-        cle: "accord",
-        label: "Donner mon accord",
-        style: "principal",
-        confirmation: "Donner votre accord ? La mission passera à l'organisation.",
-        executer: async () => {
-          await api.patch(`/api/missions/${m.id}/approuver-n1`);
-          return "Accord enregistré";
-        },
-      },
-      rejet(m, "le demandeur"),
-    );
-  }
-  if (m.statut === "ORGANISEE" && (raf || admin)) {
-    const versSe = m.validationSeRequise;
+  const chezLeRaf = m.statut === "SOUMISE" || m.statut === "ORGANISEE";
+  if (chezLeRaf && (raf || admin)) {
     actions.push({
       cle: "valider",
       label: "Valider la mission",
       style: "principal",
-      confirmation: versSe
+      confirmation: m.validationSeRequise
         ? "Valider l'équipe et le budget enregistrés ? La mission ira ensuite au Secrétaire exécutif."
-        : Number(m.budgetEstime) > 0
-          ? "Valider l'équipe et le budget enregistrés ? La comptabilité débloquera ensuite les fonds."
-          : "Valider la mission sans frais ? L'ordre de mission sera aussitôt disponible.",
+        : `Valider l'équipe et le budget enregistrés ? ${suiteValidation(m)}`,
       executer: async () => {
         await api.patch(`/api/missions/${m.id}/valider`);
         return "Mission validée";
       },
     });
   }
-  if ((m.statut === "APPROUVEE_N1" || m.statut === "ORGANISEE") && (raf || admin)) {
+  if ((chezLeRaf || m.statut === "APPROUVEE_N1") && (raf || admin)) {
     actions.push(rejet(m, "le demandeur"));
   }
   if (m.statut === "EN_VALIDATION_SE" && aAcces(roles, [R.SE, R.ADMIN])) {
@@ -172,7 +161,7 @@ export function actionsMission(m, roles, userId) {
         cle: "valider-se",
         label: "Valider la mission",
         style: "principal",
-        confirmation: "Valider cette mission ? La comptabilité débloquera ensuite les fonds.",
+        confirmation: `Valider cette mission ? ${suiteValidation(m)}`,
         executer: async () => {
           await api.patch(`/api/missions/${m.id}/valider-se`);
           return "Mission validée";
