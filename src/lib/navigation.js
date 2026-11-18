@@ -168,6 +168,9 @@ export function aAcces(userRoles = [], roles) {
 /** Vrai si tous les rôles de l'utilisateur font partie de la liste (et qu'il en a au moins un). */
 const seulement = (userRoles, roles) => userRoles.length > 0 && userRoles.every((r) => roles.includes(r));
 
+/** Vrai pour le Secrétaire exécutif (sans autre rôle) : il décide et consulte, il ne saisit rien. */
+export const neCreeRien = (userRoles = []) => seulement(userRoles, [R.SE]);
+
 /** Vrai si l'utilisateur ne fait pas de demandes de terrain (missions, achats). */
 export const sansDemandesTerrain = (userRoles = []) => seulement(userRoles, MENU.sansDemandesTerrain);
 

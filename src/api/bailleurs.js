@@ -7,7 +7,7 @@ import { R } from "@/lib/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 /** Rôles qui enregistrent les bailleurs et les conventions. */
-export const GESTIONNAIRES_BAILLEURS = [R.RAF, R.SE, R.ADMIN];
+export const GESTIONNAIRES_BAILLEURS = [R.RAF, R.ADMIN];
 
 const liste = (r) => (Array.isArray(r.data) ? r.data : []);
 

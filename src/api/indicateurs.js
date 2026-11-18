@@ -7,7 +7,7 @@ import { R } from "@/lib/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 /** Rôles qui créent les indicateurs et mettent à jour leur valeur atteinte. */
-export const GESTIONNAIRES_INDICATEURS = [R.RSE, R.SE, R.ADMIN];
+export const GESTIONNAIRES_INDICATEURS = [R.RSE, R.ADMIN];
 
 export const NIVEAUX = { IMPACT: "Impact", EFFET: "Effet", PRODUIT: "Produit", ACTIVITE: "Activité" };
 export const TYPES = { QUANTITATIF: "Quantitatif", QUALITATIF: "Qualitatif" };

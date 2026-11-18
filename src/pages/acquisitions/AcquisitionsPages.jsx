@@ -15,6 +15,7 @@ import { CHAMP, CadreFormulaire, Ligne } from "@/components/demande/Formulaire";
 import ListeDemandes from "@/components/demande/ListeDemandes";
 import { messageErreur } from "@/lib/erreurs";
 import { dateCourte, montant } from "@/lib/format";
+import { neCreeRien } from "@/lib/navigation";
 import useAuthStore from "@/stores/auth.store";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
@@ -46,7 +47,7 @@ export function AcquisitionsPage() {
       texteRecherche={(a) => [a.designation, a.soumisPar, a.projetCode, a.codeActif]}
       lien={(a) => `/acquisitions/${a.id}`}
       placeholder="Bien, demandeur, projet…"
-      nouveau={{ label: "Demander un achat", to: "/acquisitions/nouvelle" }}
+      nouveau={neCreeRien(user?.roles) ? null : { label: "Demander un achat", to: "/acquisitions/nouvelle" }}
     />
   );
 }
