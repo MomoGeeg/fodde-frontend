@@ -22,9 +22,7 @@ import BudgetsPage from "@/pages/budgets/BudgetsPage";
 import DepenseFichePage from "@/pages/depenses/DepenseFichePage";
 import DepenseFormPage from "@/pages/depenses/DepenseFormPage";
 import DepensesPage from "@/pages/depenses/DepensesPage";
-import ProjetDetail from "@/pages/projets/ProjetDetail";
-import ProjetForm from "@/pages/projets/ProjetForm";
-import ProjetsList from "@/pages/projets/ProjetsList";
+import { ProjetFichePage, ProjetFormPage, ProjetsPage } from "@/pages/projets/ProjetsPages";
 import RAFBudgets from "@/pages/raf/RAFBudgets";
 import RHAlertes from "@/pages/rh/RHAlertes";
 import RHEmployeDetail from "@/pages/rh/RHEmployeDetail";
@@ -81,11 +79,15 @@ export default function AppRoutes() {
 
           {/* ── Projets ─────────────────────────────────────── */}
           <Route element={<Acces roles={ACCES.projets} />}>
-            <Route path="projets" element={<ProjetsList />} />
-            <Route path="projets/nouveau" element={<ProjetForm />} />
-            <Route path="projets/:id" element={<ProjetDetail />} />
-            <Route path="projets/:id/edit" element={<ProjetForm />} />
+            <Route path="projets" element={<ProjetsPage />} />
+            <Route path="projets/:id" element={<ProjetFichePage />} />
             <Route path="activites" element={<ActivitesList />} />
+          </Route>
+          <Route element={<Acces roles={[R.RP]} />}>
+            <Route path="projets/nouveau" element={<ProjetFormPage />} />
+          </Route>
+          <Route element={<Acces roles={[R.RP, R.CP]} />}>
+            <Route path="projets/:id/modifier" element={<ProjetFormPage />} />
           </Route>
 
           {/* ── Finances ────────────────────────────────────── */}
