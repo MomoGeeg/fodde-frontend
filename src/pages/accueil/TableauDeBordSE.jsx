@@ -166,7 +166,7 @@ export default function TableauDeBordSE() {
         />
       </section>
 
-      <Bloc titre={`À valider${aValider.length ? ` (${aValider.length})` : ""}`} lien="/secretariat/validations" libelleLien="Validations">
+      <Bloc titre={`À valider${aValider.length ? ` (${aValider.length})` : ""}`}>
         {se.isLoading || chargeProjets ? (
           <Vide>Chargement…</Vide>
         ) : aValider.length ? (
