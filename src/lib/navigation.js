@@ -149,6 +149,20 @@ export const NAVIGATION = [
   },
 ];
 
+/** Entrée de NAVIGATION par son adresse (même libellé et même icône partout). */
+const entree = (path) => NAVIGATION.flatMap((section) => section.items).find((item) => item.path === path);
+
+/**
+ * Menu du Secrétaire exécutif : il dirige et consulte, il ne saisit rien. Ses décisions
+ * sont toutes sur l'accueil (« À valider ») ; le reste est rangé en trois sujets.
+ */
+const NAVIGATION_SE = [
+  { items: [entree("/")] },
+  { titre: "Activité", items: ["/finances/depenses", "/missions", "/acquisitions", "/conges"].map(entree) },
+  { titre: "Projets", items: ["/projets", "/finances/budgets", "/bailleurs", "/se/indicateurs"].map(entree) },
+  { titre: "Organisation", items: ["/rh/employes", "/logistique", "/documents"].map(entree) },
+];
+
 /**
  * Vrai pour un compte qui n'a que le rôle administrateur. Son métier est la
  * gestion des comptes utilisateurs, rien d'autre : un seul espace, /admin.
@@ -184,10 +198,9 @@ export function menuPour(userRoles = []) {
   if (estAdminSeul(userRoles)) {
     return NAVIGATION.filter((section) => section.titre === "Administration");
   }
+  if (neCreeRien(userRoles)) return NAVIGATION_SE;
   return NAVIGATION.map((section) => ({
     ...section,
-    // Le SE ne fait pas de demandes : il les suit.
-    titre: section.titre === "Demandes" && neCreeRien(userRoles) ? "Suivi" : section.titre,
     items: section.items.filter((item) => dansMenu(userRoles, item)),
   })).filter((section) => section.items.length > 0);
 }
