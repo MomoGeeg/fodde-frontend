@@ -67,7 +67,7 @@ const memeJour = (a, b) => new Date(a).toDateString() === new Date(b).toDateStri
 /** Fin de session : heure seule si le même jour que la connexion, sinon date et heure. */
 function finSession(c) {
   if (!c.succes) return "—";
-  if (!c.finSession) return "En cours";
+  if (!c.finSession) return "Connecté";
   const quand = memeJour(c.dateConnexion, c.finSession) ? heure(c.finSession) : dateHeure(c.finSession);
   return c.typeFin === "EXPIRATION" ? `${quand} (expirée)` : quand;
 }
@@ -215,7 +215,7 @@ export default function AdminConnexionsPage() {
       ["Connexion", "Déconnexion", "Utilisateur", "E-mail", "Résultat", "Motif", "Adresse IP", "Appareil"],
       ...lignes.map((c) => [
         dateHeure(c.dateConnexion),
-        c.succes && c.finSession ? dateHeure(c.finSession) + (c.typeFin === "EXPIRATION" ? " (expirée)" : "") : c.succes ? "En cours" : "",
+        c.succes && c.finSession ? dateHeure(c.finSession) + (c.typeFin === "EXPIRATION" ? " (expirée)" : "") : c.succes ? "Connecté" : "",
         c.nomComplet || "",
         c.email,
         c.succes ? "Réussie" : "Refusée",
@@ -316,7 +316,14 @@ export default function AdminConnexionsPage() {
                       c.succes && !c.finSession ? "font-medium text-green-700" : "text-gray-700"
                     }`}
                   >
-                    {finSession(c)}
+                    {c.succes && !c.finSession ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-green-500" aria-hidden="true" />
+                        Connecté
+                      </span>
+                    ) : (
+                      finSession(c)
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-900">{c.nomComplet || "—"}</p>
