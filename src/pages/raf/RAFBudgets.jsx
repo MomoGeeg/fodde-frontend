@@ -8,6 +8,8 @@ import {
   useProjetsRAF,
   useSoumettreAllocation,
 } from "@/api/raf.api";
+import { neCreeRien } from "@/lib/navigation";
+import useAuthStore from "@/stores/auth.store";
 import {
   ArrowLeft,
   BarChart2,
@@ -41,6 +43,12 @@ const STATUT_BA = {
   ACTIF:     { label: "Actif",     cls: "bg-green-100 text-green-700" },
   CLOTURE:   { label: "Clôturé",   cls: "bg-purple-100 text-purple-700" },
 };
+
+/** Le Secrétaire exécutif consulte les budgets ; la saisie revient au RAF. */
+function useSaisie() {
+  const { user } = useAuthStore();
+  return !neCreeRien(user?.roles);
+}
 
 function StatutBadge({ statut, map }) {
   const { label, cls } = (map ?? STATUT_ALLOC)[statut] ?? { label: statut, cls: "bg-gray-100 text-gray-500" };
@@ -356,7 +364,8 @@ function VueLignes({ allocation, onBack }) {
   const soumettre = useSoumettreAllocation();
   const [showModal, setShowModal] = useState(false);
   const lignes = allocation.lignes ?? [];
-  const peutModifier = ["BROUILLON", "REJETEE"].includes(allocation.statut);
+  const saisie = useSaisie();
+  const peutModifier = saisie && ["BROUILLON", "REJETEE"].includes(allocation.statut);
   const peutSoumettre = peutModifier && lignes.length > 0;
 
   const montantVentile = lignes.reduce((s, l) => s + (l.montantPrevu ?? 0), 0);
@@ -498,7 +507,8 @@ function VueAllocations({ budgetAnnuel, onBack, onSelectAllocation }) {
   const soumettre = useSoumettreAllocation();
   const [showModal, setShowModal] = useState(false);
 
-  const peutAjouter = ["BROUILLON", "ACTIF"].includes(budgetAnnuel.statut);
+  const saisie = useSaisie();
+  const peutAjouter = saisie && ["BROUILLON", "ACTIF"].includes(budgetAnnuel.statut);
   const taux = budgetAnnuel.montantTotal > 0
     ? ((budgetAnnuel.montantAlloue ?? 0) / budgetAnnuel.montantTotal) * 100
     : 0;
@@ -576,7 +586,7 @@ function VueAllocations({ budgetAnnuel, onBack, onSelectAllocation }) {
                     ? ((a.montantDepense ?? 0) / a.montantAlloue) * 100
                     : 0;
                   const peutSoumettre =
-                    ["BROUILLON", "REJETEE"].includes(a.statut) && (a.lignes?.length ?? 0) > 0;
+                    saisie && ["BROUILLON", "REJETEE"].includes(a.statut) && (a.lignes?.length ?? 0) > 0;
 
                   return (
                     <tr
@@ -652,7 +662,8 @@ function VueBudgetsAnnuels({ onSelectBudget }) {
 
   const anneeActuelle = new Date().getFullYear();
   const budgetActuel = budgets.find((b) => b.exercice === anneeActuelle);
-  const peutCreer = !budgetActuel || budgetActuel.statut === "CLOTURE";
+  const saisie = useSaisie();
+  const peutCreer = saisie && (!budgetActuel || budgetActuel.statut === "CLOTURE");
 
   return (
     <div className="space-y-6">
@@ -681,15 +692,14 @@ function VueBudgetsAnnuels({ onSelectBudget }) {
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-20">
           <BarChart2 size={40} className="text-gray-300 mb-3" />
           <p className="text-sm font-medium text-gray-600">Aucun budget annuel enregistré</p>
-          <p className="text-xs text-gray-400 mt-1">
-            Créez le budget de l'exercice en cours pour commencer les allocations.
-          </p>
-          <button
-            onClick={() => setShowModal(true)}
-            className="mt-4 flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
-          >
-            <Plus size={15} /> Créer le budget {anneeActuelle}
-          </button>
+          {saisie && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="mt-4 flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+            >
+              <Plus size={15} /> Créer le budget {anneeActuelle}
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

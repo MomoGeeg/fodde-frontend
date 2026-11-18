@@ -6,6 +6,7 @@ import { ChevronRight, TriangleAlert } from "lucide-react";
 import { Link } from "react-router-dom";
 import TableauDeBordRH from "./TableauDeBordRH";
 import TableauDeBordRP from "./TableauDeBordRP";
+import TableauDeBordSE from "./TableauDeBordSE";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Page d'accueil commune : ce que j'ai à faire, où en sont mes demandes,
@@ -136,13 +137,17 @@ export default function AccueilPage() {
   const { user } = useAuthStore();
   const roles = user?.roles ?? [];
 
-  const voitAlertes = aAcces(roles, [R.SE, R.RAF, R.ADMIN]);
-  const voitChiffres = aAcces(roles, [R.SE, R.RAF]);
+  // Le Secrétaire exécutif a son tableau de bord (vue d'ensemble de l'ONG).
+  const estSE = aAcces(roles, [R.SE]);
+  const voitAlertes = !estSE && aAcces(roles, [R.RAF, R.ADMIN]);
+  const voitChiffres = !estSE && aAcces(roles, [R.RAF]);
   // Le responsable des programmes a son propre tableau de bord (s'il n'a pas aussi un rôle de direction).
   const estRP = aAcces(roles, [R.RP]) && !aAcces(roles, [R.SE, R.RAF]);
   // Les RH ont aussi leur tableau de bord (sauf s'ils ont un rôle de direction ou de programme).
   const estRH = aAcces(roles, [R.RH]) && !aAcces(roles, [R.SE, R.RAF, R.RP]);
-  const tableauDeBord = estRP || estRH;
+  const tableauDeBord = estSE || estRP || estRH;
+  // Le SE ne fait pas de demandes ; les RH n'en suivent pas depuis l'accueil.
+  const sansMesDemandes = estSE || estRH;
 
   const aTraiter = useQuery({
     queryKey: ["accueil", "a-traiter", roles],
@@ -153,7 +158,7 @@ export default function AccueilPage() {
   const mesDemandes = useQuery({
     queryKey: ["accueil", "mes-demandes", user?.id],
     queryFn: () => chargerMesDemandes(roles, user?.id),
-    enabled: !estRH,
+    enabled: !sansMesDemandes,
     staleTime: 60_000,
   });
   const alertes = useQuery({
@@ -186,6 +191,7 @@ export default function AccueilPage() {
         </section>
       )}
 
+      {estSE && <TableauDeBordSE />}
       {estRP && <TableauDeBordRP userId={user?.id} />}
       {estRH && <TableauDeBordRH userId={user?.id} />}
 
@@ -215,7 +221,7 @@ export default function AccueilPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {!estRH && (
+        {!sansMesDemandes && (
           <section className="rounded-lg border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
               <h2 className="text-sm font-semibold text-gray-900">Mes demandes</h2>

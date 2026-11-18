@@ -20,7 +20,7 @@ import { CHAMP, CadreFormulaire, Ligne } from "@/components/demande/Formulaire";
 import ListeDemandes from "@/components/demande/ListeDemandes";
 import { messageErreur } from "@/lib/erreurs";
 import { dateCourte, montant } from "@/lib/format";
-import { R, aAcces } from "@/lib/navigation";
+import { R, aAcces, neCreeRien } from "@/lib/navigation";
 import useAuthStore from "@/stores/auth.store";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, MessageCircle, Plus, Printer, Trash2 } from "lucide-react";
@@ -53,7 +53,7 @@ export function MissionsPage() {
       texteRecherche={(m) => [m.destination, m.motif, m.demandeurNom, m.projetCode, ...(m.participants ?? []).map((p) => p.nom)]}
       lien={(m) => `/missions/${m.id}`}
       placeholder="Destination, objet, personne, projet…"
-      nouveau={{ label: "Nouvel ordre de mission", to: "/missions/nouvelle" }}
+      nouveau={neCreeRien(user?.roles) ? null : { label: "Nouvel ordre de mission", to: "/missions/nouvelle" }}
     />
   );
 }
