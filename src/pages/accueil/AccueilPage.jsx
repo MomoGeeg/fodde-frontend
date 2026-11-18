@@ -45,7 +45,9 @@ async function chargerATraiter(roles, userId) {
       liste("/api/acquisitions").then((a) =>
         ajouter("Acquisitions à valider", a.filter((x) => x.statut === "EN_ATTENTE").length, "/acquisitions"),
       ),
-      liste("/api/conges/en-attente").then((c) => ajouter("Congés à approuver", c.length, "/conges")),
+      liste("/api/conges/en-attente").then((c) =>
+        ajouter("Congés à approuver", c.filter((x) => x.statut === "VALIDE_RH").length, "/conges"),
+      ),
     );
   }
 
@@ -108,7 +110,7 @@ async function chargerMesDemandes(roles, userId) {
     { libelle: "Missions prêtes à venir", nombre: missions.filter((x) => x.statut === "PRETE" && x.dateFin >= new Date().toISOString().slice(0, 10)).length, lien: "/missions?vue=toutes" },
     { libelle: "Achats en attente", nombre: compter(achats, ["EN_ATTENTE"]), lien: "/acquisitions?vue=toutes" },
     { libelle: "Achats validés", nombre: compter(achats, ["VALIDEE"]), lien: "/acquisitions?vue=toutes" },
-    { libelle: "Congés en attente", nombre: compter(conges, ["EN_ATTENTE"]), lien: "/conges?vue=toutes" },
+    { libelle: "Congés en attente", nombre: compter(conges, ["EN_ATTENTE", "VALIDE_RH"]), lien: "/conges?vue=toutes" },
     { libelle: "Congés approuvés à venir", nombre: conges.filter((c) => c.statut === "APPROUVE" && c.dateFin >= new Date().toISOString().slice(0, 10)).length, lien: "/conges?vue=toutes" },
   ].filter((r) => r.nombre > 0);
 }

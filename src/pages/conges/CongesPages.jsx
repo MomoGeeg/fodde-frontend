@@ -16,7 +16,7 @@ import { CHAMP, CadreFormulaire, Ligne } from "@/components/demande/Formulaire";
 import ListeDemandes from "@/components/demande/ListeDemandes";
 import { messageErreur } from "@/lib/erreurs";
 import { dateCourte } from "@/lib/format";
-import { R, aAcces } from "@/lib/navigation";
+import { R, aAcces, neCreeRien } from "@/lib/navigation";
 import useAuthStore from "@/stores/auth.store";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
@@ -52,13 +52,13 @@ export function CongesPage() {
       lien={(c) => `/conges/${c.id}`}
       placeholder="Employé, type de congé…"
       tri={(c) => c.dateDebut ?? ""}
-      nouveau={aAcces(roles, [R.RH]) ? { label: "Enregistrer un congé", to: "/conges/nouveau" } : null}
+      nouveau={neCreeRien(roles) ? null : { label: "Demander un congé", to: "/conges/nouveau" }}
       />
     </div>
   );
 }
 
-/** Solde de congés de l'employé connecté, ou explication si son compte n'est pas lié à sa fiche. */
+/** Solde de congés de l'employé connecté. */
 function MonSolde() {
   const { data: fiche, isLoading } = useMaFiche();
   if (isLoading) return null;
@@ -70,13 +70,9 @@ function MonSolde() {
           <span className="font-semibold">
             {fiche.soldeConges != null ? `${fiche.soldeConges} jour${fiche.soldeConges > 1 ? "s" : ""}` : "non renseigné"}
           </span>
-          <span className="text-gray-500"> · pour poser un congé, adressez-vous aux RH.</span>
         </p>
       ) : (
-        <p className="text-gray-600">
-          Votre compte n'est pas encore lié à votre fiche employé : vos congés ne peuvent pas s'afficher.
-          Demandez à l'administrateur de faire le lien.
-        </p>
+        <p className="text-gray-600">Votre compte n'est lié à aucune fiche employé.</p>
       )}
     </div>
   );
@@ -86,6 +82,7 @@ export function CongeFichePage() {
   const { id } = useParams();
   const { user } = useAuthStore();
   const { data = [], isLoading } = useConges();
+  const { data: maFiche } = useMaFiche();
   const c = data.find((x) => x.id === id);
 
   return (
@@ -96,7 +93,7 @@ export function CongeFichePage() {
       {...(c && {
         historique: `/api/conges/${c.id}/historique`,
         reference: c.employeNom,
-        titre: `${TYPES_CONGE[c.typeConge] ?? c.typeConge} — ${duree(c)}`,
+        titre: `${TYPES_CONGE[c.typeConge] ?? c.typeConge}, ${duree(c)}`,
         statut: c.statut,
         statuts: STATUTS_CONGE,
         etapes: ETAPES_CONGE,
@@ -104,12 +101,13 @@ export function CongeFichePage() {
           c.statut === "REJETE" || c.statut === "ANNULE"
             ? { titre: c.statut === "REJETE" ? "Demande rejetée" : "Demande annulée", motif: c.motifRejet }
             : null,
-        actions: actionsConge(c, user?.roles ?? [], user?.id),
+        actions: actionsConge(c, user?.roles ?? [], !!maFiche && maFiche.id === c.employeId),
         champs: [
-          { libelle: "Employé", valeur: [c.employeNom, c.employePoste].filter(Boolean).join(" — ") },
+          { libelle: "Employé", valeur: [c.employeNom, c.employePoste].filter(Boolean).join(", ") },
           { libelle: "Type", valeur: TYPES_CONGE[c.typeConge] ?? c.typeConge },
           { libelle: "Période", valeur: `${periode(c)} (${duree(c)})` },
-          { libelle: "Enregistrée le", valeur: dateCourte(c.createdAt) },
+          { libelle: "Demandée le", valeur: dateCourte(c.createdAt) },
+          { libelle: "Validée par les RH le", valeur: c.dateValidationRh ? dateCourte(c.dateValidationRh) : null },
           { libelle: "Approuvée le", valeur: c.dateValidationRaf ? dateCourte(c.dateValidationRaf) : null },
           { libelle: "Motif", valeur: c.motif },
         ],
@@ -121,11 +119,16 @@ export function CongeFichePage() {
 export function CongeFormPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: employes = [] } = useEmployesActifs();
+  const { user } = useAuthStore();
+  const estRH = aAcces(user?.roles ?? [], [R.RH]);
+  const { data: employes = [] } = useEmployesActifs({ enabled: estRH });
+  const { data: maFiche } = useMaFiche();
+  // employeId vide = pour soi-même
   const [f, setF] = useState({ employeId: "", typeConge: "ANNUEL", dateDebut: "", dateFin: "", motif: "" });
   const [erreurs, setErreurs] = useState({});
   const [envoi, setEnvoi] = useState(false);
-  const employe = employes.find((e) => e.id === f.employeId);
+  const pourUnAutre = estRH && f.employeId && f.employeId !== maFiche?.id;
+  const employe = pourUnAutre ? employes.find((e) => e.id === f.employeId) : maFiche;
 
   const maj = (cle) => (e) => {
     setF((p) => ({ ...p, [cle]: e.target.value }));
@@ -134,7 +137,7 @@ export function CongeFormPage() {
 
   const soumettre = async () => {
     const e = {};
-    if (!f.employeId) e.employeId = "Choisissez l'employé.";
+    if (!pourUnAutre && !maFiche) e.employeId = "Votre compte n'est lié à aucune fiche employé.";
     if (!f.dateDebut) e.dateDebut = "Indiquez le premier jour.";
     if (!f.dateFin) e.dateFin = "Indiquez le dernier jour.";
     else if (f.dateDebut && f.dateFin < f.dateDebut) e.dateFin = "Le dernier jour doit suivre le premier.";
@@ -143,9 +146,9 @@ export function CongeFormPage() {
 
     setEnvoi(true);
     try {
-      const cree = await creerConge({ ...f, motif: f.motif.trim() || null });
+      const cree = await creerConge({ ...f, employeId: pourUnAutre ? f.employeId : null, motif: f.motif.trim() || null });
       await queryClient.invalidateQueries({ queryKey: ["conges"] });
-      toast.success("Demande de congé enregistrée, en attente du RAF");
+      toast.success(pourUnAutre ? "Congé enregistré, transmis au RAF" : "Demande envoyée aux RH");
       navigate(`/conges/${cree.id}`);
     } catch (err) {
       // Ex. « Solde de congés insuffisant » renvoyé par le backend
@@ -158,25 +161,33 @@ export function CongeFormPage() {
   return (
     <CadreFormulaire
       retour={{ to: "/conges", label: "Congés" }}
-      titre="Enregistrer une demande de congé"
+      titre="Demande de congé"
       onSoumettre={soumettre}
-      libelleSoumettre="Envoyer au RAF"
+      libelleSoumettre={pourUnAutre ? "Envoyer au RAF" : "Envoyer aux RH"}
       envoi={envoi}
     >
       <Ligne
-        libelle="Employé"
+        libelle={estRH ? "Employé" : "Solde de congés annuels"}
         erreur={erreurs.employeId}
-        aide={employe?.soldeConges != null ? `Solde de congés annuels : ${employe.soldeConges} jour(s)` : undefined}
+        aide={estRH && employe?.soldeConges != null ? `Solde de congés annuels : ${employe.soldeConges} jour(s)` : undefined}
       >
-        <select value={f.employeId} onChange={maj("employeId")} className={CHAMP}>
-          <option value="">Choisir…</option>
-          {employes.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.nom} {e.prenom}
-              {e.poste ? ` — ${e.poste}` : ""}
-            </option>
-          ))}
-        </select>
+        {estRH ? (
+          <select value={f.employeId} onChange={maj("employeId")} className={CHAMP}>
+            <option value="">Moi-même</option>
+            {employes
+              .filter((e) => e.id !== maFiche?.id)
+              .map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.nom} {e.prenom}
+                  {e.poste ? `, ${e.poste}` : ""}
+                </option>
+              ))}
+          </select>
+        ) : (
+          <p className="py-2 text-sm font-medium text-gray-900">
+            {maFiche?.soldeConges != null ? `${maFiche.soldeConges} jour(s)` : "Non renseigné"}
+          </p>
+        )}
       </Ligne>
       <Ligne libelle="Type de congé">
         <select value={f.typeConge} onChange={maj("typeConge")} className={CHAMP}>
