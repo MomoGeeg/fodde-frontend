@@ -186,6 +186,8 @@ export function menuPour(userRoles = []) {
   }
   return NAVIGATION.map((section) => ({
     ...section,
+    // Le SE ne fait pas de demandes : il les suit.
+    titre: section.titre === "Demandes" && neCreeRien(userRoles) ? "Suivi" : section.titre,
     items: section.items.filter((item) => dansMenu(userRoles, item)),
   })).filter((section) => section.items.length > 0);
 }
