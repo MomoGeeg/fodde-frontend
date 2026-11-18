@@ -5,8 +5,9 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { POLES, useComptesSansFiche, useCreateEmploye, useEmployes, useModifierEmploye } from "@/api/rh-data";
+import { useComptesSansFiche, useCreateEmploye, useEmployes, useModifierEmploye } from "@/api/rh-data";
 import { getPropositionRattachement } from "@/api/rhService";
+import { poleDuService } from "@/lib/poles";
 import { OptionsServices } from "@/lib/services";
 import { messageErreur } from "@/lib/erreurs";
 
@@ -90,17 +91,13 @@ export default function RHEmployeForm() {
   const modifierEmployeMutation = useModifierEmploye();
   const enregistrement = createEmployeMutation.isPending || modifierEmployeMutation.isPending;
 
-  // ── Pôle et supérieur proposés d'après les rôles du compte ──
-  const [proposition, setProposition] = useState(null);
+  // ── Supérieur direct proposé d'après les rôles du compte ──
   const proposer = async (idCompte, { remplacer = false } = {}) => {
-    setProposition(null);
     if (!idCompte) return;
     try {
       const p = await getPropositionRattachement(idCompte);
-      setProposition(p);
       setForm((prev) => ({
         ...prev,
-        pole: remplacer || !prev.pole ? p.pole || prev.pole : prev.pole,
         superieurId: remplacer || !prev.superieurId ? p.superieurId || prev.superieurId : prev.superieurId,
       }));
     } catch {
@@ -194,8 +191,11 @@ export default function RHEmployeForm() {
     if (!form.prenom.trim()) errs.prenom = "Le prénom est obligatoire";
     if (!form.dateNaissance)
       errs.dateNaissance = "La date de naissance est obligatoire";
+    if (!form.lieuNaissance.trim())
+      errs.lieuNaissance = "Le lieu de naissance est obligatoire";
     if (!form.nationalite.trim())
       errs.nationalite = "La nationalité est obligatoire";
+    if (!form.adresse.trim()) errs.adresse = "L'adresse est obligatoire";
     if (!form.poste.trim()) errs.poste = "Le poste est obligatoire";
     if (!form.departement.trim())
       errs.departement = "Le service est obligatoire";
@@ -244,14 +244,15 @@ export default function RHEmployeForm() {
         nom: form.nom,
         prenom: form.prenom,
         dateNaissance: form.dateNaissance || null,
-        lieuNaissance: form.lieuNaissance || null,
+        lieuNaissance: form.lieuNaissance.trim(),
         nationalite: form.nationalite,
         telephone: form.telephone || null,
-        adresse: form.adresse || null,
+        adresse: form.adresse.trim(),
         poste: form.poste,
         departement: form.departement,
         dateEmbauche: form.dateDebutContrat,
-        pole: form.pole || null,
+        // Ancienne valeur gardée si le service n'est pas dans la liste
+        pole: poleDuService(form.departement) || form.pole || null,
         superieurId: form.superieurId || null,
       };
 
@@ -268,7 +269,7 @@ export default function RHEmployeForm() {
         employeId: employe.id,
         typeContrat: form.typeContrat,
         dateDebut: form.dateDebutContrat,
-        dateFin: form.dateFinContrat || null,
+        dateFin: form.typeContrat === "CDI" ? null : form.dateFinContrat || null,
         salaireBase: parseFloat(form.salaireBase),
         devise: form.devise,
         poste: form.poste,
@@ -299,16 +300,9 @@ export default function RHEmployeForm() {
           >
             <ArrowLeft size={18} />
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {isEditMode ? "Modifier le dossier" : "Nouveau dossier employé"}
-            </h1>
-            <p className="mt-0.5 text-sm text-gray-500">
-              {isEditMode
-                ? `Modification de ${form.prenom} ${form.nom}`
-                : "Remplissez le formulaire pour créer un dossier"}
-            </p>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isEditMode ? `Dossier de ${form.prenom} ${form.nom}` : "Nouveau dossier employé"}
+          </h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -325,10 +319,10 @@ export default function RHEmployeForm() {
                   onChange={(e) => choisirCompte(e.target.value)}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
                 >
-                  <option value="">— Pas encore de compte —</option>
+                  <option value="">Pas encore de compte</option>
                   {comptesSansFiche.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.prenom} {c.nom} — {c.email}
+                      {c.prenom} {c.nom} ({c.email})
                     </option>
                   ))}
                 </select>
@@ -354,9 +348,6 @@ export default function RHEmployeForm() {
               <div>
                 <FormLabel>Matricule</FormLabel>
                 <FormInput value={form.matricule} disabled />
-                <p className="mt-1 text-xs text-gray-400">
-                  Généré automatiquement
-                </p>
               </div>
               <div /> {/* placeholder grid */}
               <div>
@@ -387,19 +378,20 @@ export default function RHEmployeForm() {
                 <FieldError msg={errors.dateNaissance} />
               </div>
               <div>
-                <FormLabel>Lieu de naissance</FormLabel>
+                <FormLabel required>Lieu de naissance</FormLabel>
                 <FormInput
                   value={form.lieuNaissance}
                   onChange={set("lieuNaissance")}
-                  placeholder="Lieu de naissance"
+                  placeholder="Ex : Kolda"
                 />
+                <FieldError msg={errors.lieuNaissance} />
               </div>
               <div>
                 <FormLabel required>Nationalité</FormLabel>
                 <FormInput
                   value={form.nationalite}
                   onChange={set("nationalite")}
-                  placeholder="Ex: Sénégalaise"
+                  placeholder="Ex : Sénégalaise"
                 />
                 <FieldError msg={errors.nationalite} />
               </div>
@@ -412,14 +404,15 @@ export default function RHEmployeForm() {
                 />
               </div>
               <div className="sm:col-span-2">
-                <FormLabel>Adresse</FormLabel>
+                <FormLabel required>Adresse</FormLabel>
                 <textarea
                   value={form.adresse}
                   onChange={set("adresse")}
                   rows={2}
-                  placeholder="Adresse complète..."
+                  placeholder="Quartier, ville"
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none resize-none"
                 />
+                <FieldError msg={errors.adresse} />
               </div>
             </div>
           </div>
@@ -427,7 +420,7 @@ export default function RHEmployeForm() {
           {/* ── Poste & Organisation ────────────────────── */}
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
             <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-3">
-              Poste & Organisation
+              Poste et organisation
             </h2>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
@@ -451,54 +444,26 @@ export default function RHEmployeForm() {
                 <FieldError msg={errors.departement} />
               </div>
               <div>
-                <FormLabel>Pôle</FormLabel>
-                <select
-                  value={form.pole}
-                  onChange={set("pole")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
-                >
-                  <option value="">— À préciser —</option>
-                  {Object.entries(POLES).map(([code, p]) => (
-                    <option key={code} value={code}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-                {form.pole && <p className="mt-1 text-xs text-gray-400">{POLES[form.pole]?.detail}</p>}
-              </div>
-              <div>
-                <FormLabel>Supérieur direct (N+1)</FormLabel>
+                <FormLabel>Supérieur direct</FormLabel>
                 <select
                   value={form.superieurId}
                   onChange={set("superieurId")}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
                 >
-                  <option value="">— Aucun —</option>
+                  <option value="">Aucun</option>
                   {superviseurs.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.prenom} {s.nom} — {s.poste}
+                      {s.prenom} {s.nom}, {s.poste}
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-xs text-gray-400">
-                  Reçoit en premier ses demandes (missions, congés).
-                </p>
-              </div>
-              <div className="sm:col-span-2">
-                {proposition?.message && (
-                  <p className="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
-                    {proposition.superieurNom
-                      ? `Proposé d'après les rôles du compte : ${POLES[proposition.pole]?.label ?? ""}, supérieur ${proposition.superieurNom}. Vous pouvez le changer.`
-                      : proposition.message}
-                  </p>
-                )}
                 {isEditMode && ficheEditee?.userId && (
                   <button
                     type="button"
                     onClick={() => proposer(ficheEditee.userId, { remplacer: true })}
-                    className="mt-2 text-xs font-medium text-green-700 hover:underline"
+                    className="mt-1.5 text-xs font-medium text-green-700 hover:underline"
                   >
-                    Proposer d'après les rôles de son compte
+                    Proposer selon les rôles de son compte
                   </button>
                 )}
               </div>
@@ -516,7 +481,13 @@ export default function RHEmployeForm() {
                 <FormLabel required>Type de contrat</FormLabel>
                 <select
                   value={form.typeContrat}
-                  onChange={set("typeContrat")}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      typeContrat: e.target.value,
+                      dateFinContrat: e.target.value === "CDI" ? "" : prev.dateFinContrat,
+                    }))
+                  }
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
                 >
                   {TYPES_CONTRAT.map((t) => (
@@ -536,28 +507,25 @@ export default function RHEmployeForm() {
                 />
                 <FieldError msg={errors.dateDebutContrat} />
               </div>
-              <div>
-                <FormLabel
-                  required={["CDD", "CONSULTANT", "STAGIAIRE"].includes(
-                    form.typeContrat,
-                  )}
-                >
-                  Date de fin
-                </FormLabel>
-                <FormInput
-                  type="date"
-                  value={form.dateFinContrat}
-                  onChange={set("dateFinContrat")}
-                />
-                {form.typeContrat === "CDI" && (
-                  <p className="mt-1 text-xs text-gray-400">
-                    Optionnel pour un CDI
-                  </p>
-                )}
-                <FieldError msg={errors.dateFinContrat} />
-              </div>
+              {form.typeContrat !== "CDI" && (
+                <div>
+                  <FormLabel
+                    required={["CDD", "CONSULTANT", "STAGIAIRE"].includes(
+                      form.typeContrat,
+                    )}
+                  >
+                    Date de fin
+                  </FormLabel>
+                  <FormInput
+                    type="date"
+                    value={form.dateFinContrat}
+                    onChange={set("dateFinContrat")}
+                  />
+                  <FieldError msg={errors.dateFinContrat} />
+                </div>
+              )}
 
-              {/* Salaire — visible RH + SE uniquement */}
+              {/* Salaire : visible par les RH et le SE */}
               {canSeeSalaire && (
                 <>
                   <div>
@@ -596,13 +564,9 @@ export default function RHEmployeForm() {
                           value={form.motifModifSalaire}
                           onChange={set("motifModifSalaire")}
                           rows={2}
-                          placeholder="Motif obligatoire — nécessite validation du SE..."
+                          placeholder="Motif de la modification"
                           className="w-full rounded-lg border border-orange-200 px-3 py-2 text-sm text-gray-900 focus:border-orange-400 focus:outline-none resize-none bg-white"
                         />
-                        <p className="mt-1 text-xs text-orange-600">
-                          ⚠ La modification de salaire sera soumise au SE pour
-                          validation.
-                        </p>
                         <FieldError msg={errors.motifModifSalaire} />
                       </div>
                     </div>
