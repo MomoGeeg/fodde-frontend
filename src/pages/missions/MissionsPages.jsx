@@ -77,7 +77,7 @@ export function MissionFichePage() {
       {...(m && {
         historique: `/api/missions/${m.id}/historique`,
         reference: `Demandée par ${m.demandeurNom ?? "—"}${m.projetCode ? ` · ${m.projetCode}` : ""}`,
-        titre: `${m.destination} — ${m.motif}`,
+        titre: `${m.destination}, ${m.motif}`,
         montant: Number(m.budgetEstime) > 0 ? montant(m.budgetEstime) : null,
         statut: m.statut,
         statuts: STATUTS_MISSION,
@@ -95,7 +95,6 @@ export function MissionFichePage() {
           { libelle: "Projet", valeur: m.projetCode },
           { libelle: "Demandée par", valeur: m.demandeurNom },
           { libelle: "Demandée le", valeur: dateCourte(m.createdAt) },
-          { libelle: "Accord du supérieur", valeur: m.n1Nom ?? "Sans objet" },
           { libelle: "Objet de la mission", valeur: m.motif },
         ],
       })}
@@ -104,7 +103,7 @@ export function MissionFichePage() {
         <>
           <BlocEquipe m={m} />
           {m.statut === "APPROUVEE_N1" && aAcces(roles, [R.LOG, R.ADMIN]) && <FormOrganisation m={m} />}
-          {m.statut === "ORGANISEE" && aAcces(roles, [R.RAF, R.ADMIN]) ? (
+          {(m.statut === "SOUMISE" || m.statut === "ORGANISEE") && aAcces(roles, [R.RAF, R.ADMIN]) ? (
             <FormPreparation key={m.id + m.budgetEstime} m={m} />
           ) : (
             m.frais?.length > 0 && <BlocBudget m={m} />
@@ -189,7 +188,7 @@ function TableauFrais({ frais }) {
           <tr key={i}>
             <td className="py-1.5">
               {CATEGORIES_FRAIS[f.categorie]}
-              {f.libelle ? <span className="text-gray-500"> — {f.libelle}</span> : null}
+              {f.libelle ? <span className="text-gray-500">, {f.libelle}</span> : null}
             </td>
             <td className="py-1.5 text-right tabular-nums">{Number(f.quantite)}</td>
             <td className="py-1.5 text-right tabular-nums">{montant(f.prixUnitaire)}</td>
@@ -246,9 +245,6 @@ function FormOrganisation({ m }) {
 
   return (
     <Bloc titre="Organisation (logistique)">
-      <p className="mb-4 text-sm text-gray-600">
-        Seuls les véhicules et les chauffeurs libres du {dateCourte(m.dateDebut)} au {dateCourte(m.dateFin)} sont proposés.
-      </p>
       {isLoading ? (
         <p className="text-sm text-gray-500">Recherche des disponibilités…</p>
       ) : (
@@ -318,7 +314,7 @@ function FormPreparation({ m }) {
   for (const a of libres?.agents ?? []) if (!personnes.some((p) => p.id === a.id)) personnes.push(a);
 
   const total = lignes.reduce((s, l) => s + (Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0), 0);
-  const versSe = soumettreSe || total >= Number(m.seuilSe ?? 500000);
+  const versSe = soumettreSe || total >= Number(m.seuilSe ?? 5000000);
 
   const majLigne = (i, cle) => (e) => setLignes((ls) => ls.map((l, j) => (j === i ? { ...l, [cle]: e.target.value } : l)));
 
@@ -399,11 +395,7 @@ function FormPreparation({ m }) {
             <input type="checkbox" checked={soumettreSe} onChange={(e) => setSoumettreSe(e.target.checked)} />
             Soumettre au Secrétaire exécutif
           </label>
-          <p className="mt-1 text-xs text-gray-500">
-            {versSe
-              ? "Après votre validation, la mission ira au SE."
-              : `Le SE valide à partir de ${montant(m.seuilSe ?? 500000)}, ou si vous cochez la case.`}
-          </p>
+          {versSe && <p className="mt-1 text-xs font-medium text-amber-700">Validation du SE requise</p>}
         </div>
         <button
           onClick={enregistrer}
@@ -471,7 +463,7 @@ function BlocDiffusion({ m }) {
             <li key={d.nom + d.role} className="flex flex-wrap items-center justify-between gap-2 py-2">
               <span>
                 <span className="font-medium text-gray-900">{d.nom}</span>
-                <span className="text-gray-500"> — {d.role}</span>
+                <span className="text-gray-500">, {d.role}</span>
               </span>
               {numero ? (
                 <a
@@ -522,7 +514,7 @@ export function OrdreMissionPage() {
 
       <article className="rounded-lg border border-gray-200 bg-white p-8 text-sm text-gray-900 print:border-0 print:p-0">
         <header className="border-b border-gray-300 pb-4">
-          <p className="text-xs uppercase tracking-wide text-gray-500">ONG FODDE — Kolda</p>
+          <p className="text-xs uppercase tracking-wide text-gray-500">ONG FODDE, Kolda</p>
           <h1 className="mt-1 text-xl font-bold">Ordre de mission</h1>
           <p className="mt-1 text-xs text-gray-500">Établi le {dateCourte(new Date())}</p>
         </header>
@@ -663,7 +655,7 @@ export function MissionFormPage() {
             .filter((p) => p.statut === "ACTIF")
             .map((p) => (
               <option key={p.id} value={p.id}>
-                {p.code} — {p.titre}
+                {p.code} · {p.titre}
               </option>
             ))}
         </select>

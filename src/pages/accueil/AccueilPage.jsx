@@ -40,7 +40,11 @@ async function chargerATraiter(roles, userId) {
           ajouter("Dépenses à vérifier ou valider", soumises.length + verifiees.length, "/finances/depenses"),
       ),
       liste("/api/missions").then((m) =>
-        ajouter("Missions à valider (équipe et budget)", m.filter((x) => x.statut === "ORGANISEE").length, "/missions"),
+        ajouter(
+          "Missions à valider (équipe et budget)",
+          m.filter((x) => x.statut === "SOUMISE" || x.statut === "ORGANISEE").length,
+          "/missions",
+        ),
       ),
       liste("/api/acquisitions").then((a) =>
         ajouter("Acquisitions à valider", a.filter((x) => x.statut === "EN_ATTENTE").length, "/acquisitions"),
@@ -51,10 +55,9 @@ async function chargerATraiter(roles, userId) {
     );
   }
 
-  // Missions : accord du supérieur direct (quel que soit son rôle), puis chaque service à son étape
+  // Missions : chaque service à son étape (RAF, SE, logistique, comptabilité)
   appels.push(
     liste("/api/missions").then((m) => {
-      ajouter("Missions à approuver (supérieur direct)", m.filter((x) => x.statut === "SOUMISE" && x.n1Id === userId).length, "/missions");
       if (aAcces(roles, [R.LOG]))
         ajouter("Missions à organiser (véhicule, chauffeur)", m.filter((x) => x.statut === "APPROUVEE_N1").length, "/missions");
       if (aAcces(roles, [R.SE]))
@@ -194,8 +197,8 @@ export default function AccueilPage() {
       )}
 
       {estSE && <TableauDeBordSE />}
-      {estRP && <TableauDeBordRP userId={user?.id} />}
-      {estRH && <TableauDeBordRH userId={user?.id} />}
+      {estRP && <TableauDeBordRP />}
+      {estRH && <TableauDeBordRH />}
 
       {!tableauDeBord && (
         <section className="rounded-lg border border-gray-200 bg-white">
