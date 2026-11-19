@@ -6,6 +6,7 @@ import { BailleurFichePage, BailleurFormPage, BailleursPage, FinancementFormPage
 import { IndicateurFichePage, IndicateurFormPage, IndicateursPage } from "@/pages/indicateurs/IndicateursPages";
 import { GESTIONNAIRES_INDICATEURS } from "@/api/indicateurs";
 import { AcquisitionFichePage, AcquisitionFormPage, AcquisitionsPage } from "@/pages/acquisitions/AcquisitionsPages";
+import { EquipePage, SuiviMensuelPage } from "@/pages/terrain/TerrainPages";
 import { CongeFichePage, CongeFormPage, CongesPage } from "@/pages/conges/CongesPages";
 import { MissionFichePage, MissionFormPage, MissionsPage, OrdreMissionPage } from "@/pages/missions/MissionsPages";
 import ActivitesList from "@/pages/activites/ActivitesList";
@@ -124,6 +125,14 @@ export default function AppRoutes() {
           <Route path="conges" element={<CongesPage />} />
           <Route path="conges/:id" element={<CongeFichePage />} />
           <Route path="conges/nouveau" element={<CongeFormPage />} />
+
+          {/* ── Terrain : planning, rapports, équipe du superviseur ── */}
+          <Route element={<Acces roles={ACCES.terrain} />}>
+            <Route path="terrain/suivi" element={<SuiviMensuelPage />} />
+          </Route>
+          <Route element={<Acces roles={ACCES.superviseur} />}>
+            <Route path="terrain/equipe" element={<EquipePage />} />
+          </Route>
 
           {/* ── Ressources humaines ─────────────────────────── */}
           <Route element={<Acces roles={ACCES.employes} />}>
