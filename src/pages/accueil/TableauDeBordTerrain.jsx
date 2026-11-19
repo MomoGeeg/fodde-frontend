@@ -1,4 +1,5 @@
-import { perimetresApi, terrainApi } from "@/api/perimetres";
+import { indicateursPerimetreApi, perimetresApi, terrainApi } from "@/api/perimetres";
+import IndicateursPerimetre from "@/components/perimetres/IndicateursPerimetre";
 import { Bloc, Carte, Vide } from "@/components/tableau/Blocs";
 import { messageErreur } from "@/lib/erreurs";
 import { dateCourte } from "@/lib/format";
@@ -92,6 +93,11 @@ export default function TableauDeBordTerrain() {
   const { data: activites = [], isLoading: chargeActivites } = useQuery({
     queryKey: ["terrain", "activites"],
     queryFn: terrainApi.mesActivites,
+  });
+
+  const { data: indicateurs = [], isLoading: chargeIndicateurs } = useQuery({
+    queryKey: ["indicateurs-perimetre", "miens"],
+    queryFn: indicateursPerimetreApi.mesIndicateurs,
   });
 
   const valides = activites.filter((a) => a.statut !== "ANNULEE");
@@ -243,6 +249,25 @@ export default function TableauDeBordTerrain() {
           )}
         </Bloc>
       </div>
+
+      <Bloc titre="Indicateurs de mes périmètres">
+        {chargeIndicateurs ? (
+          <Vide>Chargement…</Vide>
+        ) : indicateurs.length ? (
+          <div className="divide-y divide-gray-200">
+            {indicateurs.map((d) => (
+              <div key={d.perimetreId}>
+                <p className="bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-700">
+                  {d.perimetreNom} · {d.village}
+                </p>
+                <IndicateursPerimetre donnees={d} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Vide>Aucun périmètre ne vous est encore affecté.</Vide>
+        )}
+      </Bloc>
     </div>
   );
 }

@@ -1,7 +1,8 @@
-import { perimetresApi } from "@/api/perimetres";
+import { indicateursPerimetreApi, perimetresApi } from "@/api/perimetres";
+import IndicateursPerimetre from "@/components/perimetres/IndicateursPerimetre";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit, Plus, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { BarChart3, Edit, Plus, Trash2, X } from "lucide-react";
+import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
 const VIDE = {
@@ -30,11 +31,24 @@ function Champ({ label, requis, children }) {
   );
 }
 
+/** Indicateurs d'un périmètre, chargés à l'ouverture de sa ligne. */
+function LigneIndicateurs({ perimetreId }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["indicateurs-perimetre", perimetreId],
+    queryFn: () => indicateursPerimetreApi.duPerimetre(perimetreId),
+  });
+  if (isLoading || !data) {
+    return <p className="px-4 py-4 text-sm text-gray-500">Chargement…</p>;
+  }
+  return <IndicateursPerimetre donnees={data} />;
+}
+
 /** Onglet Périmètres de la fiche projet. */
 export default function TabPerimetres({ projet, peutGerer }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState(null);
   const [enEdition, setEnEdition] = useState(null);
+  const [ouvert, setOuvert] = useState(null);
 
   const { data: perimetres = [], isLoading } = useQuery({
     queryKey: ["perimetres", projet.id],
@@ -275,55 +289,89 @@ export default function TabPerimetres({ projet, peutGerer }) {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {perimetres.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-3">
-                    <p className="text-sm font-medium text-gray-900">{p.nom}</p>
-                    <p className="text-xs text-gray-400">{p.village}</p>
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-600">
-                    {[p.commune, p.departement].filter(Boolean).join(", ") ||
-                      "Non renseigné"}
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-600">
-                    {p.superficieHa != null
-                      ? `${new Intl.NumberFormat("fr-SN").format(p.superficieHa)} ha`
-                      : ""}
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-700">
-                    {p.technicienNom ?? "Non affecté"}
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-700">
-                    {p.superviseurNom ?? "Non affecté"}
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-600">
-                    {p.nbActivites}
-                  </td>
-                  <td className="px-6 py-3 text-right">
-                    {peutGerer && (
+                <Fragment key={p.id}>
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-6 py-3">
+                      <p className="text-sm font-medium text-gray-900">
+                        {p.nom}
+                      </p>
+                      <p className="text-xs text-gray-400">{p.village}</p>
+                    </td>
+                    <td className="px-6 py-3 text-sm text-gray-600">
+                      {[p.commune, p.departement].filter(Boolean).join(", ") ||
+                        "Non renseigné"}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-gray-600">
+                      {p.superficieHa != null
+                        ? `${new Intl.NumberFormat("fr-SN").format(p.superficieHa)} ha`
+                        : ""}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-gray-700">
+                      {p.technicienNom ?? "Non affecté"}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-gray-700">
+                      {p.superviseurNom ?? "Non affecté"}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-gray-600">
+                      {p.nbActivites}
+                    </td>
+                    <td className="px-6 py-3 text-right">
                       <div className="flex justify-end gap-1">
                         <button
-                          onClick={() => ouvrir(p)}
-                          title="Modifier"
-                          className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                          onClick={() =>
+                            setOuvert(ouvert === p.id ? null : p.id)
+                          }
+                          title="Indicateurs"
+                          className={`rounded-lg p-1.5 hover:bg-gray-100 hover:text-gray-700 ${
+                            ouvert === p.id ? "text-primary" : "text-gray-400"
+                          }`}
                         >
-                          <Edit size={14} />
+                          <BarChart3 size={14} />
                         </button>
-                        <button
-                          onClick={() => confirmerSuppression(p)}
-                          title="Supprimer"
-                          className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {peutGerer && (
+                          <>
+                            <button
+                              onClick={() => ouvrir(p)}
+                              title="Modifier"
+                              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={() => confirmerSuppression(p)}
+                              title="Supprimer"
+                              className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        )}
                       </div>
-                    )}
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
+                </Fragment>
               ))}
             </tbody>
           </table>
         )}
       </div>
+
+      {perimetres.some((p) => p.id === ouvert) && (
+        <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+            <h3 className="text-sm font-semibold text-gray-800">
+              Indicateurs : {perimetres.find((p) => p.id === ouvert).nom}
+            </h3>
+            <button
+              onClick={() => setOuvert(null)}
+              className="rounded p-1 text-gray-400 hover:bg-gray-100"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <LigneIndicateurs perimetreId={ouvert} />
+        </section>
+      )}
     </div>
   );
 }
