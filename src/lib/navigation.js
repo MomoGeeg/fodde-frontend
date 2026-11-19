@@ -40,6 +40,7 @@ export const R = {
   RSE: "ROLE_RESPONSABLE_SE",
   LOG: "ROLE_RESPONSABLE_LOGISTIQUE",
   TT: "ROLE_TECHNICIEN_TERRAIN",
+  SUP: "ROLE_SUPERVISEUR",
   ANTENNE: "ROLE_ANTENNE",
   COM: "ROLE_CHARGE_COMMUNICATION",
 };
@@ -229,6 +230,7 @@ export const LIBELLES_ROLES = {
   ROLE_CHARGE_PROGRAMME: "Chargé de programme",
   ROLE_RESPONSABLE_SE: "Responsable suivi-évaluation",
   ROLE_RESPONSABLE_LOGISTIQUE: "Responsable logistique",
+  ROLE_SUPERVISEUR: "Superviseur",
   ROLE_TECHNICIEN_TERRAIN: "Technicien terrain",
   ROLE_ANTENNE: "Responsable d'antenne",
   ROLE_CHARGE_COMMUNICATION: "Chargé de communication",
