@@ -1,0 +1,329 @@
+import { perimetresApi } from "@/api/perimetres";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Edit, Plus, Trash2, X } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+const VIDE = {
+  nom: "",
+  village: "",
+  commune: "",
+  departement: "",
+  superficieHa: "",
+  technicienId: "",
+  superviseurId: "",
+};
+
+const champ =
+  "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none";
+const etiquette =
+  "mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500";
+
+function Champ({ label, requis, children }) {
+  return (
+    <div>
+      <label className={etiquette}>
+        {label} {requis && <span className="text-red-500">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+/** Onglet Périmètres de la fiche projet. */
+export default function TabPerimetres({ projet, peutGerer }) {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState(null);
+  const [enEdition, setEnEdition] = useState(null);
+
+  const { data: perimetres = [], isLoading } = useQuery({
+    queryKey: ["perimetres", projet.id],
+    queryFn: () => perimetresApi.parProjet(projet.id),
+  });
+  const { data: intervenants } = useQuery({
+    queryKey: ["perimetres-intervenants"],
+    queryFn: perimetresApi.intervenants,
+    enabled: peutGerer,
+  });
+  const techniciens = intervenants?.techniciens ?? [];
+  const superviseurs = intervenants?.superviseurs ?? [];
+
+  const rafraichir = () =>
+    queryClient.invalidateQueries({ queryKey: ["perimetres", projet.id] });
+
+  const { mutate: enregistrer, isPending } = useMutation({
+    mutationFn: (data) =>
+      enEdition
+        ? perimetresApi.modifier(enEdition, data)
+        : perimetresApi.creer(data),
+    onSuccess: () => {
+      rafraichir();
+      toast.success(enEdition ? "Périmètre modifié" : "Périmètre créé");
+      fermer();
+    },
+    onError: (err) => toast.error(err.message ?? "Erreur"),
+  });
+
+  const { mutate: supprimer } = useMutation({
+    mutationFn: perimetresApi.supprimer,
+    onSuccess: () => {
+      rafraichir();
+      toast.success("Périmètre supprimé");
+    },
+    onError: (err) => toast.error(err.message ?? "Erreur"),
+  });
+
+  const fermer = () => {
+    setForm(null);
+    setEnEdition(null);
+  };
+
+  const ouvrir = (p) => {
+    setEnEdition(p?.id ?? null);
+    setForm(
+      p
+        ? {
+            nom: p.nom ?? "",
+            village: p.village ?? "",
+            commune: p.commune ?? "",
+            departement: p.departement ?? "",
+            superficieHa: p.superficieHa ?? "",
+            technicienId: p.technicienId ?? "",
+            superviseurId: p.superviseurId ?? "",
+          }
+        : VIDE,
+    );
+  };
+
+  const maj = (cle) => (e) => setForm((f) => ({ ...f, [cle]: e.target.value }));
+
+  const soumettre = (e) => {
+    e.preventDefault();
+    if (!form.nom.trim() || !form.village.trim()) {
+      toast.error("Le nom et le village sont obligatoires");
+      return;
+    }
+    enregistrer({
+      projetId: projet.id,
+      nom: form.nom.trim(),
+      village: form.village.trim(),
+      commune: form.commune.trim() || null,
+      departement: form.departement.trim() || null,
+      superficieHa:
+        form.superficieHa === "" ? null : parseFloat(form.superficieHa),
+      technicienId: form.technicienId || null,
+      superviseurId: form.superviseurId || null,
+    });
+  };
+
+  const confirmerSuppression = (p) => {
+    if (window.confirm(`Supprimer le périmètre « ${p.nom} » ?`))
+      supprimer(p.id);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">
+          {perimetres.length} périmètre{perimetres.length !== 1 ? "s" : ""}
+        </p>
+        {peutGerer && !form && (
+          <button
+            onClick={() => ouvrir(null)}
+            className="flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+          >
+            <Plus size={13} />
+            Ajouter un périmètre
+          </button>
+        )}
+      </div>
+
+      {form && (
+        <form
+          onSubmit={soumettre}
+          className="rounded-xl border border-green-100 bg-white p-5 shadow-sm space-y-4"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-800">
+              {enEdition ? "Modifier le périmètre" : "Nouveau périmètre"}
+            </h3>
+            <button
+              type="button"
+              onClick={fermer}
+              className="rounded p-1 text-gray-400 hover:bg-gray-100"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Champ label="Nom" requis>
+              <input value={form.nom} onChange={maj("nom")} className={champ} />
+            </Champ>
+            <Champ label="Village" requis>
+              <input
+                value={form.village}
+                onChange={maj("village")}
+                className={champ}
+              />
+            </Champ>
+            <Champ label="Commune">
+              <input
+                value={form.commune}
+                onChange={maj("commune")}
+                className={champ}
+              />
+            </Champ>
+            <Champ label="Département">
+              <input
+                value={form.departement}
+                onChange={maj("departement")}
+                className={champ}
+              />
+            </Champ>
+            <Champ label="Superficie (ha)">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.superficieHa}
+                onChange={maj("superficieHa")}
+                className={champ}
+              />
+            </Champ>
+            <div />
+            <Champ label="Technicien">
+              <select
+                value={form.technicienId}
+                onChange={maj("technicienId")}
+                className={champ}
+              >
+                <option value="">Non affecté</option>
+                {techniciens.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nom}
+                  </option>
+                ))}
+              </select>
+            </Champ>
+            <Champ label="Superviseur">
+              <select
+                value={form.superviseurId}
+                onChange={maj("superviseurId")}
+                className={champ}
+              >
+                <option value="">Non affecté</option>
+                {superviseurs.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nom}
+                  </option>
+                ))}
+              </select>
+            </Champ>
+          </div>
+          <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
+            <button
+              type="button"
+              onClick={fermer}
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="rounded-lg px-4 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+              style={{
+                background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)",
+              }}
+            >
+              {isPending ? "Enregistrement..." : "Enregistrer"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+        {isLoading ? (
+          <div className="px-6 py-10 text-center text-sm text-gray-400">
+            Chargement...
+          </div>
+        ) : perimetres.length === 0 ? (
+          <div className="px-6 py-10 text-center text-sm text-gray-400">
+            Aucun périmètre pour ce projet.
+          </div>
+        ) : (
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead className="bg-gray-50">
+              <tr>
+                {[
+                  "Périmètre",
+                  "Localisation",
+                  "Superficie",
+                  "Technicien",
+                  "Superviseur",
+                  "Activités",
+                  "",
+                ].map((t) => (
+                  <th
+                    key={t}
+                    className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
+                  >
+                    {t}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {perimetres.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-3">
+                    <p className="text-sm font-medium text-gray-900">{p.nom}</p>
+                    <p className="text-xs text-gray-400">{p.village}</p>
+                  </td>
+                  <td className="px-6 py-3 text-sm text-gray-600">
+                    {[p.commune, p.departement].filter(Boolean).join(", ") ||
+                      "Non renseigné"}
+                  </td>
+                  <td className="px-6 py-3 text-sm text-gray-600">
+                    {p.superficieHa != null
+                      ? `${new Intl.NumberFormat("fr-SN").format(p.superficieHa)} ha`
+                      : ""}
+                  </td>
+                  <td className="px-6 py-3 text-sm text-gray-700">
+                    {p.technicienNom ?? "Non affecté"}
+                  </td>
+                  <td className="px-6 py-3 text-sm text-gray-700">
+                    {p.superviseurNom ?? "Non affecté"}
+                  </td>
+                  <td className="px-6 py-3 text-sm text-gray-600">
+                    {p.nbActivites}
+                  </td>
+                  <td className="px-6 py-3 text-right">
+                    {peutGerer && (
+                      <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => ouvrir(p)}
+                          title="Modifier"
+                          className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                        >
+                          <Edit size={14} />
+                        </button>
+                        <button
+                          onClick={() => confirmerSuppression(p)}
+                          title="Supprimer"
+                          className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}

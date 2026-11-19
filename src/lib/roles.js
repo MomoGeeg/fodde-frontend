@@ -9,6 +9,7 @@ export const ROLES_DISPONIBLES = [
   { value: "ROLE_RESPONSABLE_LOGISTIQUE", label: "Responsable Logistique" },
   { value: "ROLE_COMPTABLE",             label: "Comptable" },
   { value: "ROLE_CHARGE_COMMUNICATION",  label: "Chargé de Communication" },
+  { value: "ROLE_SUPERVISEUR",           label: "Superviseur" },
   { value: "ROLE_TECHNICIEN_TERRAIN",    label: "Technicien Terrain" },
   { value: "ROLE_ADMIN",                 label: "Administrateur Système" },
 ];

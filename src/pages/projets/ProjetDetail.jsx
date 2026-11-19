@@ -1,3 +1,4 @@
+import { peutGererPerimetres, perimetresApi } from "@/api/perimetres";
 import { activitesProjetApi, projetsApi } from "@/api/projets.api";
 import { usersApi } from "@/api/users.api";
 import useAuthStore from "@/stores/auth.store";
@@ -23,6 +24,7 @@ import {
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import TabPerimetres from "./TabPerimetres";
 
 // ─── Constantes ────────────────────────────────────────────────────────────
 const STATUT_COLORS = {
@@ -184,7 +186,7 @@ function InfoRow({ label, children }) {
       <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
         {label}
       </dt>
-      <dd className="text-sm text-gray-800">{children ?? "—"}</dd>
+      <dd className="text-sm text-gray-800">{children ?? ""}</dd>
     </div>
   );
 }
@@ -227,13 +229,13 @@ function TabInfos({ projet, users }) {
                 ? new Intl.NumberFormat("fr-SN").format(projet.budgetTotal) +
                   " " +
                   (projet.devise ?? "")
-                : "—"}
+                : ""}
             </span>
           </InfoRow>
           <InfoRow label="Responsable">
             {responsable
               ? `${responsable.prenom} ${responsable.nom}`
-              : (projet.responsableId ?? "—")}
+              : ""}
           </InfoRow>
           <InfoRow label="Créé le">
             {projet.createdAt
@@ -242,7 +244,7 @@ function TabInfos({ projet, users }) {
                   month: "long",
                   year: "numeric",
                 })
-              : "—"}
+              : ""}
           </InfoRow>
         </dl>
       </div>
@@ -281,6 +283,14 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
     datePrevuFin: "",
     budgetAlloue: "",
     parentId: "",
+    type: "ACTIVITE",
+    perimetreId: "",
+  });
+  const [saisieParticipants, setSaisieParticipants] = useState(null);
+
+  const { data: perimetres = [] } = useQuery({
+    queryKey: ["perimetres", projet.id],
+    queryFn: () => perimetresApi.parProjet(projet.id),
   });
 
   const today = new Date();
@@ -315,6 +325,8 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
         datePrevuFin: "",
         budgetAlloue: "",
         parentId: "",
+        type: "ACTIVITE",
+        perimetreId: "",
       });
     },
     onError: (err) => toast.error(err.message ?? "Erreur"),
@@ -339,6 +351,17 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
     onError: (err) => toast.error(err.message ?? "Erreur"),
   });
 
+  const { mutate: enregistrerParticipants, isPending: savingParticipants } = useMutation({
+    mutationFn: ({ id, participants, femmes }) =>
+      activitesProjetApi.enregistrerParticipants(id, participants, femmes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["activites", projet.id] });
+      toast.success("Participants enregistrés");
+      setSaisieParticipants(null);
+    },
+    onError: (err) => toast.error(err.message ?? "Erreur"),
+  });
+
   const handleSubmitActivite = (e) => {
     e.preventDefault();
     if (!form.titre.trim()) {
@@ -359,6 +382,8 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
       budgetAlloue: form.budgetAlloue
         ? parseFloat(form.budgetAlloue)
         : undefined,
+      type: form.type,
+      perimetreId: form.perimetreId || undefined,
     });
   };
 
@@ -405,6 +430,22 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
                     {act.description}
                   </p>
                 )}
+                {(act.type === "FORMATION" || act.perimetreNom) && (
+                  <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+                    {act.type === "FORMATION" && (
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
+                        Formation
+                      </span>
+                    )}
+                    {act.perimetreNom && <span>{act.perimetreNom}</span>}
+                    {act.participants != null && (
+                      <span>
+                        {act.participants} participant{act.participants !== 1 ? "s" : ""}
+                        {act.participantsFemmes != null && `, dont ${act.participantsFemmes} femmes`}
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
           </td>
@@ -419,7 +460,7 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
           <td className="px-6 py-3 text-sm text-gray-600">
             {act.budgetAlloue != null
               ? new Intl.NumberFormat("fr-SN").format(act.budgetAlloue)
-              : "—"}
+              : ""}
           </td>
           <td className="px-6 py-3">
             <ProgressBar value={act.tauxAvancement} />
@@ -448,6 +489,22 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
                     className="rounded-lg bg-green-50 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 disabled:opacity-50 transition-colors"
                   >
                     Terminer
+                  </button>
+                )}
+                {canManage && act.type === "FORMATION" && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSaisieParticipants({
+                        id: act.id,
+                        titre: act.titre,
+                        participants: act.participants ?? "",
+                        femmes: act.participantsFemmes ?? "",
+                      })
+                    }
+                    className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+                  >
+                    Participants
                   </button>
                 )}
                 {canManage && !isSubActivite && (
@@ -504,7 +561,7 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
       {/* En-tête tableau activités */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          {activites.length} activité{activites.length !== 1 ? "s" : ""} —
+          {activites.length} activité{activites.length !== 1 ? "s" : ""} ·
           Budget cumulé :{" "}
           <span
             className={`font-medium ${budgetDepasse ? "text-red-600" : "text-gray-700"}`}
@@ -606,6 +663,38 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
               />
             </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Type
+              </label>
+              <select
+                value={form.type}
+                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+              >
+                <option value="ACTIVITE">Activité</option>
+                <option value="FORMATION">Formation</option>
+              </select>
+            </div>
+            {perimetres.length > 0 && (
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Périmètre
+                </label>
+                <select
+                  value={form.perimetreId}
+                  onChange={(e) => setForm((f) => ({ ...f, perimetreId: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+                >
+                  <option value="">Aucun</option>
+                  {perimetres.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nom}, {p.village}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {!form.parentId && (
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -618,7 +707,7 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
                   }
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
                 >
-                  <option value="">— Aucune (activité principale) —</option>
+                  <option value="">Aucune, activité principale</option>
                   {parents.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.titre}
@@ -646,6 +735,63 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
               }}
             >
               {creating ? "Création..." : "Créer"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {saisieParticipants && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const n = (v) => (v === "" ? null : parseInt(v, 10));
+            enregistrerParticipants({
+              id: saisieParticipants.id,
+              participants: n(saisieParticipants.participants),
+              femmes: n(saisieParticipants.femmes),
+            });
+          }}
+          className="rounded-xl border border-green-100 bg-white p-5 shadow-sm space-y-4"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-800">
+              Participants : {saisieParticipants.titre}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setSaisieParticipants(null)}
+              className="rounded p-1 text-gray-400 hover:bg-gray-100"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {[
+              ["participants", "Participants"],
+              ["femmes", "Dont femmes"],
+            ].map(([cle, label]) => (
+              <div key={cle}>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  {label}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={saisieParticipants[cle]}
+                  onChange={(e) => setSaisieParticipants((v) => ({ ...v, [cle]: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
+            <button
+              type="submit"
+              disabled={savingParticipants}
+              className="rounded-lg px-4 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+              style={{ background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)" }}
+            >
+              {savingParticipants ? "Enregistrement..." : "Enregistrer"}
             </button>
           </div>
         </form>
@@ -793,7 +939,7 @@ function TabAvancement({
           <div className="mb-4 flex items-center gap-2 rounded-lg bg-orange-50 border border-orange-200 px-4 py-2.5">
             <Pause size={15} className="text-orange-500" />
             <span className="text-sm font-medium text-orange-700">
-              Projet suspendu — en attente de réactivation
+              Projet suspendu, en attente de réactivation
             </span>
           </div>
         )}
@@ -979,7 +1125,7 @@ function TabAvancement({
 
             {projet.statut === "CLOTURE" && (
               <p className="text-sm text-gray-400 text-center py-2">
-                Projet clôturé — lecture seule
+                Projet clôturé, lecture seule
               </p>
             )}
 
@@ -1347,7 +1493,7 @@ export default function ProjetDetail() {
           <X size={16} className="mt-0.5 shrink-0 text-red-500" />
           <div>
             <p className="text-sm font-semibold text-red-800">
-              Projet rejeté — modifications requises
+              Projet rejeté, modifications requises
             </p>
             <p className="mt-0.5 text-sm text-red-700">
               {projet.commentaire_validation}
@@ -1380,6 +1526,12 @@ export default function ProjetDetail() {
           onClick={() => setActiveTab("activites")}
         >
           Activités {activites.length > 0 && `(${activites.length})`}
+        </OngletBtn>
+        <OngletBtn
+          active={activeTab === "perimetres"}
+          onClick={() => setActiveTab("perimetres")}
+        >
+          Périmètres
         </OngletBtn>
         <OngletBtn
           active={activeTab === "avancement"}
@@ -1417,6 +1569,13 @@ export default function ProjetDetail() {
             isSuspendu={isSuspendu}
           />
         ))}
+
+      {activeTab === "perimetres" && (
+        <TabPerimetres
+          projet={projet}
+          peutGerer={peutGererPerimetres(user, projet) && !isReadOnly}
+        />
+      )}
 
       {activeTab === "avancement" && (
         <TabAvancement
