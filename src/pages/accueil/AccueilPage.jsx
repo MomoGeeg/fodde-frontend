@@ -1,5 +1,5 @@
 import api from "@/api/axios";
-import { R, aAcces, sansDemandesTerrain } from "@/lib/navigation";
+import { R, aAcces, estTerrain, sansDemandesTerrain } from "@/lib/navigation";
 import useAuthStore from "@/stores/auth.store";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, TriangleAlert } from "lucide-react";
@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import TableauDeBordRH from "./TableauDeBordRH";
 import TableauDeBordRP from "./TableauDeBordRP";
 import TableauDeBordSE from "./TableauDeBordSE";
+import TableauDeBordTerrain from "./TableauDeBordTerrain";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Page d'accueil commune : ce que j'ai à faire, où en sont mes demandes,
@@ -150,7 +151,9 @@ export default function AccueilPage() {
   const estRP = aAcces(roles, [R.RP]) && !aAcces(roles, [R.SE, R.RAF]);
   // Les RH ont aussi leur tableau de bord (sauf s'ils ont un rôle de direction ou de programme).
   const estRH = aAcces(roles, [R.RH]) && !aAcces(roles, [R.SE, R.RAF, R.RP]);
-  const tableauDeBord = estSE || estRP || estRH;
+  // Techniciens terrain et superviseurs : leurs périmètres, formations et activités.
+  const terrain = estTerrain(roles);
+  const tableauDeBord = estSE || estRP || estRH || terrain;
   // Le SE ne fait pas de demandes ; les RH n'en suivent pas depuis l'accueil.
   const sansMesDemandes = estSE || estRH;
 
@@ -199,6 +202,7 @@ export default function AccueilPage() {
       {estSE && <TableauDeBordSE />}
       {estRP && <TableauDeBordRP />}
       {estRH && <TableauDeBordRH />}
+      {terrain && <TableauDeBordTerrain />}
 
       {!tableauDeBord && (
         <section className="rounded-lg border border-gray-200 bg-white">
@@ -230,7 +234,16 @@ export default function AccueilPage() {
           <section className="rounded-lg border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
               <h2 className="text-sm font-semibold text-gray-900">Mes demandes</h2>
-              {!sansDemandesTerrain(roles) && (
+              {terrain ? (
+                <span className="flex gap-3 text-xs font-medium">
+                  <Link to="/conges/nouveau" className="text-primary hover:underline">
+                    Congé
+                  </Link>
+                  <Link to="/acquisitions/nouvelle" className="text-primary hover:underline">
+                    Achat
+                  </Link>
+                </span>
+              ) : !sansDemandesTerrain(roles) && (
                 <span className="flex gap-3 text-xs font-medium">
                   <Link to="/missions/nouvelle" className="text-primary hover:underline">
                     Mission

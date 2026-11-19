@@ -15,9 +15,10 @@ import { CHAMP, CadreFormulaire, Ligne } from "@/components/demande/Formulaire";
 import ListeDemandes from "@/components/demande/ListeDemandes";
 import { messageErreur } from "@/lib/erreurs";
 import { dateCourte, montant } from "@/lib/format";
-import { neCreeRien } from "@/lib/navigation";
+import { perimetresApi } from "@/api/perimetres";
+import { estTerrain, neCreeRien } from "@/lib/navigation";
 import useAuthStore from "@/stores/auth.store";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -28,7 +29,7 @@ const COLONNES = [
     rendu: (a) => <Cellule principal={a.designation} secondaire={CATEGORIES_ACQUISITION[a.categorie] ?? a.categorie} />,
   },
   { titre: "Demandeur", rendu: (a) => <Cellule principal={a.soumisPar} secondaire={dateCourte(a.createdAt)} /> },
-  { titre: "Projet", rendu: (a) => a.projetCode },
+  { titre: "Projet", rendu: (a) => <Cellule principal={a.projetCode} secondaire={a.perimetreNom} /> },
   { titre: "Valeur", droite: true, rendu: (a) => montant(a.valeur) },
 ];
 
@@ -44,7 +45,7 @@ export function AcquisitionsPage() {
       aTraiter={aTraiter}
       statuts={STATUTS_ACQUISITION}
       colonnes={COLONNES}
-      texteRecherche={(a) => [a.designation, a.soumisPar, a.projetCode, a.codeActif]}
+      texteRecherche={(a) => [a.designation, a.soumisPar, a.projetCode, a.perimetreNom, a.codeActif]}
       lien={(a) => `/acquisitions/${a.id}`}
       placeholder="Bien, demandeur, projet…"
       nouveau={neCreeRien(user?.roles) ? null : { label: "Demander un achat", to: "/acquisitions/nouvelle" }}
@@ -76,6 +77,7 @@ export function AcquisitionFichePage() {
         champs: [
           { libelle: "Catégorie", valeur: CATEGORIES_ACQUISITION[a.categorie] ?? a.categorie },
           { libelle: "Projet", valeur: a.projetCode },
+          ...(a.perimetreNom ? [{ libelle: "Périmètre", valeur: a.perimetreNom }] : []),
           { libelle: "Date d'achat prévue", valeur: dateCourte(a.dateAcquisition) },
           { libelle: "Demandée par", valeur: a.soumisPar },
           { libelle: "Demandée le", valeur: dateCourte(a.createdAt) },
@@ -116,11 +118,18 @@ export function AcquisitionFormPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const terrain = estTerrain(user?.roles ?? []);
   const { data: projets = [] } = useProjets();
+  const { data: perimetres = [] } = useQuery({
+    queryKey: ["terrain", "perimetres"],
+    queryFn: perimetresApi.mesPerimetres,
+    enabled: terrain,
+  });
   const [f, setF] = useState({
     designation: "",
-    categorie: "EQUIPEMENT",
+    categorie: terrain ? "MATERIEL_AGRICOLE" : "EQUIPEMENT",
     projetId: "",
+    perimetreId: "",
     valeur: "",
     dateAcquisition: new Date().toISOString().slice(0, 10),
     justification: "",
@@ -136,7 +145,8 @@ export function AcquisitionFormPage() {
   const soumettre = async () => {
     const e = {};
     if (!f.designation.trim()) e.designation = "Indiquez le bien à acheter.";
-    if (!f.projetId) e.projetId = "Choisissez le projet qui finance l'achat.";
+    if (terrain && !f.perimetreId) e.perimetreId = "Choisissez le périmètre concerné.";
+    if (!terrain && !f.projetId) e.projetId = "Choisissez le projet qui finance l'achat.";
     if (!(Number(f.valeur) > 0)) e.valeur = "Indiquez la valeur estimée.";
     if (!f.dateAcquisition) e.dateAcquisition = "Indiquez la date prévue.";
     if (!f.justification.trim()) e.justification = "Expliquez en une phrase pourquoi cet achat est nécessaire.";
@@ -146,7 +156,14 @@ export function AcquisitionFormPage() {
     setEnvoi(true);
     try {
       const creee = await creerAcquisition(
-        { ...f, designation: f.designation.trim(), justification: f.justification.trim(), valeur: Number(f.valeur) },
+        {
+          ...f,
+          projetId: terrain ? null : f.projetId,
+          perimetreId: terrain ? f.perimetreId : null,
+          designation: f.designation.trim(),
+          justification: f.justification.trim(),
+          valeur: Number(f.valeur),
+        },
         user.id,
       );
       await queryClient.invalidateQueries({ queryKey: ["acquisitions"] });
@@ -180,18 +197,31 @@ export function AcquisitionFormPage() {
             ))}
           </select>
         </Ligne>
-        <Ligne libelle="Projet" erreur={erreurs.projetId}>
-          <select value={f.projetId} onChange={maj("projetId")} className={CHAMP}>
-            <option value="">Choisir…</option>
-            {projets
-              .filter((p) => p.statut === "ACTIF")
-              .map((p) => (
+        {terrain ? (
+          <Ligne libelle="Périmètre" erreur={erreurs.perimetreId}>
+            <select value={f.perimetreId} onChange={maj("perimetreId")} className={CHAMP}>
+              <option value="">Choisir…</option>
+              {perimetres.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.code} — {p.titre}
+                  {p.nom}, {p.village}
                 </option>
               ))}
-          </select>
-        </Ligne>
+            </select>
+          </Ligne>
+        ) : (
+          <Ligne libelle="Projet" erreur={erreurs.projetId}>
+            <select value={f.projetId} onChange={maj("projetId")} className={CHAMP}>
+              <option value="">Choisir…</option>
+              {projets
+                .filter((p) => p.statut === "ACTIF")
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} · {p.titre}
+                  </option>
+                ))}
+            </select>
+          </Ligne>
+        )}
         <Ligne libelle="Valeur estimée (F CFA)" erreur={erreurs.valeur}>
           <input type="number" min="0" inputMode="numeric" value={f.valeur} onChange={maj("valeur")} className={CHAMP} />
         </Ligne>
