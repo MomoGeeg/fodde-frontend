@@ -31,6 +31,16 @@ export const terrainApi = {
   },
 };
 
+/** Indicateurs du projet relevés sur un périmètre. */
+export const indicateursPerimetreApi = {
+  duPerimetre: (id) =>
+    api.get(`/api/perimetres/${id}/indicateurs`).then((r) => r.data),
+  mesIndicateurs: () =>
+    api.get("/api/perimetres/mes-indicateurs").then((r) => r.data),
+  enregistrer: (id, data) =>
+    api.post(`/api/perimetres/${id}/mesures`, data).then((r) => r.data),
+};
+
 /** Mêmes droits que le backend : RP, admin ou chef de projet désigné. */
 export function peutGererPerimetres(user, projet) {
   const roles = user?.roles ?? [];
