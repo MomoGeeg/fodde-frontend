@@ -1,10 +1,10 @@
 import {
   CATEGORIES_ACQUISITION,
-  ETAPES_ACQUISITION,
   STATUTS_ACQUISITION,
   actionsAcquisition,
   creerAcquisition,
   estATraiter,
+  etapesAcquisition,
   useAcquisitions,
 } from "@/api/acquisitions";
 import { useProjets } from "@/api/depenses";
@@ -36,7 +36,7 @@ const COLONNES = [
 export function AcquisitionsPage() {
   const { user } = useAuthStore();
   const { data, isLoading, isError } = useAcquisitions();
-  const aTraiter = useCallback((a) => estATraiter(a, user?.roles ?? []), [user]);
+  const aTraiter = useCallback((a) => estATraiter(a, user?.roles ?? [], user?.id), [user]);
   return (
     <ListeDemandes
       demandes={data}
@@ -71,7 +71,7 @@ export function AcquisitionFichePage() {
         montant: montant(a.valeur),
         statut: a.statut,
         statuts: STATUTS_ACQUISITION,
-        etapes: ETAPES_ACQUISITION,
+        etapes: etapesAcquisition(a),
         arret: a.statut === "REJETEE" ? { titre: "Acquisition rejetée", motif: a.motifRejet } : null,
         actions: actionsAcquisition(a, user?.roles ?? [], user?.id),
         champs: [

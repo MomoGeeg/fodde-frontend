@@ -2,6 +2,7 @@ import {
   Handshake,
   CalendarDays,
   CheckSquare,
+  ClipboardList,
   FileArchive,
   FileCheck,
   FileText,
@@ -60,6 +61,8 @@ export const ACCES = {
   logistique: [R.LOG, R.RAF, R.SE, R.ADMIN],
   saisieLogistique: [R.LOG, R.ADMIN],
   administration: [R.ADMIN],
+  terrain: [R.TT, R.SUP, R.ADMIN],
+  superviseur: [R.SUP, R.ADMIN],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,6 +92,7 @@ export const MENU = {
   /** Techniciens et superviseurs : congés et achats seulement. */
   sansMissions: [R.RH, R.TT, R.SUP],
   terrain: [R.TT, R.SUP],
+  superviseur: [R.SUP],
 };
 
 export const NAVIGATION = [
@@ -109,6 +113,13 @@ export const NAVIGATION = [
       { label: "Missions", path: "/missions", icon: MapPin, sauf: MENU.sansMissions },
       { label: "Acquisitions", path: "/acquisitions", icon: Package, sauf: MENU.sansDemandesTerrain },
       { label: "Congés", path: "/conges", icon: CalendarDays },
+    ],
+  },
+  {
+    titre: "Terrain",
+    items: [
+      { label: "Planning et rapports", path: "/terrain/suivi", icon: ClipboardList, menu: MENU.terrain },
+      { label: "Mon équipe", path: "/terrain/equipe", icon: Users, menu: MENU.superviseur },
     ],
   },
   {

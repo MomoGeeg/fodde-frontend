@@ -3,6 +3,8 @@ import IndicateursPerimetre from "@/components/perimetres/IndicateursPerimetre";
 import { Bloc, Carte, Vide } from "@/components/tableau/Blocs";
 import { messageErreur } from "@/lib/erreurs";
 import { dateCourte } from "@/lib/format";
+import { R, aAcces } from "@/lib/navigation";
+import { BlocSuiviTechnicien, BlocsSuperviseur } from "@/pages/terrain/TerrainPages";
 import useAuthStore from "@/stores/auth.store";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -111,8 +113,11 @@ export default function TableauDeBordTerrain() {
 
   const activitesParPerimetre = (id) => valides.filter((a) => a.perimetreId === id);
 
+  const roles = user?.roles ?? [];
+
   return (
     <div className="space-y-6">
+      {aAcces(roles, [R.SUP]) && <BlocsSuperviseur />}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Carte libelle="Mes périmètres" valeur={perimetres.length} chargement={chargePerimetres} />
         <Carte
@@ -178,6 +183,8 @@ export default function TableauDeBordTerrain() {
           <Vide>Aucune activité à venir.</Vide>
         )}
       </Bloc>
+
+      {aAcces(roles, [R.TT]) && <BlocSuiviTechnicien />}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Bloc titre="Mes périmètres">
