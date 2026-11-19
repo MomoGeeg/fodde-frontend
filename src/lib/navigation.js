@@ -86,6 +86,9 @@ export const MENU = {
   pasPret: [],
   /** Les RH gèrent le personnel : pas de missions ni d'achats à demander. */
   sansDemandesTerrain: [R.RH],
+  /** Techniciens et superviseurs : congés et achats seulement. */
+  sansMissions: [R.RH, R.TT, R.SUP],
+  terrain: [R.TT, R.SUP],
 };
 
 export const NAVIGATION = [
@@ -103,7 +106,7 @@ export const NAVIGATION = [
     titre: "Demandes",
     items: [
       { label: "Dépenses", path: "/finances/depenses", icon: Receipt, menu: MENU.depenses },
-      { label: "Missions", path: "/missions", icon: MapPin, sauf: MENU.sansDemandesTerrain },
+      { label: "Missions", path: "/missions", icon: MapPin, sauf: MENU.sansMissions },
       { label: "Acquisitions", path: "/acquisitions", icon: Package, sauf: MENU.sansDemandesTerrain },
       { label: "Congés", path: "/conges", icon: CalendarDays },
     ],
@@ -188,6 +191,9 @@ export const neCreeRien = (userRoles = []) => seulement(userRoles, [R.SE]);
 
 /** Vrai si l'utilisateur ne fait pas de demandes de terrain (missions, achats). */
 export const sansDemandesTerrain = (userRoles = []) => seulement(userRoles, MENU.sansDemandesTerrain);
+
+/** Vrai pour le technicien terrain ou le superviseur sans autre rôle. */
+export const estTerrain = (userRoles = []) => seulement(userRoles, MENU.terrain);
 
 /** Vrai si l'entrée doit figurer dans le menu de cet utilisateur. */
 const dansMenu = (userRoles, item) =>
