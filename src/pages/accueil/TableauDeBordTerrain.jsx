@@ -114,18 +114,15 @@ export default function TableauDeBordTerrain() {
   const activitesParPerimetre = (id) => valides.filter((a) => a.perimetreId === id);
 
   const roles = user?.roles ?? [];
+  // Le superviseur lit ces chiffres, par technicien, dans le tableau de son équipe.
+  const superviseur = aAcces(roles, [R.SUP]);
+  const technicien = aAcces(roles, [R.TT]);
 
   return (
     <div className="space-y-6">
-      {aAcces(roles, [R.SUP]) && <BlocsSuperviseur />}
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <Carte libelle="Mes périmètres" valeur={perimetres.length} chargement={chargePerimetres} />
-        <Carte
-          libelle="Formations réalisées"
-          valeur={formationsRealisees.length}
-          detail={`sur ${formations.length} prévue${formations.length > 1 ? "s" : ""}`}
-          chargement={chargeActivites}
-        />
+      {superviseur && <BlocsSuperviseur />}
+      {technicien && (
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Carte
           libelle="Personnes formées"
           valeur={nombre(formes)}
@@ -140,6 +137,7 @@ export default function TableauDeBordTerrain() {
         />
         <Carte libelle="En retard" valeur={retards.length} chargement={chargeActivites} alerte={retards.length > 0} />
       </section>
+      )}
 
       <Bloc titre={`Mes activités${aVenir.length ? ` (${aVenir.length})` : ""}`}>
         {chargeActivites ? (
@@ -186,7 +184,7 @@ export default function TableauDeBordTerrain() {
 
       {aAcces(roles, [R.TT]) && <BlocSuiviTechnicien />}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className={`grid gap-6 ${technicien ? "lg:grid-cols-2" : ""}`}>
         <Bloc titre="Mes périmètres">
           {chargePerimetres ? (
             <Vide>Chargement…</Vide>
@@ -217,7 +215,8 @@ export default function TableauDeBordTerrain() {
           )}
         </Bloc>
 
-        <Bloc titre="Formations réalisées">
+        {technicien && (
+        <Bloc titre={`Formations réalisées (${formationsRealisees.length} sur ${formations.length})`}>
           {chargeActivites ? (
             <Vide>Chargement…</Vide>
           ) : formationsRealisees.length ? (
@@ -255,6 +254,7 @@ export default function TableauDeBordTerrain() {
             <Vide>Aucune formation réalisée pour le moment.</Vide>
           )}
         </Bloc>
+        )}
       </div>
 
       <Bloc titre="Indicateurs de mes périmètres">
