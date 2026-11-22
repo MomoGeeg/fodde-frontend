@@ -18,6 +18,4 @@ export const activitesProjetApi = {
   demarrer: (id) => ps.demarrerActivite(id),
   mettreAJourAvancement: (id, taux, statut) =>
     ps.mettreAJourAvancement(id, taux, statut),
-  enregistrerParticipants: (id, participants, femmes) =>
-    ps.enregistrerParticipants(id, participants, femmes),
 };

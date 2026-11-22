@@ -1,5 +1,6 @@
 import { indicateursPerimetreApi, perimetresApi } from "@/api/perimetres";
 import IndicateursPerimetre from "@/components/perimetres/IndicateursPerimetre";
+import AnimateursProjet from "./AnimateursProjet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Edit, Plus, Trash2, X } from "lucide-react";
 import { Fragment, useState } from "react";
@@ -372,6 +373,8 @@ export default function TabPerimetres({ projet, peutGerer }) {
           <LigneIndicateurs perimetreId={ouvert} />
         </section>
       )}
+
+      <AnimateursProjet projet={projet} peutGerer={peutGerer} />
     </div>
   );
 }

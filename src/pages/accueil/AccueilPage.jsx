@@ -85,6 +85,14 @@ async function chargerATraiter(roles, userId) {
     );
   }
 
+  if (aAcces(roles, [R.CP])) {
+    appels.push(
+      liste("/api/suivis-terrain/equipe").then((s) =>
+        ajouter("Plannings et rapports à valider", s.filter((x) => x.statut === "SOUMIS").length, "/terrain/suivi"),
+      ),
+    );
+  }
+
   if (aAcces(roles, [R.COMPTABLE])) {
     appels.push(
       liste(`/api/depenses/mes-depenses?userId=${userId}`).then((d) => {

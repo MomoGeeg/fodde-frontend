@@ -44,6 +44,7 @@ function roleBadgeColor(role) {
     ROLE_COMPTABLE:             "bg-amber-100 text-amber-800",
     ROLE_CHARGE_COMMUNICATION:  "bg-pink-100 text-pink-800",
     ROLE_SUPERVISEUR:           "bg-teal-100 text-teal-800",
+    ROLE_ANIMATEUR:             "bg-lime-100 text-lime-800",
     ROLE_TECHNICIEN_TERRAIN:    "bg-lime-100 text-lime-800",
     ROLE_ANTENNE:               "bg-teal-100 text-teal-800",
   };

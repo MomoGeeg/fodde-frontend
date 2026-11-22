@@ -17,18 +17,10 @@ export const perimetresApi = {
   supprimer: (id) => api.delete(`/api/perimetres/${id}`),
 };
 
-/** Espace terrain : activités du technicien ou du superviseur, participants des formations. */
+/** Espace terrain : activités du technicien, de l'animateur ou du superviseur. */
 export const terrainApi = {
   mesActivites: () =>
     api.get("/api/activites/mes-activites").then((r) => r.data),
-  enregistrerParticipants: (id, participants, femmes) => {
-    const params = {};
-    if (participants != null) params.participants = participants;
-    if (femmes != null) params.femmes = femmes;
-    return api
-      .patch(`/api/activites/${id}/participants`, null, { params })
-      .then((r) => r.data);
-  },
 };
 
 /** Indicateurs du projet relevés sur un périmètre. */

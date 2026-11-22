@@ -63,7 +63,7 @@ function DetailSuivi({ suivi }) {
             suivi.statut === "A_REVOIR" ? "bg-red-50 text-red-800" : "bg-green-50 text-green-800"
           }`}
         >
-          <span className="font-semibold">{suivi.decideParNom ?? "Superviseur"} : </span>
+          <span className="font-semibold">{suivi.decideParNom ?? "Validation"} : </span>
           {suivi.commentaire}
         </p>
       )}
@@ -252,8 +252,8 @@ function FormulaireSuivi({ suivis }) {
 export function SuiviMensuelPage() {
   const { user } = useAuthStore();
   const roles = user?.roles ?? [];
-  const technicien = aAcces(roles, [R.TT]);
-  const superviseur = aAcces(roles, [R.SUP, R.ADMIN]);
+  const technicien = aAcces(roles, [R.TT, R.ANIM]);
+  const superviseur = aAcces(roles, [R.SUP, R.CP, R.RP, R.ADMIN]);
   const [vue, setVue] = useState("attente");
 
   const { data: miens = [], isLoading: chargeMiens } = useSuivisMiens(technicien);
@@ -328,13 +328,13 @@ export function SuiviMensuelPage() {
 /** Techniciens encadrés : périmètres, avancement, état du suivi mensuel. */
 export function TableauEquipe({ membres, chargement }) {
   if (chargement) return <Vide>Chargement…</Vide>;
-  if (!membres.length) return <Vide>Aucun technicien sur vos périmètres.</Vide>;
+  if (!membres.length) return <Vide>Personne dans votre équipe pour le moment.</Vide>;
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-100 text-sm">
         <thead className="bg-gray-50">
           <tr>
-            {["Technicien", "Activités réalisées", "En retard", "Personnes formées", "Planning du mois", "Dernier rapport"].map(
+            {["Membre", "Activités réalisées", "En retard", "Participants", "Planning du mois", "Dernier rapport"].map(
               (t) => (
                 <th key={t} className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                   {t}
@@ -392,7 +392,7 @@ export function EquipePage() {
   return (
     <div className="space-y-6">
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Carte libelle="Techniciens" valeur={membres.length} chargement={isLoading} />
+        <Carte libelle="Membres" valeur={membres.length} chargement={isLoading} />
         <Carte
           libelle="Activités réalisées"
           valeur={`${membres.reduce((t, m) => t + m.activitesRealisees, 0)} sur ${membres.reduce((t, m) => t + m.activitesPrevues, 0)}`}
@@ -405,7 +405,7 @@ export function EquipePage() {
           chargement={isLoading}
         />
         <Carte
-          libelle="Personnes formées"
+          libelle="Participants"
           valeur={nombre(membres.reduce((t, m) => t + m.personnesFormees, 0))}
           chargement={isLoading}
         />
