@@ -91,7 +91,9 @@ export const MENU = {
   pasPret: [],
   /** Les RH gèrent le personnel : pas de missions ni d'achats à demander. */
   sansDemandesTerrain: [R.RH],
-  /** Techniciens, animateurs et superviseurs : congés et achats seulement. */
+  /** Achats : lancés par le coordonnateur du projet, traités par le RAF et le RP. */
+  acquisitions: [R.CP, R.RP, R.RAF, R.SE, R.ADMIN, R.LOG],
+  /** Techniciens, animateurs et superviseurs : congés seulement. */
   sansMissions: [R.RH, R.TT, R.SUP, R.ANIM],
   terrain: [R.TT, R.SUP, R.ANIM],
   suiviTerrain: [R.TT, R.SUP, R.ANIM, R.CP],
@@ -114,7 +116,7 @@ export const NAVIGATION = [
     items: [
       { label: "Dépenses", path: "/finances/depenses", icon: Receipt, menu: MENU.depenses },
       { label: "Missions", path: "/missions", icon: MapPin, sauf: MENU.sansMissions },
-      { label: "Acquisitions", path: "/acquisitions", icon: Package, sauf: MENU.sansDemandesTerrain },
+      { label: "Acquisitions", path: "/acquisitions", icon: Package, menu: MENU.acquisitions },
       { label: "Congés", path: "/conges", icon: CalendarDays },
     ],
   },
