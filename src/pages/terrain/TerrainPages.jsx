@@ -1,4 +1,3 @@
-import { useAcquisitions } from "@/api/acquisitions";
 import { STATUTS_SUIVI, TYPES_SUIVI, libelleMois, moisDecale, suivisApi } from "@/api/suivis";
 import StatutBadge from "@/components/demande/StatutBadge";
 import { Bloc, Carte, Vide } from "@/components/tableau/Blocs";
@@ -456,23 +455,13 @@ export function BlocSuiviTechnicien() {
 
 /** Superviseur : ce qui attend sa décision, puis son équipe. */
 export function BlocsSuperviseur() {
-  const { user } = useAuthStore();
   const { data: suivis = [], isLoading: chargeSuivis } = useSuivisEquipe();
-  const { data: achats = [], isLoading: chargeAchats } = useAcquisitions();
   const { data: membres = [], isLoading: chargeMembres } = useMembresEquipe();
-  const achatsAViser = achats.filter((a) => a.statut === "ATTENTE_SUPERVISEUR" && a.soumisParId !== user?.id);
   const plannings = suivis.filter((s) => s.statut === "SOUMIS" && s.type === "PLANNING");
   const rapports = suivis.filter((s) => s.statut === "SOUMIS" && s.type === "RAPPORT");
   return (
     <>
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Carte
-          libelle="Achats à viser"
-          valeur={achatsAViser.length}
-          lien="/acquisitions"
-          alerte={achatsAViser.length > 0}
-          chargement={chargeAchats}
-        />
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Carte
           libelle="Plannings à valider"
           valeur={plannings.length}

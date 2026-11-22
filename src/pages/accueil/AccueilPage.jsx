@@ -85,6 +85,17 @@ async function chargerATraiter(roles, userId) {
     );
   }
 
+  // Achats à viser : le coordonnateur du projet (chef de projet), quel que soit son rôle.
+  appels.push(
+    liste("/api/acquisitions/mes-projets").then((a) =>
+      ajouter(
+        "Achats à viser",
+        a.filter((x) => x.statut === "ATTENTE_COORDONNATEUR" && x.soumisParId !== userId).length,
+        "/acquisitions",
+      ),
+    ),
+  );
+
   if (aAcces(roles, [R.CP])) {
     appels.push(
       liste("/api/suivis-terrain/equipe").then((s) =>
