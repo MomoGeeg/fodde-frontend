@@ -42,6 +42,7 @@ export const R = {
   LOG: "ROLE_RESPONSABLE_LOGISTIQUE",
   TT: "ROLE_TECHNICIEN_TERRAIN",
   SUP: "ROLE_SUPERVISEUR",
+  ANIM: "ROLE_ANIMATEUR",
   ANTENNE: "ROLE_ANTENNE",
   COM: "ROLE_CHARGE_COMMUNICATION",
 };
@@ -61,8 +62,9 @@ export const ACCES = {
   logistique: [R.LOG, R.RAF, R.SE, R.ADMIN],
   saisieLogistique: [R.LOG, R.ADMIN],
   administration: [R.ADMIN],
-  terrain: [R.TT, R.SUP, R.ADMIN],
-  superviseur: [R.SUP, R.ADMIN],
+  /** Le coordonnateur (chef de projet) valide le suivi de ses animateurs. */
+  terrain: [R.TT, R.SUP, R.ANIM, R.CP, R.RP, R.ADMIN],
+  superviseur: [R.SUP, R.CP, R.RP, R.ADMIN],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,10 +91,11 @@ export const MENU = {
   pasPret: [],
   /** Les RH gèrent le personnel : pas de missions ni d'achats à demander. */
   sansDemandesTerrain: [R.RH],
-  /** Techniciens et superviseurs : congés et achats seulement. */
-  sansMissions: [R.RH, R.TT, R.SUP],
-  terrain: [R.TT, R.SUP],
-  superviseur: [R.SUP],
+  /** Techniciens, animateurs et superviseurs : congés et achats seulement. */
+  sansMissions: [R.RH, R.TT, R.SUP, R.ANIM],
+  terrain: [R.TT, R.SUP, R.ANIM],
+  suiviTerrain: [R.TT, R.SUP, R.ANIM, R.CP],
+  superviseur: [R.SUP, R.CP],
 };
 
 export const NAVIGATION = [
@@ -118,7 +121,7 @@ export const NAVIGATION = [
   {
     titre: "Terrain",
     items: [
-      { label: "Planning et rapports", path: "/terrain/suivi", icon: ClipboardList, menu: MENU.terrain },
+      { label: "Planning et rapports", path: "/terrain/suivi", icon: ClipboardList, menu: MENU.suiviTerrain },
       { label: "Mon équipe", path: "/terrain/equipe", icon: Users, menu: MENU.superviseur },
     ],
   },
@@ -203,7 +206,7 @@ export const neCreeRien = (userRoles = []) => seulement(userRoles, [R.SE]);
 /** Vrai si l'utilisateur ne fait pas de demandes de terrain (missions, achats). */
 export const sansDemandesTerrain = (userRoles = []) => seulement(userRoles, MENU.sansDemandesTerrain);
 
-/** Vrai pour le technicien terrain ou le superviseur sans autre rôle. */
+/** Vrai pour le technicien terrain, l'animateur ou le superviseur sans autre rôle. */
 export const estTerrain = (userRoles = []) => seulement(userRoles, MENU.terrain);
 
 /** Vrai si l'entrée doit figurer dans le menu de cet utilisateur. */
@@ -249,6 +252,7 @@ export const LIBELLES_ROLES = {
   ROLE_RESPONSABLE_LOGISTIQUE: "Responsable logistique",
   ROLE_SUPERVISEUR: "Superviseur",
   ROLE_TECHNICIEN_TERRAIN: "Technicien terrain",
+  ROLE_ANIMATEUR: "Animateur",
   ROLE_ANTENNE: "Responsable d'antenne",
   ROLE_CHARGE_COMMUNICATION: "Chargé de communication",
 };

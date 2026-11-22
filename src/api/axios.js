@@ -12,6 +12,11 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("fodde_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Fichier envoyé (FormData) : sans cela, l'en-tête JSON par défaut ferait convertir le
+  // formulaire en JSON et le fichier serait perdu ; le navigateur pose alors multipart lui-même.
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    config.headers.delete("Content-Type");
+  }
   return config;
 });
 

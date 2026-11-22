@@ -80,14 +80,6 @@ export async function mettreAJourAvancement(id, taux, statut) {
   return res.data;
 }
 
-export async function enregistrerParticipants(id, participants, femmes) {
-  const params = {};
-  if (participants != null) params.participants = participants;
-  if (femmes != null) params.femmes = femmes;
-  const res = await api.patch(`/api/activites/${id}/participants`, null, { params });
-  return res.data;
-}
-
 // Helpers synchrones (pour compatibilité, pas de logique async)
 export function joursRestants() { return null; }
 export function urgenceContrat() { return false; }

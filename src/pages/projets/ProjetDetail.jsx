@@ -25,6 +25,8 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import TabPerimetres from "./TabPerimetres";
+import { TYPES_ACTIVITE } from "@/api/animateurs";
+import PiecesActivite from "@/components/activites/PiecesActivite";
 
 // ─── Constantes ────────────────────────────────────────────────────────────
 const STATUT_COLORS = {
@@ -285,8 +287,9 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
     parentId: "",
     type: "ACTIVITE",
     perimetreId: "",
+    lieu: "",
   });
-  const [saisieParticipants, setSaisieParticipants] = useState(null);
+  const [ouverte, setOuverte] = useState(null);
 
   const { data: perimetres = [] } = useQuery({
     queryKey: ["perimetres", projet.id],
@@ -327,6 +330,7 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
         parentId: "",
         type: "ACTIVITE",
         perimetreId: "",
+        lieu: "",
       });
     },
     onError: (err) => toast.error(err.message ?? "Erreur"),
@@ -351,16 +355,6 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
     onError: (err) => toast.error(err.message ?? "Erreur"),
   });
 
-  const { mutate: enregistrerParticipants, isPending: savingParticipants } = useMutation({
-    mutationFn: ({ id, participants, femmes }) =>
-      activitesProjetApi.enregistrerParticipants(id, participants, femmes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["activites", projet.id] });
-      toast.success("Participants enregistrés");
-      setSaisieParticipants(null);
-    },
-    onError: (err) => toast.error(err.message ?? "Erreur"),
-  });
 
   const handleSubmitActivite = (e) => {
     e.preventDefault();
@@ -384,6 +378,7 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
         : undefined,
       type: form.type,
       perimetreId: form.perimetreId || undefined,
+      lieu: form.lieu.trim() || undefined,
     });
   };
 
@@ -430,14 +425,14 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
                     {act.description}
                   </p>
                 )}
-                {(act.type === "FORMATION" || act.perimetreNom) && (
+                {(act.type !== "ACTIVITE" || act.perimetreNom || act.lieu || act.participants != null) && (
                   <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
-                    {act.type === "FORMATION" && (
+                    {act.type && act.type !== "ACTIVITE" && (
                       <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
-                        Formation
+                        {TYPES_ACTIVITE[act.type] ?? act.type}
                       </span>
                     )}
-                    {act.perimetreNom && <span>{act.perimetreNom}</span>}
+                    {(act.lieu || act.perimetreNom) && <span>{act.lieu ?? act.perimetreNom}</span>}
                     {act.participants != null && (
                       <span>
                         {act.participants} participant{act.participants !== 1 ? "s" : ""}
@@ -491,22 +486,17 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
                     Terminer
                   </button>
                 )}
-                {canManage && act.type === "FORMATION" && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSaisieParticipants({
-                        id: act.id,
-                        titre: act.titre,
-                        participants: act.participants ?? "",
-                        femmes: act.participantsFemmes ?? "",
-                      })
-                    }
-                    className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors"
-                  >
-                    Participants
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setOuverte(ouverte === act.id ? null : act.id)}
+                  className={`rounded-lg border px-2 py-1 text-xs font-medium transition-colors ${
+                    ouverte === act.id
+                      ? "border-green-200 bg-green-50 text-green-700"
+                      : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                  }`}
+                >
+                  Pièces
+                </button>
                 {canManage && !isSubActivite && (
                   <button
                     type="button"
@@ -672,9 +662,24 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
                 onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
               >
-                <option value="ACTIVITE">Activité</option>
-                <option value="FORMATION">Formation</option>
+                {Object.entries(TYPES_ACTIVITE).map(([code, libelle]) => (
+                  <option key={code} value={code}>
+                    {libelle}
+                  </option>
+                ))}
               </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Lieu
+              </label>
+              <input
+                type="text"
+                value={form.lieu}
+                onChange={(e) => setForm((f) => ({ ...f, lieu: e.target.value }))}
+                placeholder="Village, quartier, école"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+              />
             </div>
             {perimetres.length > 0 && (
               <div>
@@ -740,62 +745,6 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
         </form>
       )}
 
-      {saisieParticipants && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const n = (v) => (v === "" ? null : parseInt(v, 10));
-            enregistrerParticipants({
-              id: saisieParticipants.id,
-              participants: n(saisieParticipants.participants),
-              femmes: n(saisieParticipants.femmes),
-            });
-          }}
-          className="rounded-xl border border-green-100 bg-white p-5 shadow-sm space-y-4"
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-800">
-              Participants : {saisieParticipants.titre}
-            </h3>
-            <button
-              type="button"
-              onClick={() => setSaisieParticipants(null)}
-              className="rounded p-1 text-gray-400 hover:bg-gray-100"
-            >
-              <X size={15} />
-            </button>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {[
-              ["participants", "Participants"],
-              ["femmes", "Dont femmes"],
-            ].map(([cle, label]) => (
-              <div key={cle}>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  {label}
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={saisieParticipants[cle]}
-                  onChange={(e) => setSaisieParticipants((v) => ({ ...v, [cle]: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
-                />
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
-            <button
-              type="submit"
-              disabled={savingParticipants}
-              className="rounded-lg px-4 py-1.5 text-xs font-medium text-white disabled:opacity-60"
-              style={{ background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)" }}
-            >
-              {savingParticipants ? "Enregistrement..." : "Enregistrer"}
-            </button>
-          </div>
-        </form>
-      )}
 
       {/* Tableau activités */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -837,6 +786,27 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
           </table>
         )}
       </div>
+
+      {activites.some((a) => a.id === ouverte) && (
+        <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+            <h3 className="text-sm font-semibold text-gray-800">
+              Pièces : {activites.find((a) => a.id === ouverte).titre}
+            </h3>
+            <button onClick={() => setOuverte(null)} className="rounded p-1 text-gray-400 hover:bg-gray-100">
+              <X size={15} />
+            </button>
+          </div>
+          <div className="pt-4">
+            <PiecesActivite
+              key={ouverte}
+              activite={activites.find((a) => a.id === ouverte)}
+              peutModifier={canManage && !isSuspendu}
+              cles={[["activites", projet.id]]}
+            />
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -1531,7 +1501,7 @@ export default function ProjetDetail() {
           active={activeTab === "perimetres"}
           onClick={() => setActiveTab("perimetres")}
         >
-          Périmètres
+          Terrain
         </OngletBtn>
         <OngletBtn
           active={activeTab === "avancement"}
