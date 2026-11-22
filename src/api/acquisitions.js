@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Acquisitions : un employé demande l'achat d'un bien pour un projet ; le RAF
-// valide ou rejette. Achat pour un périmètre : le superviseur du périmètre le
-// vise d'abord. Circuit : (ATTENTE_SUPERVISEUR →) EN_ATTENTE → VALIDEE
+// valide ou rejette. Le coordonnateur du projet (chef de projet) le vise d'abord,
+// sauf s'il le demande lui-même. Circuit : (ATTENTE_COORDONNATEUR →) EN_ATTENTE → VALIDEE
 // ─────────────────────────────────────────────────────────────────────────────
 import api from "@/api/axios";
 import { R, aAcces } from "@/lib/navigation";
@@ -9,7 +9,7 @@ import useAuthStore from "@/stores/auth.store";
 import { useQuery } from "@tanstack/react-query";
 
 export const STATUTS_ACQUISITION = {
-  ATTENTE_SUPERVISEUR: { label: "Visa du superviseur", ton: "attention" },
+  ATTENTE_COORDONNATEUR: { label: "Visa du coordonnateur", ton: "attention" },
   EN_ATTENTE: { label: "En attente", ton: "info" },
   VALIDEE: { label: "Validée", ton: "succes" },
   REJETEE: { label: "Rejetée", ton: "danger" },
@@ -32,21 +32,20 @@ export function useAcquisitions() {
   const { user } = useAuthStore();
   const roles = user?.roles ?? [];
   const voitTout = aAcces(roles, VOIT_TOUT);
-  const superviseur = !voitTout && aAcces(roles, [R.SUP]);
   return useQuery({
-    queryKey: ["acquisitions", voitTout ? "toutes" : superviseur ? "supervisees" : "miennes"],
+    queryKey: ["acquisitions", voitTout ? "toutes" : "miennes"],
     queryFn: async () => {
       if (voitTout) {
         const { data } = await api.get("/api/acquisitions");
         return Array.isArray(data) ? data : [];
       }
-      const [miennes, supervisees] = await Promise.all([
+      const [miennes, projets] = await Promise.all([
         api.get("/api/acquisitions/mes-acquisitions").then((r) => r.data),
-        superviseur ? api.get("/api/acquisitions/supervises").then((r) => r.data) : [],
+        api.get("/api/acquisitions/mes-projets").then((r) => r.data),
       ]);
-      // Le superviseur voit ses demandes et celles de ses périmètres, sans doublon.
+      // Chacun voit ses demandes ; le coordonnateur aussi celles de ses projets, sans doublon.
       const parId = new Map();
-      [...(miennes ?? []), ...(supervisees ?? [])].forEach((x) => parId.set(x.id, x));
+      [...(miennes ?? []), ...(projets ?? [])].forEach((x) => parId.set(x.id, x));
       return [...parId.values()].sort((x, y) => (y.createdAt ?? "").localeCompare(x.createdAt ?? ""));
     },
     enabled: !!user,
@@ -62,24 +61,26 @@ export const ETAPES_ACQUISITION = [
   { code: "VALIDEE", label: "Validée par le RAF" },
 ];
 
-/** Achat pour un périmètre : visa du superviseur avant le RAF. */
-const ETAPES_ACQUISITION_TERRAIN = [
-  { code: "ATTENTE_SUPERVISEUR", label: "Demandée" },
-  { code: "EN_ATTENTE", label: "Visée par le superviseur" },
+/** Achat d'un projet qui a un coordonnateur : son visa avant le RAF. */
+const ETAPES_ACQUISITION_COORDONNEE = [
+  { code: "ATTENTE_COORDONNATEUR", label: "Demandée" },
+  { code: "EN_ATTENTE", label: "Visée par le coordonnateur" },
   { code: "VALIDEE", label: "Validée par le RAF" },
 ];
 
-export const etapesAcquisition = (a) => (a?.perimetreId ? ETAPES_ACQUISITION_TERRAIN : ETAPES_ACQUISITION);
+const viseeParCoordonnateur = (a) => !!a?.coordonnateurId && a.coordonnateurId !== a.soumisParId;
 
-/** Le service vérifie en plus que l'utilisateur supervise bien le périmètre de l'achat. */
-const aViser = (a, roles, userId) =>
-  aAcces(roles, [R.SUP]) && a.statut === "ATTENTE_SUPERVISEUR" && a.soumisParId !== userId;
+export const etapesAcquisition = (a) =>
+  a?.statut === "ATTENTE_COORDONNATEUR" || viseeParCoordonnateur(a) ? ETAPES_ACQUISITION_COORDONNEE : ETAPES_ACQUISITION;
+
+const aViser = (a, userId) =>
+  a.statut === "ATTENTE_COORDONNATEUR" && !!userId && a.coordonnateurId === userId && a.soumisParId !== userId;
 
 export const estATraiter = (a, roles, userId) =>
-  (aAcces(roles, [R.RAF]) && a.statut === "EN_ATTENTE") || aViser(a, roles, userId);
+  (aAcces(roles, [R.RAF]) && a.statut === "EN_ATTENTE") || aViser(a, userId);
 
 export function actionsAcquisition(a, roles, userId) {
-  if (aViser(a, roles, userId)) {
+  if (aViser(a, userId)) {
     return [
       {
         cle: "viser",
@@ -98,7 +99,7 @@ export function actionsAcquisition(a, roles, userId) {
         motif: true,
         confirmation: "Rejeter cet achat ? Le motif sera visible par le demandeur.",
         executer: async (motif) => {
-          await api.patch(`/api/acquisitions/${a.id}/rejeter-superviseur`, { motif });
+          await api.patch(`/api/acquisitions/${a.id}/rejeter-coordonnateur`, { motif });
           return "Achat rejeté";
         },
       },
