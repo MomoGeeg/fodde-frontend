@@ -155,6 +155,37 @@ async function chargerChiffres(roles) {
   return chiffres;
 }
 
+/**
+ * Titre de l'accueil selon le métier. Plusieurs rôles : celui du tableau de bord affiché
+ * (SE, RP, RH, terrain), puis les autres dans l'ordre de la liste.
+ */
+function titreAccueil(roles, { estSE, estRP, estRH, terrain }) {
+  if (estSE) return "Vue d'ensemble de l'ONG";
+  if (estRP) return "Pilotage des programmes";
+  if (estRH) return "Gestion du personnel";
+  if (terrain) {
+    if (aAcces(roles, [R.SUP])) return "Supervision du terrain";
+    if (aAcces(roles, [R.TT])) return "Mes périmètres et activités";
+    return "Mes activités de terrain";
+  }
+  const titres = [
+    [R.RAF, "Finances et validations"],
+    [R.CP, "Suivi de mes projets"],
+    [R.COMPTABLE, "Comptabilité"],
+    [R.RSE, "Suivi-évaluation"],
+    [R.LOG, "Logistique et parc"],
+    [R.COM, "Communication"],
+    [R.ADMIN, "Administration des comptes"],
+  ];
+  return titres.find(([role]) => aAcces(roles, [role]))?.[1] ?? "Mon espace";
+}
+
+/** Date du jour en toutes lettres : « Lundi 24 novembre 2026 ». */
+function dateDuJour() {
+  const texte = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return texte.charAt(0).toUpperCase() + texte.slice(1);
+}
+
 export default function AccueilPage() {
   const { user } = useAuthStore();
   const roles = user?.roles ?? [];
@@ -200,7 +231,12 @@ export default function AccueilPage() {
 
   return (
     <div className={`mx-auto space-y-6 ${tableauDeBord ? "max-w-6xl" : "max-w-5xl"}`}>
-      <p className="text-sm text-gray-600">Bonjour {user?.prenom},</p>
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+          {titreAccueil(roles, { estSE, estRP, estRH, terrain })}
+        </h1>
+        <p className="mt-1 text-sm text-gray-500">{dateDuJour()}</p>
+      </header>
 
       {voitChiffres && (
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
