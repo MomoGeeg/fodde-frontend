@@ -25,6 +25,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import TabPerimetres from "./TabPerimetres";
+import TabEquipe from "./TabEquipe";
 import { TYPES_ACTIVITE } from "@/api/animateurs";
 import PiecesActivite from "@/components/activites/PiecesActivite";
 
@@ -211,6 +212,8 @@ function TabInfos({ projet, users }) {
           </InfoRow>
           <InfoRow label="Titre">{projet.titre}</InfoRow>
           <InfoRow label="Zone géographique">{projet.zoneGeographique}</InfoRow>
+          <InfoRow label="Bailleur">{projet.bailleur}</InfoRow>
+          <InfoRow label="Chargé de projet">{projet.chefProjetNom}</InfoRow>
           <InfoRow label="Statut">
             <StatusBadge statut={projet.statut} />
           </InfoRow>
@@ -1556,6 +1559,12 @@ export default function ProjetDetail() {
           Infos générales
         </OngletBtn>
         <OngletBtn
+          active={activeTab === "equipe"}
+          onClick={() => setActiveTab("equipe")}
+        >
+          Équipe
+        </OngletBtn>
+        <OngletBtn
           active={activeTab === "activites"}
           onClick={() => setActiveTab("activites")}
         >
@@ -1583,6 +1592,16 @@ export default function ProjetDetail() {
 
       {/* Contenu des onglets */}
       {activeTab === "infos" && <TabInfos projet={projet} users={users} />}
+
+      {activeTab === "equipe" && (
+        <TabEquipe
+          projet={projet}
+          peutGerer={
+            (canManage || user?.id === projet.chefProjetId) &&
+            !["CLOTURE", "ARCHIVE"].includes(projet.statut)
+          }
+        />
+      )}
 
       {activeTab === "activites" &&
         (loadingActivites ? (
