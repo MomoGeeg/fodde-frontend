@@ -6,10 +6,8 @@ import api from "@/api/axios";
 import { R } from "@/lib/navigation";
 import { useQuery } from "@tanstack/react-query";
 
-/** Rôles qui enregistrent les bailleurs. */
+/** Rôles qui enregistrent les bailleurs et les conventions de financement. */
 export const GESTIONNAIRES_BAILLEURS = [R.RP, R.ADMIN];
-/** Rôles qui enregistrent les conventions de financement. */
-export const GESTIONNAIRES_CONVENTIONS = [R.RAF, R.ADMIN];
 
 const liste = (r) => (Array.isArray(r.data) ? r.data : []);
 
