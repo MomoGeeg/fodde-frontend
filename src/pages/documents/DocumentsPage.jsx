@@ -12,7 +12,8 @@ import {
   XCircle,
   FolderOpen,
 } from "lucide-react";
-import { useDocuments, TYPE_OPTIONS, STATUT_CONFIG, typeLabel } from "@/api/documents.api";
+import { useDocuments, TYPE_OPTIONS, STATUT_CONFIG, typeLabel, typesPourRoles } from "@/api/documents.api";
+import useAuthStore from "@/stores/auth.store";
 import DocumentUploadModal from "./DocumentUploadModal";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -48,6 +49,9 @@ export default function DocumentsPage() {
   const [filterType, setFilterType] = useState("");
   const [filterStatut, setFilterStatut] = useState("");
   const [showUpload, setShowUpload] = useState(false);
+  const { user } = useAuthStore();
+  // Sans type de document à son métier (administrateur), on ne dépose rien.
+  const peutDeposer = typesPourRoles(user?.roles ?? []).length > 0;
 
   const { data: documents = [], isLoading, error, refetch } = useDocuments();
 
@@ -112,13 +116,15 @@ export default function DocumentsPage() {
             {counts.total} document{counts.total !== 1 ? "s" : ""} accessibles
           </p>
         </div>
-        <button
-          onClick={() => setShowUpload(true)}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
-        >
-          <Plus size={16} />
-          Déposer un document
-        </button>
+        {peutDeposer && (
+          <button
+            onClick={() => setShowUpload(true)}
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
+          >
+            <Plus size={16} />
+            Déposer un document
+          </button>
+        )}
       </div>
 
       {/* ── Filtres ── */}
