@@ -67,7 +67,8 @@ export default function LoginPage() {
         <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-primary-light/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
 
-        <div className="relative flex h-full flex-col gap-6 p-5 sm:p-8 lg:min-h-screen lg:justify-center lg:gap-6 lg:p-10">
+        {/* Écran peu haut (portable) : tout resserré pour tenir sans défilement */}
+        <div className="relative flex h-full flex-col gap-6 p-5 sm:p-8 lg:min-h-screen lg:justify-center lg:gap-6 lg:p-10 lg:[@media(max-height:800px)]:gap-4 lg:[@media(max-height:800px)]:py-6">
           <div className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-lg shadow-black/20">
               <img src="/fodde-logo.png" alt="" className="h-8 w-8 object-contain" />
@@ -75,8 +76,8 @@ export default function LoginPage() {
             <span className="text-lg font-semibold tracking-tight">ONG FODDE</span>
           </div>
 
-          {/* Illustration entière : même proportion que le fichier (1200 × 860), environ 42 % de la hauteur d'écran */}
-          <figure className="overflow-hidden rounded-2xl shadow-2xl shadow-black/40 ring-1 ring-white/15 lg:max-w-[calc(42vh*1200/860)]">
+          {/* Illustration entière : même proportion que le fichier (1200 × 860), environ 42 % de la hauteur d'écran (36 % si l'écran est peu haut) */}
+          <figure className="overflow-hidden rounded-2xl shadow-2xl shadow-black/40 ring-1 ring-white/15 lg:max-w-[calc(42vh*1200/860)] lg:[@media(max-height:800px)]:max-w-[calc(36vh*1200/860)]">
             <img
               src="/connexion-illustration.svg"
               alt="Tableau de bord et carte des périmètres de la plateforme FODDE"
@@ -86,14 +87,14 @@ export default function LoginPage() {
 
           <div className="hidden max-w-xl lg:block">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/70">Plateforme de gestion</p>
-            <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-tight xl:text-4xl">
+            <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-tight xl:text-4xl [@media(max-height:800px)]:text-2xl">
               Forum pour un Développement Durable Endogène
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-white/80">
+            <p className="mt-4 text-base leading-relaxed text-white/80 [@media(max-height:800px)]:hidden">
               Un seul espace pour piloter les projets, suivre les budgets, valider les demandes et rendre compte aux
               partenaires.
             </p>
-            <ul className="mt-6 flex flex-wrap gap-2">
+            <ul className="mt-6 flex flex-wrap gap-2 [@media(max-height:800px)]:mt-4">
               {MODULES.map((m) => (
                 <li
                   key={m}
@@ -103,21 +104,21 @@ export default function LoginPage() {
                 </li>
               ))}
             </ul>
-            <p className="mt-6 text-xs text-white/60">Kolda · Sénégal</p>
+            <p className="mt-6 text-xs text-white/60 [@media(max-height:800px)]:mt-3">Kolda · Sénégal</p>
           </div>
         </div>
       </section>
 
       {/* ── Formulaire ────────────────────────────────────── */}
-      <main className="relative flex justify-center px-4 pb-16 pt-6 sm:pt-8 lg:items-center lg:px-12 lg:py-12">
+      <main className="relative flex justify-center px-4 pb-16 pt-6 sm:pt-8 lg:items-center lg:px-12 lg:py-12 lg:[@media(max-height:800px)]:py-6">
         {/* Halo discret aux couleurs de la charte */}
         <div className="pointer-events-none absolute right-0 top-1/4 hidden h-72 w-72 rounded-full bg-primary/10 blur-3xl lg:block" />
 
-        <div className="relative w-full max-w-md rounded-3xl bg-white p-7 shadow-xl shadow-gray-900/5 ring-1 ring-gray-900/5 sm:p-10">
+        <div className="relative w-full max-w-md rounded-3xl bg-white p-7 shadow-xl shadow-gray-900/5 ring-1 ring-gray-900/5 sm:p-10 lg:[@media(max-height:800px)]:p-7">
           <h1 className="text-[26px] font-semibold tracking-tight text-gray-900">Connexion</h1>
           <p className="mt-1.5 text-sm text-gray-500">Heureux de vous revoir. Connectez-vous à votre espace de travail.</p>
 
-          <form onSubmit={seConnecter} className="mt-8 space-y-5" noValidate>
+          <form onSubmit={seConnecter} className="mt-8 space-y-5 [@media(max-height:800px)]:mt-6 [@media(max-height:800px)]:space-y-4" noValidate>
             {erreur && (
               <div role="alert" className="flex gap-2.5 rounded-xl border border-red-100 bg-red-50 px-3.5 py-3 text-sm text-red-800">
                 <CircleAlert size={18} className="mt-px shrink-0" />
@@ -198,7 +199,7 @@ export default function LoginPage() {
             )}
           </form>
 
-          <div className="mt-8 flex gap-3 rounded-xl bg-gray-50 px-4 py-3.5 text-sm text-gray-600">
+          <div className="mt-8 flex gap-3 rounded-xl bg-gray-50 px-4 py-3.5 text-sm text-gray-600 [@media(max-height:800px)]:mt-6">
             <LifeBuoy size={18} className="mt-0.5 shrink-0 text-primary" />
             <p>
               <span className="font-medium text-gray-800">Mot de passe oublié ou compte bloqué ?</span>
