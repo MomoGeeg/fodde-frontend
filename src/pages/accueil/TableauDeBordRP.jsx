@@ -4,6 +4,7 @@ import { Bloc, Carte } from "@/components/tableau/Blocs";
 import { dateCourte, montant } from "@/lib/format";
 import { enRetard, joursAvant, usePortefeuille } from "./portefeuille";
 import TableauProjets from "./TableauProjets";
+import BlocCartePerimetres from "@/components/perimetres/BlocCartePerimetres";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Accueil du responsable des programmes : ce qu'il doit valider, les chiffres
@@ -97,6 +98,8 @@ export default function TableauDeBordRP() {
       </section>
 
       <TableauProjets lignesProjets={lignesProjets} chargement={chargeProjets} />
+
+      <BlocCartePerimetres />
 
       <Bloc titre="Activités à suivre">
         {chargeActivites ? (
