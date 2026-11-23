@@ -2,7 +2,7 @@ import { indicateursPerimetreApi, perimetresApi } from "@/api/perimetres";
 import IndicateursPerimetre from "@/components/perimetres/IndicateursPerimetre";
 import AnimateursProjet from "./AnimateursProjet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, Edit, Plus, Trash2, X } from "lucide-react";
+import { BarChart3, Edit, LocateFixed, Plus, Trash2, X } from "lucide-react";
 import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,7 +14,12 @@ const VIDE = {
   superficieHa: "",
   technicienId: "",
   superviseurId: "",
+  latitude: "",
+  longitude: "",
+  cultures: "",
 };
+
+const nombreOuNull = (v) => (v === "" || v == null ? null : parseFloat(String(v).replace(",", ".")));
 
 const champ =
   "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none";
@@ -105,6 +110,9 @@ export default function TabPerimetres({ projet, peutGerer }) {
             superficieHa: p.superficieHa ?? "",
             technicienId: p.technicienId ?? "",
             superviseurId: p.superviseurId ?? "",
+            latitude: p.latitude ?? "",
+            longitude: p.longitude ?? "",
+            cultures: (p.cultures ?? []).join(", "),
           }
         : VIDE,
     );
@@ -112,10 +120,36 @@ export default function TabPerimetres({ projet, peutGerer }) {
 
   const maj = (cle) => (e) => setForm((f) => ({ ...f, [cle]: e.target.value }));
 
+  const [localisation, setLocalisation] = useState(false);
+  const maPosition = () => {
+    if (!navigator.geolocation) {
+      toast.error("La géolocalisation n'est pas disponible sur cet appareil");
+      return;
+    }
+    setLocalisation(true);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setForm((f) => ({ ...f, latitude: coords.latitude.toFixed(6), longitude: coords.longitude.toFixed(6) }));
+        setLocalisation(false);
+      },
+      () => {
+        toast.error("Position introuvable : autorisez la localisation ou saisissez les coordonnées");
+        setLocalisation(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+  };
+
   const soumettre = (e) => {
     e.preventDefault();
     if (!form.nom.trim() || !form.village.trim()) {
       toast.error("Le nom et le village sont obligatoires");
+      return;
+    }
+    const latitude = nombreOuNull(form.latitude);
+    const longitude = nombreOuNull(form.longitude);
+    if ((latitude == null) !== (longitude == null) || Number.isNaN(latitude) || Number.isNaN(longitude)) {
+      toast.error("Indiquez la latitude et la longitude, ou aucune des deux");
       return;
     }
     enregistrer({
@@ -128,6 +162,9 @@ export default function TabPerimetres({ projet, peutGerer }) {
         form.superficieHa === "" ? null : parseFloat(form.superficieHa),
       technicienId: form.technicienId || null,
       superviseurId: form.superviseurId || null,
+      latitude,
+      longitude,
+      cultures: form.cultures.split(",").map((c) => c.trim()).filter(Boolean),
     });
   };
 
@@ -205,7 +242,44 @@ export default function TabPerimetres({ projet, peutGerer }) {
                 className={champ}
               />
             </Champ>
-            <div />
+            <Champ label="Cultures">
+              <input
+                value={form.cultures}
+                onChange={maj("cultures")}
+                placeholder="Oignon, tomate, chou"
+                className={champ}
+              />
+            </Champ>
+            <Champ label="Latitude">
+              <input
+                inputMode="decimal"
+                value={form.latitude}
+                onChange={maj("latitude")}
+                placeholder="12.678912"
+                className={champ}
+              />
+            </Champ>
+            <Champ label="Longitude">
+              <div className="flex gap-2">
+                <input
+                  inputMode="decimal"
+                  value={form.longitude}
+                  onChange={maj("longitude")}
+                  placeholder="-14.002100"
+                  className={champ}
+                />
+                <button
+                  type="button"
+                  onClick={maPosition}
+                  disabled={localisation}
+                  title="Utiliser ma position"
+                  className="flex shrink-0 items-center gap-1 rounded-lg border border-gray-200 px-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+                >
+                  <LocateFixed size={14} />
+                  {localisation ? "…" : "Ma position"}
+                </button>
+              </div>
+            </Champ>
             <Champ label="Technicien">
               <select
                 value={form.technicienId}
@@ -296,11 +370,18 @@ export default function TabPerimetres({ projet, peutGerer }) {
                       <p className="text-sm font-medium text-gray-900">
                         {p.nom}
                       </p>
-                      <p className="text-xs text-gray-400">{p.village}</p>
+                      <p className="text-xs text-gray-400">
+                        {[p.village, ...(p.cultures ?? [])].join(" · ")}
+                      </p>
                     </td>
                     <td className="px-6 py-3 text-sm text-gray-600">
                       {[p.commune, p.departement].filter(Boolean).join(", ") ||
                         "Non renseigné"}
+                      {p.latitude != null && (
+                        <p className="text-xs tabular-nums text-gray-400">
+                          {Number(p.latitude).toFixed(5)}, {Number(p.longitude).toFixed(5)}
+                        </p>
+                      )}
                     </td>
                     <td className="px-6 py-3 text-sm text-gray-600">
                       {p.superficieHa != null

@@ -8,6 +8,7 @@ import { Bloc, Carte, Vide } from "@/components/tableau/Blocs";
 import { dateCourte, montant } from "@/lib/format";
 import { usePortefeuille } from "./portefeuille";
 import TableauProjets from "./TableauProjets";
+import BlocCartePerimetres from "@/components/perimetres/BlocCartePerimetres";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Accueil du Secrétaire exécutif : vue d'ensemble de l'ONG (projets, finances,
@@ -192,6 +193,8 @@ export default function TableauDeBordSE() {
       </Bloc>
 
       <TableauProjets lignesProjets={lignesProjets} chargement={chargeProjets} />
+
+      <BlocCartePerimetres />
 
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         <Bloc titre="Sur le terrain" lien="/missions" libelleLien="Missions">

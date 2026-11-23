@@ -7,6 +7,7 @@ import api from "@/api/axios";
 export const perimetresApi = {
   parProjet: (projetId) =>
     api.get(`/api/perimetres/projet/${projetId}`).then((r) => r.data),
+  carte: () => api.get("/api/perimetres/carte").then((r) => r.data),
   mesPerimetres: () =>
     api.get("/api/perimetres/mes-perimetres").then((r) => r.data),
   intervenants: () =>
