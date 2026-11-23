@@ -105,10 +105,14 @@ export const NAVIGATION = [
     items: [{ label: "Accueil", path: "/", icon: Home, exact: true }],
   },
   {
-    titre: "Direction",
+    titre: "Projets et budgets",
     items: [
-      { label: "Validations", path: "/secretariat/validations", icon: FileCheck, menu: MENU.direction },
-      { label: "Rapports reçus", path: "/secretariat/rapports", icon: FileText, menu: MENU.direction },
+      { label: "Projets", path: "/projets", icon: FolderKanban, menu: MENU.projets },
+      { label: "Activités", path: "/activites", icon: CheckSquare, menu: MENU.activites },
+      { label: "Suivi budgétaire", path: "/finances/budgets", icon: PieChart, menu: MENU.budgetsProjets },
+      { label: "Budget annuel", path: "/raf/budgets", icon: Landmark, menu: MENU.budgetAnnuel },
+      { label: "Bailleurs", path: "/bailleurs", icon: Handshake, menu: MENU.bailleurs },
+      { label: "Trésorerie", path: "/raf/tresorerie", icon: Landmark, menu: MENU.pasPret },
     ],
   },
   {
@@ -121,21 +125,17 @@ export const NAVIGATION = [
     ],
   },
   {
+    titre: "Direction",
+    items: [
+      { label: "Validations", path: "/secretariat/validations", icon: FileCheck, menu: MENU.direction },
+      { label: "Rapports reçus", path: "/secretariat/rapports", icon: FileText, menu: MENU.direction },
+    ],
+  },
+  {
     titre: "Terrain",
     items: [
       { label: "Planning et rapports", path: "/terrain/suivi", icon: ClipboardList, menu: MENU.suiviTerrain },
       { label: "Mon équipe", path: "/terrain/equipe", icon: Users, menu: MENU.superviseur },
-    ],
-  },
-  {
-    titre: "Projets et budgets",
-    items: [
-      { label: "Projets", path: "/projets", icon: FolderKanban, menu: MENU.projets },
-      { label: "Activités", path: "/activites", icon: CheckSquare, menu: MENU.activites },
-      { label: "Suivi budgétaire", path: "/finances/budgets", icon: PieChart, menu: MENU.budgetsProjets },
-      { label: "Budget annuel", path: "/raf/budgets", icon: Landmark, menu: MENU.budgetAnnuel },
-      { label: "Bailleurs", path: "/bailleurs", icon: Handshake, menu: MENU.bailleurs },
-      { label: "Trésorerie", path: "/raf/tresorerie", icon: Landmark, menu: MENU.pasPret },
     ],
   },
   {
@@ -178,8 +178,8 @@ const entree = (path) => NAVIGATION.flatMap((section) => section.items).find((it
  */
 const NAVIGATION_SE = [
   { items: [entree("/")] },
-  { titre: "Activité", items: ["/finances/depenses", "/missions", "/acquisitions", "/conges"].map(entree) },
   { titre: "Projets", items: ["/projets", "/finances/budgets", "/bailleurs", "/se/indicateurs"].map(entree) },
+  { titre: "Activité", items: ["/finances/depenses", "/missions", "/acquisitions", "/conges"].map(entree) },
   { titre: "Organisation", items: ["/rh/employes", "/logistique", "/documents"].map(entree) },
 ];
 
