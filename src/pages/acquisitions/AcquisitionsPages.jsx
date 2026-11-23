@@ -6,8 +6,8 @@ import {
   estATraiter,
   etapesAcquisition,
   useAcquisitions,
+  useProjetsPilotes,
 } from "@/api/acquisitions";
-import { useProjets } from "@/api/depenses";
 import { peutSaisir, useMateriels } from "@/api/logistique";
 import Cellule from "@/components/demande/Cellule";
 import FicheDemande from "@/components/demande/FicheDemande";
@@ -16,7 +16,6 @@ import ListeDemandes from "@/components/demande/ListeDemandes";
 import { messageErreur } from "@/lib/erreurs";
 import { dateCourte, montant } from "@/lib/format";
 import { perimetresApi } from "@/api/perimetres";
-import { estTerrain, neCreeRien } from "@/lib/navigation";
 import useAuthStore from "@/stores/auth.store";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
@@ -36,7 +35,8 @@ const COLONNES = [
 export function AcquisitionsPage() {
   const { user } = useAuthStore();
   const { data, isLoading, isError } = useAcquisitions();
-  const aTraiter = useCallback((a) => estATraiter(a, user?.roles ?? [], user?.id), [user]);
+  const { data: pilotes = [] } = useProjetsPilotes();
+  const aTraiter = useCallback((a) => estATraiter(a, user?.roles ?? []), [user]);
   return (
     <ListeDemandes
       demandes={data}
@@ -48,7 +48,7 @@ export function AcquisitionsPage() {
       texteRecherche={(a) => [a.designation, a.soumisPar, a.projetCode, a.perimetreNom, a.codeActif]}
       lien={(a) => `/acquisitions/${a.id}`}
       placeholder="Bien, demandeur, projet…"
-      nouveau={neCreeRien(user?.roles) ? null : { label: "Demander un achat", to: "/acquisitions/nouvelle" }}
+      nouveau={pilotes.length ? { label: "Lancer un achat", to: "/acquisitions/nouvelle" } : null}
     />
   );
 }
@@ -118,35 +118,34 @@ export function AcquisitionFormPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const terrain = estTerrain(user?.roles ?? []);
-  const { data: projets = [] } = useProjets();
-  const { data: perimetres = [] } = useQuery({
-    queryKey: ["terrain", "perimetres"],
-    queryFn: perimetresApi.mesPerimetres,
-    enabled: terrain,
-  });
+  const { data: projets = [] } = useProjetsPilotes();
   const [f, setF] = useState({
     designation: "",
-    categorie: terrain ? "MATERIEL_AGRICOLE" : "EQUIPEMENT",
+    categorie: "EQUIPEMENT",
     projetId: "",
     perimetreId: "",
     valeur: "",
     dateAcquisition: new Date().toISOString().slice(0, 10),
     justification: "",
   });
+  const { data: perimetres = [] } = useQuery({
+    queryKey: ["perimetres", "projet", f.projetId],
+    queryFn: () => perimetresApi.parProjet(f.projetId),
+    enabled: !!f.projetId,
+  });
   const [erreurs, setErreurs] = useState({});
   const [envoi, setEnvoi] = useState(false);
 
   const maj = (cle) => (e) => {
-    setF((p) => ({ ...p, [cle]: e.target.value }));
+    const valeur = e.target.value;
+    setF((p) => ({ ...p, [cle]: valeur, ...(cle === "projetId" && { perimetreId: "" }) }));
     setErreurs((p) => ({ ...p, [cle]: undefined }));
   };
 
   const soumettre = async () => {
     const e = {};
     if (!f.designation.trim()) e.designation = "Indiquez le bien à acheter.";
-    if (terrain && !f.perimetreId) e.perimetreId = "Choisissez le périmètre concerné.";
-    if (!terrain && !f.projetId) e.projetId = "Choisissez le projet qui finance l'achat.";
+    if (!f.projetId) e.projetId = "Choisissez le projet qui finance l'achat.";
     if (!(Number(f.valeur) > 0)) e.valeur = "Indiquez la valeur estimée.";
     if (!f.dateAcquisition) e.dateAcquisition = "Indiquez la date prévue.";
     if (!f.justification.trim()) e.justification = "Expliquez en une phrase pourquoi cet achat est nécessaire.";
@@ -158,8 +157,7 @@ export function AcquisitionFormPage() {
       const creee = await creerAcquisition(
         {
           ...f,
-          projetId: terrain ? null : f.projetId,
-          perimetreId: terrain ? f.perimetreId : null,
+          perimetreId: f.perimetreId || null,
           designation: f.designation.trim(),
           justification: f.justification.trim(),
           valeur: Number(f.valeur),
@@ -167,7 +165,7 @@ export function AcquisitionFormPage() {
         user.id,
       );
       await queryClient.invalidateQueries({ queryKey: ["acquisitions"] });
-      toast.success("Demande d'achat envoyée au RAF");
+      toast.success("Achat envoyé au RAF");
       navigate(`/acquisitions/${creee.id}`);
     } catch (err) {
       toast.error(messageErreur(err));
@@ -179,7 +177,7 @@ export function AcquisitionFormPage() {
   return (
     <CadreFormulaire
       retour={{ to: "/acquisitions", label: "Acquisitions" }}
-      titre="Demander un achat"
+      titre="Lancer un achat"
       onSoumettre={soumettre}
       libelleSoumettre="Envoyer au RAF"
       envoi={envoi}
@@ -197,28 +195,25 @@ export function AcquisitionFormPage() {
             ))}
           </select>
         </Ligne>
-        {terrain ? (
-          <Ligne libelle="Périmètre" erreur={erreurs.perimetreId}>
+        <Ligne libelle="Projet" erreur={erreurs.projetId}>
+          <select value={f.projetId} onChange={maj("projetId")} className={CHAMP}>
+            <option value="">Choisir…</option>
+            {projets.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.code} · {p.titre}
+              </option>
+            ))}
+          </select>
+        </Ligne>
+        {perimetres.length > 0 && (
+          <Ligne libelle="Périmètre">
             <select value={f.perimetreId} onChange={maj("perimetreId")} className={CHAMP}>
-              <option value="">Choisir…</option>
+              <option value="">Aucun</option>
               {perimetres.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nom}, {p.village}
                 </option>
               ))}
-            </select>
-          </Ligne>
-        ) : (
-          <Ligne libelle="Projet" erreur={erreurs.projetId}>
-            <select value={f.projetId} onChange={maj("projetId")} className={CHAMP}>
-              <option value="">Choisir…</option>
-              {projets
-                .filter((p) => p.statut === "ACTIF")
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.code} · {p.titre}
-                  </option>
-                ))}
             </select>
           </Ligne>
         )}

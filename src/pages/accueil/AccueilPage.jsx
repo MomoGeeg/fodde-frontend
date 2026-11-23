@@ -85,16 +85,13 @@ async function chargerATraiter(roles, userId) {
     );
   }
 
-  // Achats à viser : le coordonnateur du projet (chef de projet), quel que soit son rôle.
-  appels.push(
-    liste("/api/acquisitions/mes-projets").then((a) =>
-      ajouter(
-        "Achats à viser",
-        a.filter((x) => x.statut === "ATTENTE_COORDONNATEUR" && x.soumisParId !== userId).length,
-        "/acquisitions",
+  if (aAcces(roles, [R.RP])) {
+    appels.push(
+      liste("/api/acquisitions").then((a) =>
+        ajouter("Achats à valider", a.filter((x) => x.statut === "ATTENTE_RP").length, "/acquisitions"),
       ),
-    ),
-  );
+    );
+  }
 
   if (aAcces(roles, [R.CP])) {
     appels.push(
@@ -258,18 +255,17 @@ export default function AccueilPage() {
                   <Link to="/conges/nouveau" className="text-primary hover:underline">
                     Congé
                   </Link>
-                  <Link to="/acquisitions/nouvelle" className="text-primary hover:underline">
-                    Achat
-                  </Link>
                 </span>
               ) : !sansDemandesTerrain(roles) && (
                 <span className="flex gap-3 text-xs font-medium">
                   <Link to="/missions/nouvelle" className="text-primary hover:underline">
                     Mission
                   </Link>
-                  <Link to="/acquisitions/nouvelle" className="text-primary hover:underline">
-                    Achat
-                  </Link>
+                  {aAcces(roles, [R.CP]) && (
+                    <Link to="/acquisitions/nouvelle" className="text-primary hover:underline">
+                      Achat
+                    </Link>
+                  )}
                 </span>
               )}
             </div>
