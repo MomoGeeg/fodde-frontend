@@ -288,6 +288,10 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
     type: "ACTIVITE",
     perimetreId: "",
     lieu: "",
+    cible: "",
+    participantsPrevus: "",
+    objectifs: "",
+    indicateurs: "",
   });
   const [ouverte, setOuverte] = useState(null);
 
@@ -331,6 +335,10 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
         type: "ACTIVITE",
         perimetreId: "",
         lieu: "",
+        cible: "",
+        participantsPrevus: "",
+        objectifs: "",
+        indicateurs: "",
       });
     },
     onError: (err) => toast.error(err.message ?? "Erreur"),
@@ -366,6 +374,10 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
       toast.error("Les dates sont obligatoires");
       return;
     }
+    if (form.participantsPrevus !== "" && !(parseInt(form.participantsPrevus, 10) >= 0)) {
+      toast.error("Le nombre de participants doit être positif");
+      return;
+    }
     creerActivite({
       projetId: projet.id,
       parentId: form.parentId || undefined,
@@ -379,6 +391,11 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
       type: form.type,
       perimetreId: form.perimetreId || undefined,
       lieu: form.lieu.trim() || undefined,
+      cible: form.cible.trim() || undefined,
+      participantsPrevus:
+        form.participantsPrevus === "" ? undefined : parseInt(form.participantsPrevus, 10),
+      objectifs: form.objectifs.trim() || undefined,
+      indicateurs: form.indicateurs.trim() || undefined,
     });
   };
 
@@ -679,6 +696,53 @@ function TabActivites({ projet, activites, canManage, isSuspendu }) {
                 onChange={(e) => setForm((f) => ({ ...f, lieu: e.target.value }))}
                 placeholder="Village, quartier, école"
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Cible
+              </label>
+              <input
+                type="text"
+                value={form.cible}
+                onChange={(e) => setForm((f) => ({ ...f, cible: e.target.value }))}
+                placeholder="Femmes du groupement, élèves"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Nombre de participants
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={form.participantsPrevus}
+                onChange={(e) => setForm((f) => ({ ...f, participantsPrevus: e.target.value }))}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Objectifs à atteindre
+              </label>
+              <textarea
+                value={form.objectifs}
+                onChange={(e) => setForm((f) => ({ ...f, objectifs: e.target.value }))}
+                rows={2}
+                className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Indicateurs
+              </label>
+              <textarea
+                value={form.indicateurs}
+                onChange={(e) => setForm((f) => ({ ...f, indicateurs: e.target.value }))}
+                rows={2}
+                placeholder="Nombre de femmes formées, planches repiquées"
+                className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
               />
             </div>
             {perimetres.length > 0 && (
