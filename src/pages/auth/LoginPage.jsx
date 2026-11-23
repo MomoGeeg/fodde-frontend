@@ -61,8 +61,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 lg:grid lg:grid-cols-[1.15fr_1fr]">
-      {/* ── Photo de l'équipe ─────────────────────────────── */}
-      {/* Fond vert de la charte ; la photo y est posée en entier (aucune personne coupée). */}
+      {/* ── Illustration de la plateforme (aucune personne) ─ */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary-dark via-[#24411a] to-black-fodde text-white">
         {/* Halos lumineux discrets */}
         <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-primary-light/20 blur-3xl" />
@@ -76,13 +75,12 @@ export default function LoginPage() {
             <span className="text-lg font-semibold tracking-tight">ONG FODDE</span>
           </div>
 
-          {/* Photo entière : même proportion que l'image d'origine (2560 × 1751) */}
-          {/* Sur ordinateur, la largeur est plafonnée pour que la photo tienne dans ~40 % de la hauteur d'écran */}
-          <figure className="overflow-hidden rounded-2xl shadow-2xl shadow-black/40 ring-1 ring-white/15 lg:max-w-[calc(42vh*2560/1751)]">
+          {/* Illustration entière : même proportion que le fichier (1200 × 860), environ 42 % de la hauteur d'écran */}
+          <figure className="overflow-hidden rounded-2xl shadow-2xl shadow-black/40 ring-1 ring-white/15 lg:max-w-[calc(42vh*1200/860)]">
             <img
-              src="/bg-login.jpg"
-              alt="L'équipe de FODDE à Kolda"
-              className="aspect-[2560/1751] w-full object-cover"
+              src="/connexion-illustration.svg"
+              alt="Tableau de bord et carte des périmètres de la plateforme FODDE"
+              className="aspect-[1200/860] w-full object-cover"
             />
           </figure>
 
