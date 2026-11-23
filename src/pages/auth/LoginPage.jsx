@@ -69,7 +69,8 @@ export default function LoginPage() {
 
         {/* Écran peu haut (portable) : tout resserré pour tenir sans défilement */}
         <div className="relative flex h-full flex-col gap-6 p-5 sm:p-8 lg:min-h-screen lg:justify-center lg:gap-6 lg:p-10 lg:[@media(max-height:900px)]:gap-4 lg:[@media(max-height:900px)]:py-6">
-          <div className="flex items-center gap-3">
+          {/* Logo calé en haut à gauche sur grand écran, détaché de l'illustration */}
+          <div className="flex items-center gap-3 lg:absolute lg:left-10 lg:top-8 lg:[@media(max-height:900px)]:top-6">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-lg shadow-black/20">
               <img src="/fodde-logo.png" alt="" className="h-8 w-8 object-contain" />
             </span>
