@@ -88,8 +88,26 @@ export default function PiecesActivite({ activite, peutModifier, cles = [] }) {
     if (fichier) mutation.mutate(fichier);
   };
 
+  const planification = [
+    ["Description", activite.description],
+    ["Cible", activite.cible],
+    ["Participants prévus", activite.participantsPrevus],
+    ["Objectifs à atteindre", activite.objectifs],
+    ["Indicateurs", activite.indicateurs],
+  ].filter(([, v]) => v != null && v !== "");
+
   return (
     <div className="grid gap-4 px-4 pb-4 lg:grid-cols-3">
+      {planification.length > 0 && (
+        <dl className="grid gap-3 rounded-md bg-gray-50 p-3 text-sm sm:grid-cols-2 lg:col-span-3">
+          {planification.map(([libelle, valeur]) => (
+            <div key={libelle}>
+              <dt className={etiquette}>{libelle}</dt>
+              <dd className="whitespace-pre-line text-gray-800">{valeur}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
       <div className="lg:col-span-1">
         <p className={etiquette}>Liste de présence</p>
         {isLoading ? (
