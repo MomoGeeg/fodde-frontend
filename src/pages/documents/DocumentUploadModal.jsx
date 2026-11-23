@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { X, Upload, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/api/axios";
+import useAuthStore from "@/stores/auth.store";
 import {
   useCreerDocument,
-  TYPE_OPTIONS,
+  typesPourRoles,
   FORMATS_ACCEPTES,
   verifierFichier,
   deposerFichier,
@@ -13,11 +14,13 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const TYPE_GROUPS = TYPE_OPTIONS.reduce((acc, t) => {
-  if (!acc[t.categorie]) acc[t.categorie] = [];
-  acc[t.categorie].push(t);
-  return acc;
-}, {});
+/** Types regroupés par catégorie pour la liste déroulante. */
+const parCategorie = (types) =>
+  types.reduce((acc, t) => {
+    if (!acc[t.categorie]) acc[t.categorie] = [];
+    acc[t.categorie].push(t);
+    return acc;
+  }, {});
 
 const TYPES_RH = ["CONTRAT_EMPLOI", "BULLETIN_SALAIRE", "EVALUATION_RH"];
 
@@ -41,6 +44,9 @@ function formatSize(bytes) {
 // ── Composant ─────────────────────────────────────────────────────────────────
 
 export default function DocumentUploadModal({ onClose, onSuccess }) {
+  const { user } = useAuthStore();
+  // Chacun ne voit que les types de documents de son métier.
+  const groupesTypes = parCategorie(typesPourRoles(user?.roles ?? []));
   const [form, setForm] = useState({
     titre: "",
     typeDocument: "",
@@ -154,6 +160,97 @@ export default function DocumentUploadModal({ onClose, onSuccess }) {
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
 
+          {/* Titre */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Titre <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.titre}
+              onChange={set("titre")}
+              placeholder="Ex. : Rapport d'activité Q1 2026"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          {/* Type de document */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Type de document <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={form.typeDocument}
+              onChange={set("typeDocument")}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Choisir</option>
+              {Object.entries(groupesTypes).map(([cat, types]) => (
+                <optgroup key={cat} label={cat}>
+                  {types.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              value={form.description}
+              onChange={set("description")}
+              rows={2}
+              placeholder="Description courte (optionnel)"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+            />
+          </div>
+
+          {/* Projet lié */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Projet lié
+            </label>
+            <select
+              value={form.projetId}
+              onChange={set("projetId")}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Aucun projet</option>
+              {projets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.code} · {p.titre}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Employé concerné (types RH uniquement) */}
+          {TYPES_RH.includes(form.typeDocument) && (
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Employé concerné
+              </label>
+              <select
+                value={form.concerneEmployeId}
+                onChange={set("concerneEmployeId")}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="">Choisir un employé</option>
+                {employes.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.prenom} {e.nom}, {e.poste ?? e.departement}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Zone de téléversement */}
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -213,97 +310,6 @@ export default function DocumentUploadModal({ onClose, onSuccess }) {
               onChange={(e) => handleFile(e.target.files[0])}
             />
           </div>
-
-          {/* Titre */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Titre <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.titre}
-              onChange={set("titre")}
-              placeholder="Ex. : Rapport d'activité Q1 2026"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-
-          {/* Type de document */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Type de document <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={form.typeDocument}
-              onChange={set("typeDocument")}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="">-- Sélectionner --</option>
-              {Object.entries(TYPE_GROUPS).map(([cat, types]) => (
-                <optgroup key={cat} label={cat}>
-                  {types.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              value={form.description}
-              onChange={set("description")}
-              rows={2}
-              placeholder="Description courte (optionnel)"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-            />
-          </div>
-
-          {/* Projet lié */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Projet lié
-            </label>
-            <select
-              value={form.projetId}
-              onChange={set("projetId")}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="">-- Aucun projet --</option>
-              {projets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code} — {p.titre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Employé concerné (types RH uniquement) */}
-          {TYPES_RH.includes(form.typeDocument) && (
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Employé concerné
-              </label>
-              <select
-                value={form.concerneEmployeId}
-                onChange={set("concerneEmployeId")}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="">-- Sélectionner un employé --</option>
-                {employes.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.prenom} {e.nom} — {e.poste ?? e.departement}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
 
         {/* Footer */}

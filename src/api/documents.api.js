@@ -19,7 +19,7 @@ export const TYPE_OPTIONS = [
   { value: "RAPPORT_MISSION",    label: "Rapport de mission",   categorie: "Programmes" },
   { value: "PLAN_TRAVAIL",       label: "Plan de travail",      categorie: "Programmes" },
   // S&E
-  { value: "RAPPORT_SUIVI",      label: "Rapport de suivi",     categorie: "S&E" },
+  { value: "RAPPORT_SUIVI",      label: "Fiche ou rapport de suivi", categorie: "S&E" },
   { value: "RAPPORT_EVALUATION", label: "Rapport d'évaluation", categorie: "S&E" },
   { value: "PLAN_SE",            label: "Plan S&E",             categorie: "S&E" },
   { value: "DONNEES_COLLECTE",   label: "Données de collecte",  categorie: "S&E" },
@@ -27,10 +27,50 @@ export const TYPE_OPTIONS = [
   // Direction
   { value: "CONVENTION_BAILLEUR",label: "Convention bailleur",  categorie: "Direction" },
   { value: "INSTITUTIONNEL",     label: "Institutionnel",       categorie: "Direction" },
-  { value: "PV_REUNION",         label: "PV de réunion",        categorie: "Direction" },
+  { value: "PV_REUNION",         label: "Compte rendu ou PV de réunion", categorie: "Direction" },
   // Autre
   { value: "AUTRE",              label: "Autre",                categorie: "Autre" },
 ];
+
+// Types qu'un utilisateur peut déposer, selon son métier. Les agents de terrain
+// reprennent ce qu'ils ont décrit dans leurs fiches (rapport et planning
+// mensuels, fiche de suivi ou de visite, données Kobo et Excel, photos, comptes
+// rendus) ; ils ne déposent ni pièces financières ni documents RH.
+const TERRAIN = ["RAPPORT_ACTIVITE", "PLAN_TRAVAIL", "PHOTO_TERRAIN", "AUTRE"];
+const FINANCIER = ["JUSTIFICATIF", "FACTURE", "RAPPORT_FINANCIER", "CONTRAT_PRESTATAIRE", "ACQUISITION"];
+const TYPES_RH = ["CONTRAT_EMPLOI", "BULLETIN_SALAIRE", "EVALUATION_RH"];
+const PROGRAMMES = ["RAPPORT_ACTIVITE", "RAPPORT_MISSION", "PLAN_TRAVAIL"];
+const SUIVI_EVALUATION = ["RAPPORT_SUIVI", "RAPPORT_EVALUATION", "PLAN_SE", "DONNEES_COLLECTE", "PHOTO_TERRAIN"];
+const TOUS = null;
+
+export const TYPES_PAR_ROLE = {
+  ROLE_ADMIN: TOUS,
+  ROLE_SE: TOUS,
+  ROLE_RAF: [...FINANCIER, "CONVENTION_BAILLEUR", "RAPPORT_MISSION", "PV_REUNION", "AUTRE"],
+  ROLE_COMPTABLE: ["JUSTIFICATIF", "FACTURE", "RAPPORT_FINANCIER", "ACQUISITION", "AUTRE"],
+  ROLE_RH: [...TYPES_RH, "RAPPORT_MISSION", "PV_REUNION", "AUTRE"],
+  ROLE_RESPONSABLE_PROGRAMMES: [...PROGRAMMES, ...SUIVI_EVALUATION, "CONVENTION_BAILLEUR", "PV_REUNION", "AUTRE"],
+  ROLE_CHARGE_PROGRAMME: [...PROGRAMMES, "RAPPORT_SUIVI", "DONNEES_COLLECTE", "PHOTO_TERRAIN", "PV_REUNION", "AUTRE"],
+  ROLE_RESPONSABLE_SE: [...SUIVI_EVALUATION, "RAPPORT_ACTIVITE", "RAPPORT_MISSION", "PV_REUNION", "AUTRE"],
+  ROLE_RESPONSABLE_LOGISTIQUE: ["ACQUISITION", "RAPPORT_MISSION", "PV_REUNION", "AUTRE"],
+  ROLE_CHARGE_COMMUNICATION: ["PHOTO_TERRAIN", "INSTITUTIONNEL", "RAPPORT_ACTIVITE", "PV_REUNION", "AUTRE"],
+  ROLE_ANTENNE: [...PROGRAMMES, "PHOTO_TERRAIN", "PV_REUNION", "AUTRE"],
+  // Technicien : rapport et planning au superviseur, données Kobo et Excel au suivi-évaluation, photos.
+  ROLE_TECHNICIEN_TERRAIN: [...TERRAIN, "DONNEES_COLLECTE"],
+  ROLE_TECHNICIEN: [...TERRAIN, "DONNEES_COLLECTE"],
+  // Animateur : rapport, planning, fiche de suivi, photos et PV de réunion au coordonnateur.
+  ROLE_ANIMATEUR: [...TERRAIN, "RAPPORT_SUIVI", "PV_REUNION"],
+  // Superviseur : rapport, planning, comptes rendus, fiche de visite, synthèse des données, photos.
+  ROLE_SUPERVISEUR: [...TERRAIN, "RAPPORT_SUIVI", "DONNEES_COLLECTE", "PV_REUNION"],
+};
+
+/** Types que l'utilisateur peut choisir en déposant un document (réunion de ses rôles). */
+export function typesPourRoles(roles = []) {
+  const listes = roles.map((r) => TYPES_PAR_ROLE[r]).filter((l) => l !== undefined);
+  if (!listes.length || listes.includes(TOUS)) return TYPE_OPTIONS;
+  const permis = new Set(listes.flat());
+  return TYPE_OPTIONS.filter((t) => permis.has(t.value));
+}
 
 export const STATUT_CONFIG = {
   BROUILLON:     { label: "Brouillon",       bg: "bg-gray-100",   text: "text-gray-600"  },
