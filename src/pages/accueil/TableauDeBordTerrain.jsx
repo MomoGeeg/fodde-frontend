@@ -1,17 +1,16 @@
-import { TYPES_ACTIVITE, TYPES_ANIMATEUR, activitesTerrainApi, animateursApi } from "@/api/animateurs";
+import { TYPES_ACTIVITE, animateursApi } from "@/api/animateurs";
 import { indicateursPerimetreApi, perimetresApi, terrainApi } from "@/api/perimetres";
+import FormulairePlanification from "@/components/activites/FormulairePlanification";
 import PiecesActivite from "@/components/activites/PiecesActivite";
 import IndicateursPerimetre from "@/components/perimetres/IndicateursPerimetre";
 import { Bloc, Carte, Vide } from "@/components/tableau/Blocs";
-import { messageErreur } from "@/lib/erreurs";
 import { dateCourte } from "@/lib/format";
 import { R, aAcces } from "@/lib/navigation";
 import { BlocSuiviTechnicien, BlocsSuperviseur } from "@/pages/terrain/TerrainPages";
 import useAuthStore from "@/stores/auth.store";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Plus, X } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Accueil du terrain : technicien, animateur et superviseur. Participants,
@@ -31,102 +30,10 @@ const CLES = [["terrain", "activites"]];
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
 const nombre = (n) => new Intl.NumberFormat("fr-FR").format(n);
 const estEnRetard = (a, jour) => a.datePrevuFin < jour && a.statut !== "REALISEE" && a.statut !== "ANNULEE";
-const champ = "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none";
-const etiquette = "mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500";
 
 function Statut({ activite, jour }) {
   const s = STATUTS[estEnRetard(activite, jour) ? "EN_RETARD" : activite.statut] ?? STATUTS.PLANIFIEE;
   return <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${s.classe}`}>{s.label}</span>;
-}
-
-const VIDE = { projetId: "", type: "SENSIBILISATION", titre: "", lieu: "", datePrevuDebut: "", datePrevuFin: "" };
-
-/** Planification d'une activité par l'animateur, sur l'un de ses projets actifs. */
-function NouvelleActivite({ projets, onFermer }) {
-  const queryClient = useQueryClient();
-  const actifs = projets.filter((p) => p.statut === "ACTIF");
-  const [form, setForm] = useState({ ...VIDE, projetId: actifs.length === 1 ? actifs[0].id : "" });
-  const maj = (cle) => (e) => setForm((f) => ({ ...f, [cle]: e.target.value }));
-  const { mutate, isPending } = useMutation({
-    mutationFn: () =>
-      activitesTerrainApi.creer({
-        ...form,
-        titre: form.titre.trim(),
-        lieu: form.lieu.trim() || null,
-        datePrevuFin: form.datePrevuFin || form.datePrevuDebut,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["terrain", "activites"] });
-      toast.success("Activité planifiée");
-      onFermer();
-    },
-    onError: (err) => toast.error(messageErreur(err)),
-  });
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!form.projetId || !form.titre.trim() || !form.datePrevuDebut) {
-          toast.error("Le projet, le titre et la date sont obligatoires");
-          return;
-        }
-        mutate();
-      }}
-      className="space-y-4 border-b border-gray-100 p-4"
-    >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <label>
-          <span className={etiquette}>Projet</span>
-          <select value={form.projetId} onChange={maj("projetId")} className={champ}>
-            <option value="">Choisir</option>
-            {actifs.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.code}, {p.titre}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span className={etiquette}>Type</span>
-          <select value={form.type} onChange={maj("type")} className={champ}>
-            {TYPES_ANIMATEUR.map((t) => (
-              <option key={t} value={t}>
-                {TYPES_ACTIVITE[t]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span className={etiquette}>Lieu</span>
-          <input value={form.lieu} onChange={maj("lieu")} placeholder="Village, quartier, école" className={champ} />
-        </label>
-        <label className="sm:col-span-2 lg:col-span-1">
-          <span className={etiquette}>Titre</span>
-          <input value={form.titre} onChange={maj("titre")} className={champ} />
-        </label>
-        <label>
-          <span className={etiquette}>Date</span>
-          <input type="date" value={form.datePrevuDebut} onChange={maj("datePrevuDebut")} className={champ} />
-        </label>
-        <label>
-          <span className={etiquette}>Fin (si plusieurs jours)</span>
-          <input type="date" value={form.datePrevuFin} min={form.datePrevuDebut} onChange={maj("datePrevuFin")} className={champ} />
-        </label>
-      </div>
-      <div className="flex justify-end gap-2">
-        <button type="button" onClick={onFermer} className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700">
-          Annuler
-        </button>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-60"
-        >
-          {isPending ? "Enregistrement…" : "Planifier"}
-        </button>
-      </div>
-    </form>
-  );
 }
 
 export default function TableauDeBordTerrain() {
@@ -169,6 +76,9 @@ export default function TableauDeBordTerrain() {
   const mesPerimetres = new Set(perimetres.filter((p) => p.technicienId === user?.id).map((p) => p.id));
   const peutRenseigner = (a) => a.responsableId === user?.id || mesPerimetres.has(a.perimetreId);
   const activitesParPerimetre = (id) => valides.filter((a) => a.perimetreId === id);
+  // Périmètres sur lesquels l'utilisateur planifie : ceux qu'il suit comme technicien ou superviseur.
+  const perimetresPlanifiables = perimetres.filter((p) => p.technicienId === user?.id || p.superviseurId === user?.id);
+  const peutPlanifier = technicien || animateur || superviseur;
 
   return (
     <div className="space-y-6">
@@ -209,13 +119,13 @@ export default function TableauDeBordTerrain() {
               {libelle}
             </button>
           ))}
-          {animateur && !creation && (
+          {peutPlanifier && !creation && (
             <button
               type="button"
               onClick={() => setCreation(true)}
-              className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-white hover:bg-primary-dark"
             >
-              <Plus size={13} /> Nouvelle activité
+              <Plus size={13} /> Planifier une activité
             </button>
           )}
           {creation && (
@@ -224,7 +134,13 @@ export default function TableauDeBordTerrain() {
             </button>
           )}
         </div>
-        {creation && <NouvelleActivite projets={projets} onFermer={() => setCreation(false)} />}
+        {creation && (
+          <FormulairePlanification
+            perimetres={perimetresPlanifiables}
+            projets={animateur ? projets : []}
+            onFermer={() => setCreation(false)}
+          />
+        )}
         {chargeActivites ? (
           <Vide>Chargement…</Vide>
         ) : liste.length ? (
