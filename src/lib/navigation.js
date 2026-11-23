@@ -81,7 +81,7 @@ export const MENU = {
   depenses: [R.COMPTABLE, R.RAF, R.SE],
   budgetsProjets: [R.COMPTABLE, R.RAF, R.SE, R.RP],
   budgetAnnuel: [R.RAF],
-  bailleurs: [R.RAF, R.SE],
+  bailleurs: [R.RP, R.SE],
   employes: [R.RH, R.SE, R.RP],
   rhSeulement: [R.RH],
   indicateurs: [R.RSE, R.CP, R.RP, R.SE],

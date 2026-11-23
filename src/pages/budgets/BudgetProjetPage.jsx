@@ -7,7 +7,7 @@ import {
   useLignes,
   useProjets,
 } from "@/api/budgets";
-import { GESTIONNAIRES_BAILLEURS, useFinancements } from "@/api/bailleurs";
+import { GESTIONNAIRES_CONVENTIONS, useFinancements } from "@/api/bailleurs";
 import { MODES_PAIEMENT } from "@/api/depenses";
 import Jauge from "@/components/demande/Jauge";
 import { telechargerCsv } from "@/lib/export";
@@ -38,7 +38,7 @@ export default function BudgetProjetPage() {
   const [params, setParams] = useSearchParams();
   const { data: financements = [] } = useFinancements({ projetId: id });
   const convention = financements.find((f) => f.id === params.get("convention"));
-  const peutGererBailleurs = aAcces(user?.roles ?? [], GESTIONNAIRES_BAILLEURS);
+  const peutGererConventions = aAcces(user?.roles ?? [], GESTIONNAIRES_CONVENTIONS);
 
   /** Choisir une convention cale la période sur ses dates ; « Tout le projet » revient au suivi général. */
   const choisirConvention = (fid) => {
@@ -337,7 +337,7 @@ export default function BudgetProjetPage() {
       <section className="rounded-lg border border-gray-200 bg-white print:hidden">
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
           <h3 className="text-sm font-semibold text-gray-900">Financements du projet</h3>
-          {peutGererBailleurs && (
+          {peutGererConventions && (
             <Link
               to={`/financements/nouveau?projet=${projet.id}`}
               className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
