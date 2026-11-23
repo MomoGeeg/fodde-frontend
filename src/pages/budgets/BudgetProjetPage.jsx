@@ -7,7 +7,7 @@ import {
   useLignes,
   useProjets,
 } from "@/api/budgets";
-import { GESTIONNAIRES_CONVENTIONS, useFinancements } from "@/api/bailleurs";
+import { GESTIONNAIRES_BAILLEURS, useFinancements } from "@/api/bailleurs";
 import { MODES_PAIEMENT } from "@/api/depenses";
 import Jauge from "@/components/demande/Jauge";
 import { telechargerCsv } from "@/lib/export";
@@ -38,7 +38,7 @@ export default function BudgetProjetPage() {
   const [params, setParams] = useSearchParams();
   const { data: financements = [] } = useFinancements({ projetId: id });
   const convention = financements.find((f) => f.id === params.get("convention"));
-  const peutGererConventions = aAcces(user?.roles ?? [], GESTIONNAIRES_CONVENTIONS);
+  const peutGererConventions = aAcces(user?.roles ?? [], GESTIONNAIRES_BAILLEURS);
 
   /** Choisir une convention cale la période sur ses dates ; « Tout le projet » revient au suivi général. */
   const choisirConvention = (fid) => {

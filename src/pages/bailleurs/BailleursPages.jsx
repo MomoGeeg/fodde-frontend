@@ -1,7 +1,6 @@
 ﻿import api from "@/api/axios";
 import {
   GESTIONNAIRES_BAILLEURS,
-  GESTIONNAIRES_CONVENTIONS,
   creerBailleur,
   creerFinancement,
   useBailleurs,
@@ -60,7 +59,6 @@ export function BailleursPage() {
   const { data: bailleurs = [], isLoading } = useBailleurs();
   const { data: financements = [] } = useFinancements();
   const peutGerer = aAcces(user?.roles ?? [], GESTIONNAIRES_BAILLEURS);
-  const peutConventions = aAcces(user?.roles ?? [], GESTIONNAIRES_CONVENTIONS);
 
   const parBailleur = useMemo(() => {
     const m = new Map();
@@ -76,24 +74,20 @@ export function BailleursPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      {(peutGerer || peutConventions) && (
+      {peutGerer && (
         <div className="flex justify-end gap-2">
-          {peutConventions && (
-            <Link
-              to="/financements/nouveau"
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <Plus size={16} /> Nouvelle convention
-            </Link>
-          )}
-          {peutGerer && (
-            <Link
-              to="/bailleurs/nouveau"
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark"
-            >
-              <Plus size={16} /> Nouveau bailleur
-            </Link>
-          )}
+          <Link
+            to="/financements/nouveau"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <Plus size={16} /> Nouvelle convention
+          </Link>
+          <Link
+            to="/bailleurs/nouveau"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+          >
+            <Plus size={16} /> Nouveau bailleur
+          </Link>
         </div>
       )}
 
@@ -146,7 +140,7 @@ export function BailleurFichePage() {
   const { data: financements = [] } = useFinancements({ bailleurId: id });
   const depense = useDepenseParConvention(financements);
   const b = bailleurs.find((x) => x.id === id);
-  const peutGerer = aAcces(user?.roles ?? [], GESTIONNAIRES_CONVENTIONS);
+  const peutGerer = aAcces(user?.roles ?? [], GESTIONNAIRES_BAILLEURS);
 
   const retour = (
     <Link to="/bailleurs" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
@@ -356,7 +350,7 @@ export function FinancementFormPage() {
         <Ligne
           libelle="Bailleur"
           erreur={erreurs.bailleurId}
-          aide={bailleurs.length === 0 ? "Aucun bailleur enregistré par le RP." : undefined}
+          aide={bailleurs.length === 0 ? "Aucun bailleur : créez-le d'abord depuis la page Bailleurs." : undefined}
         >
           <select value={f.bailleurId} onChange={maj("bailleurId")} className={CHAMP}>
             <option value="">Choisir…</option>
