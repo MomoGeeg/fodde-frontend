@@ -1,5 +1,6 @@
+import api from "@/api/axios";
+import { useBailleurs } from "@/api/bailleurs";
 import { projetsApi } from "@/api/projets.api";
-import { usersApi } from "@/api/users.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -19,8 +20,7 @@ const emptyForm = {
   dateFin: "",
   budgetTotal: "",
   devise: "XOF",
-  responsableId: "",
-  equipeIds: [],
+  chefProjetId: "",
 };
 
 function FieldError({ msg }) {
@@ -66,11 +66,13 @@ export default function ProjetForm() {
   const [resultats, setResultats] = useState([""]);
   const [errors, setErrors] = useState({});
 
-  const { data: usersData } = useQuery({
-    queryKey: ["users-actifs"],
-    queryFn: usersApi.getActifs,
+  // Comptes actifs : le chargé de projet est choisi parmi les chargés de programme.
+  const { data: personnes = [] } = useQuery({
+    queryKey: ["projets", "personnes"],
+    queryFn: () => api.get("/api/projets/personnes").then((r) => (Array.isArray(r.data) ? r.data : [])),
   });
-  const users = usersData ?? [];
+  const charges = personnes.filter((p) => p.roles?.includes("ROLE_CHARGE_PROGRAMME"));
+  const { data: bailleurs = [] } = useBailleurs();
 
   const { data: projetData, isLoading: loadingProjet } = useQuery({
     queryKey: ["projet", id],
@@ -92,8 +94,7 @@ export default function ProjetForm() {
         dateFin: p.dateFin ?? "",
         budgetTotal: p.budgetTotal?.toString() ?? "",
         devise: p.devise ?? "XOF",
-        responsableId: p.responsableId ?? "",
-        equipeIds: [],
+        chefProjetId: p.chefProjetId ?? "",
       });
     }
   }, [projetData]);
@@ -129,11 +130,6 @@ export default function ProjetForm() {
 
   const validate = () => {
     const errs = {};
-    if (!form.code.trim()) {
-      errs.code = "Le code est obligatoire";
-    } else if (!/^PROJ-\d{4}-\d{3}$/.test(form.code.trim())) {
-      errs.code = "Format attendu : PROJ-AAAA-NNN (ex: PROJ-2024-001)";
-    }
     if (!form.titre.trim()) errs.titre = "Le titre est obligatoire";
     if (!form.description.trim())
       errs.description = "La description est obligatoire";
@@ -141,6 +137,7 @@ export default function ProjetForm() {
       errs.objectifGeneral = "L'objectif général est obligatoire";
     if (!form.zoneGeographique.trim())
       errs.zoneGeographique = "La zone géographique est obligatoire";
+    if (!form.bailleur.trim()) errs.bailleur = "Le bailleur est obligatoire";
     if (!form.dateDebut) errs.dateDebut = "La date de début est obligatoire";
     if (!form.dateFin) {
       errs.dateFin = "La date de fin est obligatoire";
@@ -150,8 +147,8 @@ export default function ProjetForm() {
     if (!form.budgetTotal || parseFloat(form.budgetTotal) <= 0) {
       errs.budgetTotal = "Le budget doit être supérieur à 0";
     }
-    if (!form.responsableId)
-      errs.responsableId = "Le responsable est obligatoire";
+    if (!form.chefProjetId)
+      errs.chefProjetId = "Le chargé de projet est obligatoire";
     if (resultats.filter((r) => r.trim()).length === 0) {
       errs.resultats = "Au moins un résultat attendu est obligatoire";
     }
@@ -168,18 +165,16 @@ export default function ProjetForm() {
     }
 
     const payload = {
-      code: form.code.trim(),
       titre: form.titre.trim(),
       description: form.description.trim(),
       objectifGeneral: form.objectifGeneral.trim(),
       zoneGeographique: form.zoneGeographique.trim(),
-      bailleur: form.bailleur.trim() || undefined,
+      bailleur: form.bailleur.trim(),
       dateDebut: form.dateDebut,
       dateFin: form.dateFin,
       budgetTotal: parseFloat(form.budgetTotal),
       devise: form.devise,
-      responsableId: form.responsableId || undefined,
-      equipeIds: form.equipeIds.length > 0 ? form.equipeIds : undefined,
+      chefProjetId: form.chefProjetId,
     };
 
     if (isEditMode) {
@@ -191,15 +186,6 @@ export default function ProjetForm() {
 
   const set = (key) => (e) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
-
-  const toggleEquipeMember = (userId) => {
-    setForm((prev) => ({
-      ...prev,
-      equipeIds: prev.equipeIds.includes(userId)
-        ? prev.equipeIds.filter((id) => id !== userId)
-        : [...prev.equipeIds, userId],
-    }));
-  };
 
   const addResultat = () => setResultats((prev) => [...prev, ""]);
   const updateResultat = (i, val) =>
@@ -233,16 +219,9 @@ export default function ProjetForm() {
         >
           <ArrowLeft size={18} />
         </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {isEditMode ? "Modifier le projet" : "Nouveau projet"}
-          </h1>
-          <p className="mt-0.5 text-sm text-gray-500">
-            {isEditMode
-              ? "Modifiez les informations du projet"
-              : "Remplissez le formulaire — le projet sera créé en statut Brouillon"}
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {isEditMode ? "Modifier le projet" : "Nouveau projet"}
+        </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -253,21 +232,12 @@ export default function ProjetForm() {
           </h2>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <FormLabel required>Code projet</FormLabel>
-              <FormInput
-                value={form.code}
-                onChange={set("code")}
-                placeholder="PROJ-2024-001"
-                disabled={isEditMode}
-              />
-              {isEditMode && (
-                <p className="mt-1 text-xs text-gray-400">
-                  Le code ne peut pas être modifié.
-                </p>
-              )}
-              <FieldError msg={errors.code} />
-            </div>
+            {isEditMode && (
+              <div>
+                <FormLabel>Code projet</FormLabel>
+                <FormInput value={form.code} disabled />
+              </div>
+            )}
 
             <div>
               <FormLabel required>Devise</FormLabel>
@@ -329,12 +299,20 @@ export default function ProjetForm() {
             </div>
 
             <div>
-              <FormLabel>Bailleur de fonds</FormLabel>
-              <FormInput
+              <FormLabel required>Bailleur de fonds</FormLabel>
+              <input
+                list="liste-bailleurs"
                 value={form.bailleur}
                 onChange={set("bailleur")}
-                placeholder="Ex: Union Européenne, USAID, AFD..."
+                placeholder="Ex: Union Européenne, USAID, AFD"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
               />
+              <datalist id="liste-bailleurs">
+                {bailleurs.map((b) => (
+                  <option key={b.id} value={b.nom} />
+                ))}
+              </datalist>
+              <FieldError msg={errors.bailleur} />
             </div>
           </div>
         </div>
@@ -429,69 +407,29 @@ export default function ProjetForm() {
           <FieldError msg={errors.resultats} />
         </div>
 
-        {/* Équipe */}
+        {/* Chargé de projet */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
           <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-3">
-            Équipe projet
+            Chargé de projet
           </h2>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
-              <FormLabel required>Responsable du projet</FormLabel>
+              <FormLabel required>Chargé de projet</FormLabel>
               <select
-                value={form.responsableId}
-                onChange={set("responsableId")}
+                value={form.chefProjetId}
+                onChange={set("chefProjetId")}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
               >
-                <option value="">— Sélectionner un responsable —</option>
-                {users
-                  .filter(
-                    (u) =>
-                      u.roles?.includes("ROLE_RESPONSABLE_PROGRAMMES") ||
-                      u.roles?.includes("ROLE_RAF"),
-                  )
-                  .map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.prenom} {u.nom}
-                    </option>
-                  ))}
-              </select>
-              <FieldError msg={errors.responsableId} />
-            </div>
-          </div>
-
-          <div>
-            <FormLabel>Membres de l'équipe</FormLabel>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {users
-                .filter((u) => u.id !== form.responsableId)
-                .map((u) => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => toggleEquipeMember(u.id)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                      form.equipeIds.includes(u.id)
-                        ? "border-green-500 bg-green-500 text-white"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-green-300"
-                    }`}
-                  >
-                    {u.prenom} {u.nom}
-                  </button>
+                <option value="">Choisir</option>
+                {charges.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nom}
+                  </option>
                 ))}
-              {users.length === 0 && (
-                <p className="text-xs text-gray-400">
-                  Chargement des utilisateurs...
-                </p>
-              )}
+              </select>
+              <FieldError msg={errors.chefProjetId} />
             </div>
-            {form.equipeIds.length > 0 && (
-              <p className="mt-1.5 text-xs text-gray-400">
-                {form.equipeIds.length} membre
-                {form.equipeIds.length > 1 ? "s" : ""} sélectionné
-                {form.equipeIds.length > 1 ? "s" : ""}
-              </p>
-            )}
           </div>
         </div>
 
