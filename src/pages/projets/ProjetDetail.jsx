@@ -237,6 +237,20 @@ function TabInfos({ projet, users }) {
                 : ""}
             </span>
           </InfoRow>
+          <InfoRow label="Dépensé">
+            {projet.montantDepense != null
+              ? new Intl.NumberFormat("fr-SN").format(projet.montantDepense) + " " + (projet.devise ?? "")
+              : ""}
+          </InfoRow>
+          <InfoRow label="Reste">
+            <span
+              className={`font-semibold ${projet.budgetRestant < 0 ? "text-red-600" : "text-gray-900"}`}
+            >
+              {projet.budgetRestant != null
+                ? new Intl.NumberFormat("fr-SN").format(projet.budgetRestant) + " " + (projet.devise ?? "")
+                : ""}
+            </span>
+          </InfoRow>
           <InfoRow label="Responsable">
             {responsable
               ? `${responsable.prenom} ${responsable.nom}`

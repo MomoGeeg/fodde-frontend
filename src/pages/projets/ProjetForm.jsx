@@ -69,9 +69,14 @@ export default function ProjetForm() {
   // Comptes actifs : le chargé de projet est choisi parmi les chargés de programme.
   const { data: personnes = [] } = useQuery({
     queryKey: ["projets", "personnes"],
-    queryFn: () => api.get("/api/projets/personnes").then((r) => (Array.isArray(r.data) ? r.data : [])),
+    queryFn: () =>
+      api
+        .get("/api/projets/personnes")
+        .then((r) => (Array.isArray(r.data) ? r.data : [])),
   });
-  const charges = personnes.filter((p) => p.roles?.includes("ROLE_CHARGE_PROGRAMME"));
+  const charges = personnes.filter((p) =>
+    p.roles?.includes("ROLE_CHARGE_PROGRAMME"),
+  );
   const { data: bailleurs = [] } = useBailleurs();
 
   const { data: projetData, isLoading: loadingProjet } = useQuery({
@@ -144,12 +149,15 @@ export default function ProjetForm() {
     } else if (form.dateDebut && form.dateFin <= form.dateDebut) {
       errs.dateFin = "La date de fin doit être postérieure à la date de début";
     }
-    if (!form.budgetTotal || parseFloat(form.budgetTotal) <= 0) {
+    if (
+      !isEditMode &&
+      (!form.budgetTotal || parseFloat(form.budgetTotal) <= 0)
+    ) {
       errs.budgetTotal = "Le budget doit être supérieur à 0";
     }
     if (!form.chefProjetId)
       errs.chefProjetId = "Le chargé de projet est obligatoire";
-    if (resultats.filter((r) => r.trim()).length === 0) {
+    if (!isEditMode && resultats.filter((r) => r.trim()).length === 0) {
       errs.resultats = "Au moins un résultat attendu est obligatoire";
     }
     return errs;
@@ -175,6 +183,9 @@ export default function ProjetForm() {
       budgetTotal: parseFloat(form.budgetTotal),
       devise: form.devise,
       chefProjetId: form.chefProjetId,
+      resultats: isEditMode
+        ? undefined
+        : resultats.map((r) => r.trim()).filter(Boolean),
     };
 
     if (isEditMode) {
@@ -358,6 +369,7 @@ export default function ProjetForm() {
                 value={form.budgetTotal}
                 onChange={set("budgetTotal")}
                 placeholder="0"
+                disabled={isEditMode}
               />
               <FieldError msg={errors.budgetTotal} />
             </div>
@@ -365,47 +377,49 @@ export default function ProjetForm() {
         </div>
 
         {/* Résultats attendus */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
-          <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-3">
-            Résultats attendus <span className="text-red-500">*</span>
-          </h2>
+        {!isEditMode && (
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+            <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-3">
+              Résultats attendus <span className="text-red-500">*</span>
+            </h2>
 
-          <div className="space-y-2">
-            {resultats.map((r, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                  {i + 1}
-                </span>
-                <input
-                  type="text"
-                  value={r}
-                  onChange={(e) => updateResultat(i, e.target.value)}
-                  placeholder={`Résultat attendu ${i + 1}...`}
-                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
-                />
-                {resultats.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeResultat(i)}
-                    className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                )}
-              </div>
-            ))}
+            <div className="space-y-2">
+              {resultats.map((r, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                    {i + 1}
+                  </span>
+                  <input
+                    type="text"
+                    value={r}
+                    onChange={(e) => updateResultat(i, e.target.value)}
+                    placeholder={`Résultat attendu ${i + 1}...`}
+                    className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
+                  />
+                  {resultats.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeResultat(i)}
+                      className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={addResultat}
+              className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-dark transition-colors"
+            >
+              <Plus size={14} />
+              Ajouter un résultat
+            </button>
+            <FieldError msg={errors.resultats} />
           </div>
-
-          <button
-            type="button"
-            onClick={addResultat}
-            className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-dark transition-colors"
-          >
-            <Plus size={14} />
-            Ajouter un résultat
-          </button>
-          <FieldError msg={errors.resultats} />
-        </div>
+        )}
 
         {/* Chargé de projet */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
@@ -457,7 +471,9 @@ export default function ProjetForm() {
           <button
             type="submit"
             disabled={isPending}
-            onClick={() => setSubmitMode(isEditMode ? "BROUILLON" : "EN_VALIDATION")}
+            onClick={() =>
+              setSubmitMode(isEditMode ? "BROUILLON" : "EN_VALIDATION")
+            }
             className="rounded-lg px-5 py-2 text-sm font-medium text-white disabled:opacity-60 transition-colors"
             style={{ background: "linear-gradient(135deg, #5A9C3A, #4A7C2F)" }}
           >
