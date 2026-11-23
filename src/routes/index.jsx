@@ -105,8 +105,10 @@ export default function AppRoutes() {
             <Route path="bailleurs" element={<BailleursPage />} />
             <Route path="bailleurs/:id" element={<BailleurFichePage />} />
           </Route>
-          <Route element={<Acces roles={[R.RAF, R.SE, R.ADMIN]} />}>
+          <Route element={<Acces roles={[R.RP, R.SE, R.ADMIN]} />}>
             <Route path="bailleurs/nouveau" element={<BailleurFormPage />} />
+          </Route>
+          <Route element={<Acces roles={[R.RAF, R.SE, R.ADMIN]} />}>
             <Route path="financements/nouveau" element={<FinancementFormPage />} />
           </Route>
           <Route element={<Acces roles={ACCES.budgetAnnuel} />}>
