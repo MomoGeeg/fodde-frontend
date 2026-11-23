@@ -41,11 +41,12 @@ const FINANCIER = ["JUSTIFICATIF", "FACTURE", "RAPPORT_FINANCIER", "CONTRAT_PRES
 const TYPES_RH = ["CONTRAT_EMPLOI", "BULLETIN_SALAIRE", "EVALUATION_RH"];
 const PROGRAMMES = ["RAPPORT_ACTIVITE", "RAPPORT_MISSION", "PLAN_TRAVAIL"];
 const SUIVI_EVALUATION = ["RAPPORT_SUIVI", "RAPPORT_EVALUATION", "PLAN_SE", "DONNEES_COLLECTE", "PHOTO_TERRAIN"];
-const TOUS = null;
 
 export const TYPES_PAR_ROLE = {
-  ROLE_ADMIN: TOUS,
-  ROLE_SE: TOUS,
+  // L'administrateur gère les comptes, pas les documents.
+  ROLE_ADMIN: [],
+  // Le SE consulte tous les documents mais ne dépose que les siens (direction).
+  ROLE_SE: ["CONVENTION_BAILLEUR", "INSTITUTIONNEL", "PV_REUNION", "RAPPORT_MISSION", "AUTRE"],
   ROLE_RAF: [...FINANCIER, "CONVENTION_BAILLEUR", "RAPPORT_MISSION", "PV_REUNION", "AUTRE"],
   ROLE_COMPTABLE: ["JUSTIFICATIF", "FACTURE", "RAPPORT_FINANCIER", "ACQUISITION", "AUTRE"],
   ROLE_RH: [...TYPES_RH, "RAPPORT_MISSION", "PV_REUNION", "AUTRE"],
@@ -66,9 +67,9 @@ export const TYPES_PAR_ROLE = {
 
 /** Types que l'utilisateur peut choisir en déposant un document (réunion de ses rôles). */
 export function typesPourRoles(roles = []) {
-  const listes = roles.map((r) => TYPES_PAR_ROLE[r]).filter((l) => l !== undefined);
-  if (!listes.length || listes.includes(TOUS)) return TYPE_OPTIONS;
-  const permis = new Set(listes.flat());
+  const permis = new Set(roles.flatMap((r) => TYPES_PAR_ROLE[r] ?? []));
+  // Rôle inconnu de la liste (hors administrateur) : seulement « Autre ».
+  if (!permis.size && roles.some((r) => r !== "ROLE_ADMIN")) permis.add("AUTRE");
   return TYPE_OPTIONS.filter((t) => permis.has(t.value));
 }
 
