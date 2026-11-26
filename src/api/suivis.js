@@ -1,11 +1,11 @@
 import api from "@/api/axios";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Suivi mensuel du terrain : le technicien (ou l'animateur) remet son planning
-// et son rapport du mois ; le superviseur le vise, en corrigeant le texte au
-// besoin, et le transmet au coordonnateur du projet, qui le valide ou le
-// renvoie à son auteur. Validé, il est visible du RAF, du RP, du SE et du
-// suivi-évaluation.
+// Suivi mensuel du terrain : le technicien (ou l'animateur) remet, pour un de
+// ses projets, son planning (texte) et son rapport (fichier Word) du mois ; le
+// superviseur le vise, en déposant au besoin une version corrigée, et le
+// transmet au coordonnateur du projet, qui le valide ou le renvoie à son
+// auteur. Validé, il est visible du RAF, du RP, du SE et du suivi-évaluation.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const TYPES_SUIVI = {
@@ -24,11 +24,43 @@ export const suivisApi = {
   miens: () => api.get("/api/suivis-terrain/miens").then((r) => r.data),
   equipe: () => api.get("/api/suivis-terrain/equipe").then((r) => r.data),
   membres: () => api.get("/api/suivis-terrain/equipe/membres").then((r) => r.data),
-  soumettre: (data) => api.post("/api/suivis-terrain", data).then((r) => r.data),
+  mesProjets: () => api.get("/api/suivis-terrain/mes-projets").then((r) => r.data),
+  /** `donnees` : { type, mois, projetId, contenu } ; `fichier` : le rapport Word. */
+  soumettre: (donnees, fichier) => {
+    const corps = new FormData();
+    corps.append("donnees", new Blob([JSON.stringify(donnees)], { type: "application/json" }));
+    if (fichier) corps.append("fichier", fichier);
+    return api.post("/api/suivis-terrain", corps).then((r) => r.data);
+  },
+  /** Version corrigée du rapport, déposée par le superviseur. */
+  corriger: (id, fichier) => {
+    const corps = new FormData();
+    corps.append("fichier", fichier);
+    return api.post(`/api/suivis-terrain/${id}/correction`, corps).then((r) => r.data);
+  },
   valides: () => api.get("/api/suivis-terrain/valides").then((r) => r.data),
   decider: (id, valide, commentaire, contenu = null) =>
     api.patch(`/api/suivis-terrain/${id}/decision`, { valide, commentaire, contenu }).then((r) => r.data),
 };
+
+/** Formats acceptés pour le rapport. */
+export const FORMATS_WORD = ".doc,.docx";
+
+/** Télécharge le rapport Word (ou la version remise par l'auteur) sous son nom. */
+export async function telechargerRapport(suivi, initial = false) {
+  const { data } = await api.get(`/api/suivis-terrain/${suivi.id}/fichier`, {
+    params: initial ? { initial: true } : undefined,
+    responseType: "blob",
+  });
+  const url = URL.createObjectURL(data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = (initial ? suivi.fichierInitialNom : suivi.fichierNom) ?? "rapport.docx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
 /** Mois au format AAAA-MM, décalé de `ecart` mois par rapport au mois courant. */
 export function moisDecale(ecart = 0) {
