@@ -10,13 +10,16 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Espace terrain : planning et rapport mensuels (technicien), validation et
-// équipe (superviseur). Les blocs d'accueil réutilisent les mêmes requêtes.
+// Espace terrain : planning et rapport mensuels (technicien, animateur), visa
+// du superviseur, validation du coordonnateur, équipe ; rapports validés pour
+// le RAF, le RP, le SE et le suivi-évaluation. Les blocs d'accueil réutilisent
+// les mêmes requêtes.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CLE_MIENS = ["suivis-terrain", "miens"];
 const CLE_EQUIPE = ["suivis-terrain", "equipe"];
 const CLE_MEMBRES = ["suivis-terrain", "membres"];
+const CLE_VALIDES = ["suivis-terrain", "valides"];
 const nombre = (n) => new Intl.NumberFormat("fr-FR").format(n ?? 0);
 
 const champ =
@@ -32,12 +35,38 @@ const useMembresEquipe = (actif = true) =>
 
 const titreSuivi = (s) => `${TYPES_SUIVI[s.type]} de ${libelleMois(s.mois)}`;
 
+/** Ce que doit faire celui qui décide : viser (superviseur) ou valider (coordonnateur). */
+const etapeVisa = (s) => s.statut === "SOUMIS";
+
 // ── Détail d'un planning ou d'un rapport ─────────────────────────────────────
 
 function DetailSuivi({ suivi }) {
+  const [initial, setInitial] = useState(false);
+  const circuit = [
+    suivi.projets?.length > 0 && suivi.projets.join(", "),
+    suivi.viseParNom && `visé par ${suivi.viseParNom} le ${dateCourte(suivi.dateVisa)}`,
+    suivi.statut === "VALIDE" && suivi.decideParNom && `validé par ${suivi.decideParNom} le ${dateCourte(suivi.dateDecision)}`,
+  ].filter(Boolean);
   return (
     <div className="space-y-3 px-4 pb-4 text-sm">
+      {circuit.length > 0 && <p className="text-xs text-gray-500">{circuit.join(" · ")}</p>}
       <p className="whitespace-pre-line rounded-md bg-gray-50 p-3 text-gray-800">{suivi.contenu}</p>
+      {suivi.contenuInitial && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setInitial(!initial)}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            {initial ? "Masquer le texte d’origine" : "Corrigé par le superviseur : voir le texte d’origine"}
+          </button>
+          {initial && (
+            <p className="mt-2 whitespace-pre-line rounded-md border border-dashed border-gray-300 p-3 text-gray-600">
+              {suivi.contenuInitial}
+            </p>
+          )}
+        </div>
+      )}
       {suivi.type === "PLANNING" && (
         <div>
           <p className={etiquette}>Activités prévues dans le mois</p>
@@ -62,7 +91,14 @@ function DetailSuivi({ suivi }) {
             suivi.statut === "A_REVOIR" ? "bg-red-50 text-red-800" : "bg-green-50 text-green-800"
           }`}
         >
-          <span className="font-semibold">{suivi.decideParNom ?? "Validation"} : </span>
+          <span className="font-semibold">
+            {suivi.statut === "A_REVOIR"
+              ? `Renvoyé par ${suivi.decideParNom ?? "le validateur"}`
+              : suivi.statut === "TRANSMIS"
+                ? suivi.viseParNom ?? "Superviseur"
+                : suivi.decideParNom ?? "Validation"}{" "}
+            :{" "}
+          </span>
           {suivi.commentaire}
         </p>
       )}
@@ -70,58 +106,88 @@ function DetailSuivi({ suivi }) {
   );
 }
 
-/** Décision du superviseur : valider, ou renvoyer à revoir avec un commentaire. */
+/**
+ * Décision sur un document : le superviseur le vise (en corrigeant le texte au
+ * besoin) et le transmet ; le coordonnateur le valide. Tous deux peuvent le
+ * renvoyer à son auteur avec un commentaire.
+ */
 function Decision({ suivi }) {
   const queryClient = useQueryClient();
   const [commentaire, setCommentaire] = useState("");
+  const [correction, setCorrection] = useState(null);
+  const corrige = correction !== null && correction.trim() && correction.trim() !== suivi.contenu;
   const { mutate, isPending } = useMutation({
-    mutationFn: (valide) => suivisApi.decider(suivi.id, valide, commentaire.trim() || null),
-    onSuccess: (_, valide) => {
+    mutationFn: (valide) =>
+      suivisApi.decider(suivi.id, valide, commentaire.trim() || null, valide && corrige ? correction.trim() : null),
+    onSuccess: (r, valide) => {
       queryClient.invalidateQueries({ queryKey: ["suivis-terrain"] });
-      toast.success(valide ? "Document validé" : "Document renvoyé au technicien");
+      toast.success(
+        !valide
+          ? `Renvoyé à ${suivi.technicienNom ?? "son auteur"} pour correction`
+          : r.statut === "TRANSMIS"
+            ? "Validé et transmis au coordonnateur"
+            : "Document validé",
+      );
     },
     onError: (err) => toast.error(messageErreur(err)),
   });
   return (
-    <div className="flex flex-col gap-2 border-t border-gray-100 px-4 py-3 sm:flex-row sm:items-end">
-      <label className="flex-1">
-        <span className={etiquette}>Commentaire</span>
-        <textarea
-          rows={2}
-          value={commentaire}
-          onChange={(e) => setCommentaire(e.target.value)}
-          className={champ}
-        />
-      </label>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={() => {
-            if (!commentaire.trim()) {
-              toast.error("Indiquez ce qui est à revoir");
-              return;
-            }
-            mutate(false);
-          }}
-          className="rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
-        >
-          À revoir
-        </button>
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={() => mutate(true)}
-          className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-60"
-        >
-          Valider
-        </button>
+    <div className="space-y-3 border-t border-gray-100 px-4 py-3">
+      {etapeVisa(suivi) &&
+        (correction === null ? (
+          <button
+            type="button"
+            onClick={() => setCorrection(suivi.contenu)}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Corriger le texte
+          </button>
+        ) : (
+          <label className="block">
+            <span className={etiquette}>Texte corrigé</span>
+            <textarea rows={8} value={correction} onChange={(e) => setCorrection(e.target.value)} className={champ} />
+          </label>
+        ))}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <label className="flex-1">
+          <span className={etiquette}>Commentaire</span>
+          <textarea
+            rows={2}
+            value={commentaire}
+            onChange={(e) => setCommentaire(e.target.value)}
+            className={champ}
+          />
+        </label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => {
+              if (!commentaire.trim()) {
+                toast.error("Indiquez ce qui est à corriger");
+                return;
+              }
+              mutate(false);
+            }}
+            className="rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+          >
+            Renvoyer pour correction
+          </button>
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => mutate(true)}
+            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-60"
+          >
+            {etapeVisa(suivi) && corrige ? "Valider avec la correction" : "Valider"}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function LigneSuivi({ suivi, avecTechnicien, peutDecider }) {
+function LigneSuivi({ suivi, avecTechnicien, peutDecider, sousTitre }) {
   const [ouvert, setOuvert] = useState(peutDecider);
   return (
     <li>
@@ -133,7 +199,7 @@ function LigneSuivi({ suivi, avecTechnicien, peutDecider }) {
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium text-gray-900">{titreSuivi(suivi)}</span>
           <span className="block truncate text-xs text-gray-500">
-            {[avecTechnicien && suivi.technicienNom, `remis le ${dateCourte(suivi.createdAt)}`]
+            {[avecTechnicien && suivi.technicienNom, sousTitre ?? `remis le ${dateCourte(suivi.createdAt)}`]
               .filter(Boolean)
               .join(" · ")}
           </span>
@@ -159,7 +225,7 @@ function FormulaireSuivi({ suivis }) {
   const [mois, setMois] = useState(moisDecale(0));
   const [contenu, setContenu] = useState(() => texteRemis("PLANNING", moisDecale(0)));
   const existant = suivis.find((s) => s.type === type && s.mois === mois);
-  const verrouille = existant?.statut === "VALIDE";
+  const verrouille = existant?.statut === "VALIDE" || existant?.statut === "TRANSMIS";
 
   const moisPossibles = (t) => (t === "PLANNING" ? [-1, 0, 1] : [-2, -1, 0]).map((e) => moisDecale(e));
   const choixMois = moisPossibles(type);
@@ -175,7 +241,7 @@ function FormulaireSuivi({ suivis }) {
     mutationFn: () => suivisApi.soumettre({ type, mois, contenu: contenu.trim() }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suivis-terrain"] });
-      toast.success(`${TYPES_SUIVI[type]} remis au superviseur`);
+      toast.success(`${TYPES_SUIVI[type]} remis`);
     },
     onError: (err) => toast.error(messageErreur(err)),
   });
@@ -218,7 +284,10 @@ function FormulaireSuivi({ suivis }) {
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <StatutBadge statut={existant.statut} statuts={STATUTS_SUIVI} />
           {existant.statut === "A_REVOIR" && existant.commentaire && (
-            <span className="text-red-700">{existant.commentaire}</span>
+            <span className="text-red-700">
+              {existant.decideParNom ? `${existant.decideParNom} : ` : ""}
+              {existant.commentaire}
+            </span>
           )}
         </div>
       )}
@@ -238,7 +307,7 @@ function FormulaireSuivi({ suivis }) {
           disabled={isPending || verrouille}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-60"
         >
-          {isPending ? "Envoi…" : existant && !verrouille ? "Remettre à nouveau" : "Remettre au superviseur"}
+          {isPending ? "Envoi…" : existant && !verrouille ? "Remettre à nouveau" : "Remettre"}
         </button>
       </div>
     </form>
@@ -247,7 +316,7 @@ function FormulaireSuivi({ suivis }) {
 
 // ── Pages ────────────────────────────────────────────────────────────────────
 
-/** Planning et rapport du mois : remise (technicien), validation (superviseur). */
+/** Planning et rapport du mois : remise (technicien, animateur), visa (superviseur), validation (coordonnateur). */
 export function SuiviMensuelPage() {
   const { user } = useAuthStore();
   const roles = user?.roles ?? [];
@@ -257,7 +326,7 @@ export function SuiviMensuelPage() {
 
   const { data: miens = [], isLoading: chargeMiens } = useSuivisMiens(technicien);
   const { data: equipe = [], isLoading: chargeEquipe } = useSuivisEquipe(superviseur);
-  const enAttente = equipe.filter((s) => s.statut === "SOUMIS");
+  const enAttente = equipe.filter((s) => s.aDecider);
   const listeEquipe = vue === "attente" ? enAttente : equipe;
 
   return (
@@ -290,7 +359,7 @@ export function SuiviMensuelPage() {
                   key={s.id}
                   suivi={s}
                   avecTechnicien
-                  peutDecider={s.statut === "SOUMIS" && s.technicienId !== user?.id}
+                  peutDecider={s.aDecider}
                 />
               ))}
             </ul>
@@ -416,6 +485,74 @@ export function EquipePage() {
   );
 }
 
+/** Plannings et rapports validés par le coordonnateur : RAF, RP, SE, suivi-évaluation. */
+export function RapportsTerrainPage() {
+  const { data: valides = [], isLoading } = useQuery({ queryKey: CLE_VALIDES, queryFn: suivisApi.valides });
+  const [type, setType] = useState("RAPPORT");
+  const [projet, setProjet] = useState("");
+  const projets = [...new Set(valides.flatMap((s) => s.projets ?? []))].sort();
+  const liste = valides.filter(
+    (s) => (!type || s.type === type) && (!projet || (s.projets ?? []).includes(projet)),
+  );
+  return (
+    <div className="mx-auto max-w-4xl space-y-6">
+      <Bloc titre="Rapports de terrain validés">
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-2">
+          {[
+            ["RAPPORT", "Rapports"],
+            ["PLANNING", "Plannings"],
+            ["", "Tous"],
+          ].map(([code, libelle]) => (
+            <button
+              key={code || "tous"}
+              type="button"
+              onClick={() => setType(code)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                type === code ? "bg-primary/10 text-primary" : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              {libelle}
+            </button>
+          ))}
+          {projets.length > 1 && (
+            <select
+              value={projet}
+              onChange={(e) => setProjet(e.target.value)}
+              aria-label="Projet"
+              className="ml-auto rounded-md border border-gray-300 px-2 py-1.5 text-xs"
+            >
+              <option value="">Tous les projets</option>
+              {projets.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+        {isLoading ? (
+          <Vide>Chargement…</Vide>
+        ) : liste.length ? (
+          <ul className="divide-y divide-gray-100">
+            {liste.map((s) => (
+              <LigneSuivi
+                key={s.id}
+                suivi={s}
+                avecTechnicien
+                sousTitre={[(s.projets ?? []).join(", "), `validé le ${dateCourte(s.dateDecision)}`]
+                  .filter(Boolean)
+                  .join(" · ")}
+              />
+            ))}
+          </ul>
+        ) : (
+          <Vide>Aucun document validé.</Vide>
+        )}
+      </Bloc>
+    </div>
+  );
+}
+
 // ── Blocs de l'accueil ───────────────────────────────────────────────────────
 
 /** Technicien : état du planning du mois et du dernier rapport. */
@@ -457,8 +594,8 @@ export function BlocSuiviTechnicien() {
 export function BlocsSuperviseur() {
   const { data: suivis = [], isLoading: chargeSuivis } = useSuivisEquipe();
   const { data: membres = [], isLoading: chargeMembres } = useMembresEquipe();
-  const plannings = suivis.filter((s) => s.statut === "SOUMIS" && s.type === "PLANNING");
-  const rapports = suivis.filter((s) => s.statut === "SOUMIS" && s.type === "RAPPORT");
+  const plannings = suivis.filter((s) => s.aDecider && s.type === "PLANNING");
+  const rapports = suivis.filter((s) => s.aDecider && s.type === "RAPPORT");
   return (
     <>
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">

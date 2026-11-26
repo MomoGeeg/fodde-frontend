@@ -96,7 +96,7 @@ async function chargerATraiter(roles, userId) {
   if (aAcces(roles, [R.CP])) {
     appels.push(
       liste("/api/suivis-terrain/equipe").then((s) =>
-        ajouter("Plannings et rapports à valider", s.filter((x) => x.statut === "SOUMIS").length, "/terrain/suivi"),
+        ajouter("Plannings et rapports à valider", s.filter((x) => x.aDecider).length, "/terrain/suivi"),
       ),
     );
   }
