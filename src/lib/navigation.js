@@ -65,6 +65,8 @@ export const ACCES = {
   /** Le coordonnateur (chef de projet) valide le suivi de ses animateurs. */
   terrain: [R.TT, R.SUP, R.ANIM, R.CP, R.RP, R.ADMIN],
   superviseur: [R.SUP, R.CP, R.RP, R.ADMIN],
+  /** Plannings et rapports validés par le coordonnateur. */
+  rapportsTerrain: [R.RAF, R.RP, R.SE, R.RSE, R.ADMIN],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -98,6 +100,7 @@ export const MENU = {
   terrain: [R.TT, R.SUP, R.ANIM],
   suiviTerrain: [R.TT, R.SUP, R.ANIM, R.CP],
   superviseur: [R.SUP, R.CP],
+  rapportsTerrain: [R.RAF, R.RP, R.SE, R.RSE],
 };
 
 export const NAVIGATION = [
@@ -136,6 +139,7 @@ export const NAVIGATION = [
     items: [
       { label: "Planning et rapports", path: "/terrain/suivi", icon: ClipboardList, menu: MENU.suiviTerrain },
       { label: "Mon équipe", path: "/terrain/equipe", icon: Users, menu: MENU.superviseur },
+      { label: "Rapports de terrain", path: "/terrain/rapports", icon: FileText, menu: MENU.rapportsTerrain },
     ],
   },
   {
@@ -179,7 +183,10 @@ const entree = (path) => NAVIGATION.flatMap((section) => section.items).find((it
 const NAVIGATION_SE = [
   { items: [entree("/")] },
   { titre: "Projets", items: ["/projets", "/finances/budgets", "/bailleurs", "/se/indicateurs"].map(entree) },
-  { titre: "Activité", items: ["/finances/depenses", "/missions", "/acquisitions", "/conges"].map(entree) },
+  {
+    titre: "Activité",
+    items: ["/finances/depenses", "/missions", "/acquisitions", "/conges", "/terrain/rapports"].map(entree),
+  },
   { titre: "Organisation", items: ["/rh/employes", "/logistique", "/documents"].map(entree) },
 ];
 

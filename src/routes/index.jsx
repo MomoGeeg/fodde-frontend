@@ -6,7 +6,7 @@ import { BailleurFichePage, BailleurFormPage, BailleursPage, FinancementFormPage
 import { IndicateurFichePage, IndicateurFormPage, IndicateursPage } from "@/pages/indicateurs/IndicateursPages";
 import { GESTIONNAIRES_INDICATEURS } from "@/api/indicateurs";
 import { AcquisitionFichePage, AcquisitionFormPage, AcquisitionsPage } from "@/pages/acquisitions/AcquisitionsPages";
-import { EquipePage, SuiviMensuelPage } from "@/pages/terrain/TerrainPages";
+import { EquipePage, RapportsTerrainPage, SuiviMensuelPage } from "@/pages/terrain/TerrainPages";
 import { CongeFichePage, CongeFormPage, CongesPage } from "@/pages/conges/CongesPages";
 import { MissionFichePage, MissionFormPage, MissionsPage, OrdreMissionPage } from "@/pages/missions/MissionsPages";
 import ActivitesList from "@/pages/activites/ActivitesList";
@@ -132,6 +132,9 @@ export default function AppRoutes() {
           </Route>
           <Route element={<Acces roles={ACCES.superviseur} />}>
             <Route path="terrain/equipe" element={<EquipePage />} />
+          </Route>
+          <Route element={<Acces roles={ACCES.rapportsTerrain} />}>
+            <Route path="terrain/rapports" element={<RapportsTerrainPage />} />
           </Route>
 
           {/* ── Ressources humaines ─────────────────────────── */}
